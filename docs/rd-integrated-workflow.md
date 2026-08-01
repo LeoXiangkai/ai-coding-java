@@ -4,6 +4,8 @@
 
 本流程使用轻量模板和按需路由。复杂需求可生成过程产物，小任务继续走规则索引。
 
+公开 SDD / Agent Skill 组件的参考价值和取舍见 `docs/sdd-reference-analysis.md`。本流程只吸收能提升准确性和可验证性的轻量机制，不把外部完整工具链变成默认门禁。
+
 ## 适用场景
 
 1. 新功能。
@@ -23,11 +25,11 @@ Requirement -> Design -> Task/Test -> Implement -> Verify/Review -> Release -> K
 |---|---|---|---|
 | Requirement | 澄清做什么、为什么做、验收标准是什么 | 需求简报 | `.ai-coding-java/artifacts/<work-id>/requirement-brief.md` |
 | Design | 确认影响面、数据边界、接口和技术取舍 | 设计简报 | `.ai-coding-java/artifacts/<work-id>/design-brief.md` |
-| Task/Test | 拆任务并前置测试/验收用例 | 测试用例简表 | `.ai-coding-java/artifacts/<work-id>/test-case-brief.md` |
+| Task/Test | 拆任务并前置测试/验收用例 | 测试用例简表、复杂需求 checklist | `.ai-coding-java/artifacts/<work-id>/test-case-brief.md` |
 | Implement | 按既有分层和规则实现 | 代码 diff | 业务代码目录 |
 | Verify/Review | 证明行为正确并暴露风险 | 验证证据、Review 结论 | 交付报告或 `.ai-coding-java/artifacts/<work-id>/` |
 | Release | 说明发布影响、回滚和验收证据 | 发布影响说明 | `.ai-coding-java/artifacts/<work-id>/release-impact.md` |
-| Knowledge | 抽取可复用经验 | 知识候选 | `.omx/knowledge-candidates/` |
+| Knowledge | 抽取可复用经验 | 知识候选、跨会话交接 | `.omx/knowledge-candidates/` 或 `.ai-coding-java/artifacts/<work-id>/handoff.md` |
 
 ## 阶段要求
 
@@ -62,6 +64,8 @@ Requirement -> Design -> Task/Test -> Implement -> Verify/Review -> Release -> K
 4. 权限或数据隔离。
 5. 回归场景。
 
+复杂需求可使用 `templates/requirements-checklist-template.md`，用来确认验收标准、非目标、数据边界、权限、兼容性和发布影响是否清楚。Checklist 是前置澄清工具，不是小任务的默认阻塞门禁。
+
 ### Implement
 
 执行仍以 `workflow/agent-workflow.md` 和命中的 `rules/` 为准。不得为了补产物而扩大代码 diff。
@@ -69,6 +73,8 @@ Requirement -> Design -> Task/Test -> Implement -> Verify/Review -> Release -> K
 ### Verify/Review
 
 验证依据 `docs/verification-matrix.md`。Review 使用 P0/P1/P2 分级。不能执行的验证必须写入 `Not-tested`。
+
+复杂需求或发布前建议做一次只读一致性分析：需求、设计、测试、发布影响和交付报告应能互相追溯。发现 P0 风险时必须处理；P1/P2 记录风险、建议和未验证项。
 
 ### Release
 
@@ -83,6 +89,8 @@ Requirement -> Design -> Task/Test -> Implement -> Verify/Review -> Release -> K
 ### Knowledge
 
 只有稳定、可复用、已脱敏的经验进入 `knowledge/`。过程草稿先生成到 `.omx/knowledge-candidates/`，经人工审查后再入库。
+
+跨会话、跨 Agent、多模块或提测前交接可使用 `templates/handoff-template.md`。交接只记录当前目标、已完成项、证据、未验证项、风险和下一步，不保存长篇过程日志。
 
 ## 文件策略
 

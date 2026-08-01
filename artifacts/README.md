@@ -6,10 +6,12 @@
 
 ```text
 .ai-coding-java/artifacts/<work-id>/
+  requirements-checklist.md
   requirement-brief.md
   design-brief.md
   test-case-brief.md
   release-impact.md
+  handoff.md
 ```
 
 原则：

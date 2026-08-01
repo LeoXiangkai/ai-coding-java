@@ -22,13 +22,14 @@
 14. Git Hooks 指南：[docs/git-hooks-guide.md](docs/git-hooks-guide.md)
 15. 远程托管指南：[docs/remote-hosting-guide.md](docs/remote-hosting-guide.md)
 16. 研发一体化轻量流程：[docs/rd-integrated-workflow.md](docs/rd-integrated-workflow.md)
-17. 研发过程产物目录：[artifacts/](artifacts/)
-18. 企业知识库：[knowledge/](knowledge/)
-19. 规则文件：[rules/](rules/)
-20. 工作流：[workflow/agent-workflow.md](workflow/agent-workflow.md)
-21. 交付模板：[templates/](templates/)
-22. 接入说明：[USAGE.md](USAGE.md)
-23. 组件边界：[TOOL.md](TOOL.md)
+17. SDD 参考分析：[docs/sdd-reference-analysis.md](docs/sdd-reference-analysis.md)
+18. 研发过程产物目录：[artifacts/](artifacts/)
+19. 企业知识库：[knowledge/](knowledge/)
+20. 规则文件：[rules/](rules/)
+21. 工作流：[workflow/agent-workflow.md](workflow/agent-workflow.md)
+22. 交付模板：[templates/](templates/)
+23. 接入说明：[USAGE.md](USAGE.md)
+24. 组件边界：[TOOL.md](TOOL.md)
 
 ## 原则
 
