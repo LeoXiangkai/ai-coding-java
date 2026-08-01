@@ -1,0 +1,55 @@
+#!/usr/bin/env python3
+from pathlib import Path
+import subprocess
+import sys
+
+
+def run(cmd: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(cmd, cwd=cwd, text=True, capture_output=True)
+
+
+def repo_root() -> Path:
+    result = run(["git", "rev-parse", "--show-toplevel"], Path.cwd())
+    if result.returncode != 0:
+        print("ai-coding-java pre-commit: not a git repository, skip")
+        sys.exit(0)
+    return Path(result.stdout.strip())
+
+
+def staged_files(root: Path) -> list[str]:
+    result = run(["git", "diff", "--cached", "--name-only", "--diff-filter=ACMR"], root)
+    if result.returncode != 0:
+        print(result.stderr.strip() or "ai-coding-java pre-commit: cannot read staged files", file=sys.stderr)
+        sys.exit(1)
+    return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+
+
+def main() -> int:
+    root = repo_root()
+    files = staged_files(root)
+    if not files:
+        print("ai-coding-java pre-commit: no staged files")
+        return 0
+
+    script = root / ".ai-coding-java" / "scripts" / "static_review_check.py"
+    if not script.is_file():
+        script = root / "scripts" / "static_review_check.py"
+    if not script.is_file():
+        print("ai-coding-java pre-commit: static_review_check.py not found, skip")
+        return 0
+
+    paths = [str(root / rel) for rel in files]
+    cmd = [sys.executable, str(script), "--include-docs", *paths]
+    result = subprocess.run(cmd, cwd=root, text=True)
+
+    if result.returncode == 2:
+        print("ai-coding-java pre-commit: blocked by P0 deterministic finding", file=sys.stderr)
+        return 1
+    if result.returncode == 1:
+        print("ai-coding-java pre-commit: P1 deterministic findings reported; commit is allowed", file=sys.stderr)
+        return 0
+    return result.returncode
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -2,13 +2,14 @@
 from pathlib import Path
 import argparse
 import shutil
+import subprocess
 import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
-COPY_DIRS = ["docs", "rules", "workflow", "templates", "knowledge", "artifacts"]
+COPY_DIRS = ["docs", "rules", "workflow", "templates", "knowledge", "artifacts", "hooks"]
 COPY_FILES = ["README.md", "TOOL.md", "USAGE.md"]
-TARGET_SCRIPTS = ["static_review_check.py", "extract_knowledge_candidate.py"]
+TARGET_SCRIPTS = ["static_review_check.py", "extract_knowledge_candidate.py", "install_git_hooks.py"]
 AGENTS_MARKER_START = "<!-- ai-coding-java:AGENTS:START -->"
 AGENTS_MARKER_END = "<!-- ai-coding-java:AGENTS:END -->"
 CLAUDE_MARKER_START = "<!-- ai-coding-java:CLAUDE:START -->"
@@ -72,6 +73,20 @@ def upsert_marked_block(path: Path, start: str, end: str, body: str) -> None:
         return
     path.write_text(f"# {path.name.replace('.md', '')}\n\n{block}", encoding="utf-8")
     print(f"OK created {path}")
+
+
+def install_git_hooks(target: Path) -> None:
+    installer = target / ".ai-coding-java" / "scripts" / "install_git_hooks.py"
+    if not installer.is_file():
+        print(f"SKIP git hooks missing installer {installer}")
+        return
+    result = subprocess.run([sys.executable, str(installer), str(target)], text=True, capture_output=True)
+    if result.stdout.strip():
+        print(result.stdout.strip())
+    if result.returncode != 0:
+        if result.stderr.strip():
+            print(result.stderr.strip(), file=sys.stderr)
+        raise SystemExit(result.returncode)
 
 
 def profile_text(args: argparse.Namespace) -> str:
@@ -209,13 +224,15 @@ def main() -> int:
 
     upsert_marked_block(target / "AGENTS.md", AGENTS_MARKER_START, AGENTS_MARKER_END, agents_pointer())
     upsert_marked_block(target / "CLAUDE.md", CLAUDE_MARKER_START, CLAUDE_MARKER_END, claude_pointer())
+    install_git_hooks(target)
 
     print("\nNext steps:")
     print("1. Review .ai-coding-java/project-profile.md and fill missing commands.")
     print("2. Review the marker blocks added to AGENTS.md and CLAUDE.md.")
-    print("3. Run .ai-coding-java/scripts/static_review_check.py when deterministic review is needed.")
-    print("4. Use .ai-coding-java/artifacts/<work-id>/ only when RD process records are useful.")
-    print("5. Decide whether .ai-coding-java/ stays local-only or is committed.")
+    print("3. Confirm .git/hooks/pre-commit was installed when the target is a git repository.")
+    print("4. Run .ai-coding-java/scripts/static_review_check.py when deterministic review is needed outside commit flow.")
+    print("5. Use .ai-coding-java/artifacts/<work-id>/ only when RD process records are useful.")
+    print("6. Decide whether .ai-coding-java/ stays local-only or is committed.")
     return 0
 
 

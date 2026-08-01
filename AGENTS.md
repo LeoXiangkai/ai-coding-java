@@ -2,9 +2,9 @@
 
 ## Project Purpose
 
-`ai-coding-java` is a lightweight enterprise Java Coding Agent template component. It standardizes project onboarding, rule routing, verification evidence, and review output without installing heavy hooks, CLI gates, or long mandatory workflows by default.
+`ai-coding-java` is a personal reusable enterprise Java AI Coding component for new development projects. It standardizes project onboarding, rule routing, verification evidence, review output, and lightweight pre-commit protection without extra lifecycle hooks, CLI gates, or long mandatory workflows by default.
 
-This component itself is intended to be versioned in Git. Business projects may inject `.ai-coding-java/` as local AI development assistance or choose to commit it after project review.
+This component itself is intended to be versioned in Git. Target Java projects may inject `.ai-coding-java/` as local AI development assistance or choose to commit it after project review.
 
 ## Runtime Entry Points
 
@@ -25,7 +25,8 @@ templates/  task, review, business-rule, delivery, ADR, project-profile, runtime
 artifacts/  optional RD process record guidance for target projects
 knowledge/  reusable company rules, bug roots, SQL/transaction cases, project examples
 examples/   target-project snippets, delivery report, static-review fixtures
-scripts/    context, integrity, initialization, static review, knowledge extraction helpers
+scripts/    context, integrity, initialization, hook install, static review, knowledge extraction helpers
+hooks/      lightweight target-project git hooks
 .omx/       project-memory.json and current notepad
 ```
 
@@ -37,14 +38,14 @@ Python usage follows the workspace rule: use the machine global Python only. Do 
 
 ## Working Rules
 
-1. Keep the component lightweight; do not copy heavy command systems, hooks, model routing tables, global skill catalogs, or long orchestration protocols into this project.
+1. Keep the component lightweight; do not copy unrelated command systems, lifecycle hooks, model routing tables, global skill catalogs, or long orchestration protocols into this project.
 2. Prefer small, reviewable Markdown and template changes.
 3. Do not add runtime dependencies unless the component actually needs executable tooling.
 4. Do not write plaintext secrets, internal credentials, or full sensitive logs.
 5. For project onboarding behavior, keep Codex and Claude Code entry points aligned.
 6. For Java rules, treat `docs/rule-index.md` as the first lightweight routing file and load only matched `rules/`, `workflow/`, or `templates/` files.
 7. Treat skill discovery and `$skill` invocation as global runtime behavior; this component owns only project-side Java rules, verification, review, and delivery templates.
-8. Keep RD integration optional and template-based until hooks are explicitly requested.
+8. Keep RD integration phase gates optional until explicitly requested; the default hook scope is staged-file P0 scanning only.
 
 ## Verification
 

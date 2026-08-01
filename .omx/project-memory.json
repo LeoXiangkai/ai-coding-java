@@ -2,7 +2,7 @@
   "project": {
     "name": "ai-coding-java",
     "type": "template-component",
-    "purpose": "Lightweight enterprise Java Coding Agent template for onboarding, rule routing, verification evidence, and review output."
+    "purpose": "Personal reusable enterprise Java AI Coding component for onboarding, rule routing, verification evidence, review output, and lightweight pre-commit protection."
   },
   "techStack": {
     "runtime": "Documentation/template component; no Java runtime build currently.",
@@ -26,10 +26,12 @@
         "integrityCheck": "python3 scripts/template_integrity_check.py",
         "targetInit": "python3 scripts/init_target_project.py <target>",
         "staticReview": "python3 scripts/static_review_check.py <target>",
+        "hookInstall": "python3 scripts/install_git_hooks.py <target>",
         "knowledgeCandidate": "python3 scripts/extract_knowledge_candidate.py <delivery-report>"
   },
   "conventions": {
     "lightweightByDefault": true,
+    "autoInstallLightPreCommit": true,
     "noHeavyHooksByDefault": true,
     "projectRulesFirst": true,
     "notTestedMustBeExplicit": true,
@@ -45,13 +47,14 @@
         "Phase 4 now includes a sanitized knowledge base structure and a delivery-report-to-knowledge-candidate script."
         ,
         "Phase 5 now includes optional lightweight RD integration docs, artifact guidance, and requirement/design/test/release-impact brief templates.",
+        "Phase 6 now auto-installs a lightweight Git pre-commit hook that scans staged files and blocks only deterministic P0 findings.",
         "Target project generated support files should stay under .ai-coding-java/ by default; only reviewed AGENTS.md and CLAUDE.md snippets should touch the target root.",
         "Codex recognizes target rules through AGENTS.md; Claude Code recognizes target rules through CLAUDE.md or an explicit CLAUDE-to-AGENTS delegation."
     ],
   "directives": [
     "Keep AGENTS.md and CLAUDE.md compact and aligned.",
-    "Do not copy global skill catalogs, model routing tables, or heavy ai_coding gate systems into this component by default.",
-    "Do not add hooks or hard gates for RD integration unless the user explicitly requests that phase.",
+    "Do not copy global skill catalogs, model routing tables, unrelated gate systems, or lifecycle hook stacks into this component by default.",
+    "Do not add RD phase gates, metric reporting, or platform hooks unless the user explicitly requests that phase.",
     "Use setup-ai-coding as the general initialization skill name; keep setup-cc only as a compatibility alias."
   ]
 }

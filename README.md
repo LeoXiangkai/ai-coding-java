@@ -1,6 +1,6 @@
 # ai-coding-java
 
-企业级 Java Coding Agent 轻量规范模板。
+个人可复用的企业级 Java AI Coding 新开发工程组件。
 
 目标不是增加 AI 每次加载的文档量，而是把项目初始化、规则路由、验证矩阵和 Review 口径标准化，让企业级 Java 开发更准确、更快捷、更安全。
 
@@ -19,23 +19,24 @@
 11. Git 策略：[docs/git-policy.md](docs/git-policy.md)
 12. 知识沉淀指南：[docs/knowledge-guide.md](docs/knowledge-guide.md)
 13. 运行时技能边界：[docs/runtime-skill-boundary.md](docs/runtime-skill-boundary.md)
-14. 研发一体化轻量流程：[docs/rd-integrated-workflow.md](docs/rd-integrated-workflow.md)
-15. 研发过程产物目录：[artifacts/](artifacts/)
-16. 企业知识库：[knowledge/](knowledge/)
-17. 规则文件：[rules/](rules/)
-18. 工作流：[workflow/agent-workflow.md](workflow/agent-workflow.md)
-19. 交付模板：[templates/](templates/)
-20. 接入说明：[USAGE.md](USAGE.md)
-21. 组件边界：[TOOL.md](TOOL.md)
+14. Git Hooks 指南：[docs/git-hooks-guide.md](docs/git-hooks-guide.md)
+15. 研发一体化轻量流程：[docs/rd-integrated-workflow.md](docs/rd-integrated-workflow.md)
+16. 研发过程产物目录：[artifacts/](artifacts/)
+17. 企业知识库：[knowledge/](knowledge/)
+18. 规则文件：[rules/](rules/)
+19. 工作流：[workflow/agent-workflow.md](workflow/agent-workflow.md)
+20. 交付模板：[templates/](templates/)
+21. 接入说明：[USAGE.md](USAGE.md)
+22. 组件边界：[TOOL.md](TOOL.md)
 
 ## 原则
 
 1. 项目规则优先：最近的 `AGENTS.md` 是执行入口。
 2. 技术栈初始化确认：从建议项选择或自定义输入，不强制迁移项目栈。
 3. 按需加载：小任务优先读取 `rule-index.md` 和命中的专项文件。
-4. 轻量辅助：默认不安装阻断式 hooks、CLI 门禁或重型流程。
+4. 轻量辅助：默认只自动安装 Git `pre-commit` P0 确定性扫描，不安装额外生命周期 hooks、CLI 门禁或度量系统。
 5. 证据交付：能验证的必须验证，不能验证的写入 `Not-tested`。
-6. 研发一体化可选：复杂需求可生成轻量过程产物，但默认不启用 hooks 或强制门禁。
+6. 研发一体化可选：复杂需求可生成轻量过程产物，但默认不启用研发阶段门禁或长流程强制卡点。
 
 ## Skill
 
@@ -74,7 +75,9 @@ Phase 3 已提供轻量确定性 Review 脚本和自动 Review 指南。
 
 Phase 4 已提供企业知识库目录、知识条目模板和交付报告到知识候选的提取脚本。
 
-Phase 5 已提供研发一体化轻量流程、过程产物目录和需求/设计/测试/发布影响模板，不引入 hooks、评分或内网平台绑定。
+Phase 5 已提供研发一体化轻量流程、过程产物目录和需求/设计/测试/发布影响模板，不引入度量系统或外部平台绑定。
+
+Phase 6 已提供自动安装的轻量 Git `pre-commit` hook：只扫描 staged files，P0 阻断，P1 告警。
 
 目标工程识别规则：
 

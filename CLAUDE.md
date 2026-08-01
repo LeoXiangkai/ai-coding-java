@@ -2,7 +2,7 @@
 
 ## Project
 
-`ai-coding-java` is a lightweight template component for enterprise Java Coding Agent workflows. It helps new or existing Java projects initialize AI-readable rules for technology stack confirmation, scoped rule loading, verification evidence, and code review output.
+`ai-coding-java` is a personal reusable component for enterprise Java AI Coding workflows. It helps new or existing Java projects initialize AI-readable rules for technology stack confirmation, scoped rule loading, verification evidence, code review output, and lightweight pre-commit protection.
 
 This component is designed to be recognized by both Claude Code and Codex:
 
@@ -38,7 +38,7 @@ For future project initialization, use `$setup-ai-coding`. Treat `$setup-cc` as 
 ## Development Rules
 
 1. Keep this component small and composable.
-2. Do not import the heavy `ai_coding` command, hook, gate, or dashboard stack into this component by default.
+2. Do not import unrelated command, gate, dashboard, or lifecycle hook stacks into this component by default.
 3. `AGENTS.md` and `CLAUDE.md` should stay compact and aligned.
 4. Do not add generated logs or runtime state to versioned source.
 5. Do not write secrets.

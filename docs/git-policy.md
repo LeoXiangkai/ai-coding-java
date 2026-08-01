@@ -21,6 +21,7 @@ templates/
 examples/
 scripts/
 artifacts/
+hooks/
 .omx/project-memory.json
 ```
 
@@ -75,6 +76,7 @@ For target business projects, never commit:
 .ai-coding-java/AGENTS.ai-coding-java-snippet.md after it has been merged into AGENTS.md
 .ai-coding-java/CLAUDE.ai-coding-java-snippet.md after it has been merged into CLAUDE.md
 .ai-coding-java/artifacts/ when it contains local drafts, raw evidence, private business details, or unsanitized output
+.git/hooks/pre-commit and backup hook files, because Git hook files are local Git metadata, not repository source
 runtime logs
 temporary reports
 real data exports
@@ -100,6 +102,7 @@ Development records are useful, but their destination differs:
 | Unsanitized knowledge candidate | `.omx/knowledge-candidates/`, ignored |
 | Reusable rule/template/example | docs, rules, workflow, templates, examples; committed |
 | Reusable artifact directory guidance | artifacts/README.md; committed |
+| Reusable hook source | hooks/ and scripts/install_git_hooks.py; committed |
 | Verification command result | final report or sanitized docs if reusable |
 | One-off command output/log | ignored runtime logs |
 | Target project generated `.ai-coding-java/` | target policy decides |

@@ -28,6 +28,14 @@ python3 /path/to/ai-coding-java/scripts/init_target_project.py /path/to/target-p
 
 By default, the script writes `.ai-coding-java/` and adds small marker blocks to target root `AGENTS.md` and `CLAUDE.md`, so Codex and Claude Code can discover the rules.
 
+If the target is a Git repository, the script also installs `.git/hooks/pre-commit` through:
+
+```bash
+python3 .ai-coding-java/scripts/install_git_hooks.py .
+```
+
+The hook scans staged files and blocks deterministic P0 findings only.
+
 It also writes snippets for review:
 
 ```text
@@ -43,7 +51,7 @@ After injection, run from the target project:
 python3 .ai-coding-java/scripts/static_review_check.py .
 ```
 
-Use this before AI semantic review. Treat findings as review evidence, not as an installed commit hook unless the target project explicitly chooses that policy.
+Use this before AI semantic review when you need an explicit scan outside commit flow. The same scanner is also used by the auto-installed `pre-commit` hook for staged-file checks.
 
 ## Target Project File Placement
 
