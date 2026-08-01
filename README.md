@@ -81,6 +81,16 @@ Phase 5 已提供研发一体化轻量流程、过程产物目录和需求/设�
 
 Phase 6 已提供自动安装的轻量 Git hooks：`pre-commit` 做 P0 确定性扫描，`pre-push` 做个人开发分支和验证命令预检。
 
+Phase 7 已完成 SDD / Agent Skill 借鉴分析和 forge 加固：
+
+```text
+docs/sdd-reference-analysis.md              记录可借鉴机制、收益、流程影响和取舍
+templates/requirements-checklist-template.md 复杂需求前置澄清 checklist
+templates/handoff-template.md               跨会话、跨 Agent、提测前交接模板
+```
+
+Phase 7 只把 checklist、handoff 和一致性分析作为复杂需求可选增强，不改变小任务的默认轻量流程。
+
 远程托管兼容 GitHub 和 Gitee。推荐 `origin` 指向 GitHub，`gitee` 指向 Gitee，双端保持同一个 `main` 分支。
 
 目标工程识别规则：
