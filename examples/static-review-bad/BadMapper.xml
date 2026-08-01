@@ -1,0 +1,10 @@
+<mapper namespace="example.BadMapper">
+  <select id="badOrder" resultType="map">
+    select id from user order by ${sort}
+  </select>
+
+  <update id="badUpdate">
+    update user set status = 1
+  </update>
+</mapper>
+

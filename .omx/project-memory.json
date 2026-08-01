@@ -1,0 +1,54 @@
+{
+  "project": {
+    "name": "ai-coding-java",
+    "type": "template-component",
+    "purpose": "Lightweight enterprise Java Coding Agent template for onboarding, rule routing, verification evidence, and review output."
+  },
+  "techStack": {
+    "runtime": "Documentation/template component; no Java runtime build currently.",
+    "python": "Use the machine global Python only for helper scripts."
+  },
+    "structure": {
+        "codexEntry": "AGENTS.md",
+        "claudeCodeEntry": "CLAUDE.md",
+        "humanIndex": "README.md",
+        "docs": "docs/",
+        "rules": "rules/",
+        "workflow": "workflow/",
+        "templates": "templates/",
+        "examples": "examples/",
+        "knowledge": "knowledge/",
+        "scripts": "scripts/"
+    },
+    "build": {
+        "budgetCheck": "python3 scripts/context_budget_check.py",
+        "integrityCheck": "python3 scripts/template_integrity_check.py",
+        "targetInit": "python3 scripts/init_target_project.py <target>",
+        "staticReview": "python3 scripts/static_review_check.py <target>",
+        "knowledgeCandidate": "python3 scripts/extract_knowledge_candidate.py <delivery-report>"
+  },
+  "conventions": {
+    "lightweightByDefault": true,
+    "noHeavyHooksByDefault": true,
+    "projectRulesFirst": true,
+    "notTestedMustBeExplicit": true,
+    "setupSkill": "setup-ai-coding",
+    "legacySetupSkill": "setup-cc"
+  },
+    "notes": [
+        "The component itself is intended to be versioned in Git.",
+        "Injected business-project templates may be local-only or committed according to the target project policy.",
+        "Phase 1 now includes concrete rules, workflow, and templates directories.",
+        "Phase 2 now includes target project initialization script, profile template, AGENTS snippet template, and examples.",
+        "Phase 3 now includes a lightweight deterministic static review script and good/bad fixtures.",
+        "Phase 4 now includes a sanitized knowledge base structure and a delivery-report-to-knowledge-candidate script."
+        ,
+        "Target project generated support files should stay under .ai-coding-java/ by default; only reviewed AGENTS.md and CLAUDE.md snippets should touch the target root.",
+        "Codex recognizes target rules through AGENTS.md; Claude Code recognizes target rules through CLAUDE.md or an explicit CLAUDE-to-AGENTS delegation."
+    ],
+  "directives": [
+    "Keep AGENTS.md and CLAUDE.md compact and aligned.",
+    "Do not copy global skill catalogs, model routing tables, or heavy ai_coding gate systems into this component by default.",
+    "Use setup-ai-coding as the general initialization skill name; keep setup-cc only as a compatibility alias."
+  ]
+}

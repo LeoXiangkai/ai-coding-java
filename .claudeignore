@@ -1,0 +1,12 @@
+.git/
+.DS_Store
+.omx/logs/
+.omx/state/
+.omx/metrics.json
+*.log
+node_modules/
+target/
+build/
+dist/
+.worktrees/
+

@@ -1,0 +1,9 @@
+<mapper namespace="example.GoodMapper">
+  <select id="goodQuery" resultType="map">
+    select id, name
+    from user
+    where status = #{status}
+    order by id
+  </select>
+</mapper>
+

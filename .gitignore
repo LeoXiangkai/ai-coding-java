@@ -1,0 +1,17 @@
+.DS_Store
+
+# Local runtime state
+.omx/logs/
+.omx/state/
+.omx/metrics.json
+.omx/notepad.md
+.omx/knowledge-candidates/
+.Codex/
+
+# Generated or local-only artifacts
+*.log
+.worktrees/
+node_modules/
+target/
+build/
+dist/
