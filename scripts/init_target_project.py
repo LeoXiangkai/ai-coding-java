@@ -109,6 +109,7 @@ Data boundary: {args.data_boundary}
 - API verification method:
 - P1 waiver owner and record path:
 - RD artifact policy: local-only / committed-after-review / not-used
+- Hook mode: warn / strict
 
 ## Notes
 
@@ -229,7 +230,7 @@ def main() -> int:
     print("\nNext steps:")
     print("1. Review .ai-coding-java/project-profile.md and fill missing commands.")
     print("2. Review the marker blocks added to AGENTS.md and CLAUDE.md.")
-    print("3. Confirm .git/hooks/pre-commit was installed when the target is a git repository.")
+    print("3. Confirm .git/hooks/pre-commit and .git/hooks/pre-push were installed when the target is a git repository.")
     print("4. Run .ai-coding-java/scripts/static_review_check.py when deterministic review is needed outside commit flow.")
     print("5. Use .ai-coding-java/artifacts/<work-id>/ only when RD process records are useful.")
     print("6. Decide whether .ai-coding-java/ stays local-only or is committed.")

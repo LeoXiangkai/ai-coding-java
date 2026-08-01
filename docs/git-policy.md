@@ -76,12 +76,28 @@ For target business projects, never commit:
 .ai-coding-java/AGENTS.ai-coding-java-snippet.md after it has been merged into AGENTS.md
 .ai-coding-java/CLAUDE.ai-coding-java-snippet.md after it has been merged into CLAUDE.md
 .ai-coding-java/artifacts/ when it contains local drafts, raw evidence, private business details, or unsanitized output
-.git/hooks/pre-commit and backup hook files, because Git hook files are local Git metadata, not repository source
+.git/hooks/pre-commit, .git/hooks/pre-push, and backup hook files, because Git hook files are local Git metadata, not repository source
 runtime logs
 temporary reports
 real data exports
 curl outputs with personal or business-sensitive data
 ```
+
+## Personal Development Branches
+
+Daily personal development should happen on a named work branch:
+
+```text
+feature/<name>
+bugfix/<name>
+hotfix/<name>
+refactor/<name>
+chore/<name>
+test/<name>
+release/<version>
+```
+
+`main`, `master`, `develop`, and `dev` are treated as integration branches. The default `pre-push` hook warns when pushing directly from those branches; `Hook mode: strict` blocks the push.
 
 Target project placement rule:
 

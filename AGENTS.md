@@ -2,7 +2,7 @@
 
 ## Project Purpose
 
-`ai-coding-java` is a personal reusable enterprise Java AI Coding component for new development projects. It standardizes project onboarding, rule routing, verification evidence, review output, and lightweight pre-commit protection.
+`ai-coding-java` is a personal reusable enterprise Java AI Coding component for new development projects. It standardizes project onboarding, rule routing, verification evidence, review output, and lightweight Git prechecks.
 
 This component itself is intended to be versioned in Git. Target Java projects may inject `.ai-coding-java/` as local AI development assistance or choose to commit it after project review.
 
@@ -45,7 +45,7 @@ Python usage follows the workspace rule: use the machine global Python only. Do 
 5. For project onboarding behavior, keep Codex and Claude Code entry points aligned.
 6. For Java rules, treat `docs/rule-index.md` as the first lightweight routing file and load only matched `rules/`, `workflow/`, or `templates/` files.
 7. Treat skill discovery and `$skill` invocation as global runtime behavior; this component owns only project-side Java rules, verification, review, and delivery templates.
-8. Keep the default hook scope to staged-file P0 scanning.
+8. Keep the default hook scope lightweight: staged-file P0 scanning at commit time, personal branch and verification-command prechecks at push time.
 
 ## Verification
 

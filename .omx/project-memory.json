@@ -47,7 +47,7 @@
         "Phase 4 now includes a sanitized knowledge base structure and a delivery-report-to-knowledge-candidate script."
         ,
         "Phase 5 now includes optional lightweight RD integration docs, artifact guidance, and requirement/design/test/release-impact brief templates.",
-        "Phase 6 now auto-installs a lightweight Git pre-commit hook that scans staged files and blocks only deterministic P0 findings.",
+        "Phase 6 now auto-installs lightweight Git pre-commit and pre-push hooks for staged-file P0 scanning, personal branch checks, and verification command reminders.",
         "Target project generated support files should stay under .ai-coding-java/ by default; only reviewed AGENTS.md and CLAUDE.md snippets should touch the target root.",
         "Codex recognizes target rules through AGENTS.md; Claude Code recognizes target rules through CLAUDE.md or an explicit CLAUDE-to-AGENTS delegation."
     ],

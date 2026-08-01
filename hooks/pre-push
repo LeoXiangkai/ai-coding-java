@@ -1,0 +1,137 @@
+#!/usr/bin/env python3
+from pathlib import Path
+import os
+import re
+import subprocess
+import sys
+
+
+BRANCH_RE = re.compile(
+    r"^(feature|bugfix|hotfix|refactor|chore|test|release)/[A-Za-z0-9][A-Za-z0-9._/-]*$"
+)
+PROTECTED_BRANCHES = {"main", "master", "develop", "dev"}
+
+
+def run(cmd: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(cmd, cwd=cwd, text=True, capture_output=True)
+
+
+def repo_root() -> Path:
+    result = run(["git", "rev-parse", "--show-toplevel"], Path.cwd())
+    if result.returncode != 0:
+        print("ai-coding-java pre-push: not a git repository, skip")
+        sys.exit(0)
+    return Path(result.stdout.strip())
+
+
+def current_branch(root: Path) -> str:
+    result = run(["git", "branch", "--show-current"], root)
+    if result.returncode != 0:
+        return ""
+    return result.stdout.strip()
+
+
+def read_profile(root: Path) -> dict[str, str]:
+    profile = root / ".ai-coding-java" / "project-profile.md"
+    if not profile.is_file():
+        return {}
+    values: dict[str, str] = {}
+    for raw in profile.read_text(encoding="utf-8", errors="ignore").splitlines():
+        line = raw.strip()
+        if line.startswith("- "):
+            line = line[2:].strip()
+        if ":" not in line:
+            continue
+        key, value = line.split(":", 1)
+        values[key.strip().lower()] = value.strip()
+    return values
+
+
+def hook_mode(profile: dict[str, str]) -> str:
+    env_mode = os.environ.get("AI_CODING_HOOK_MODE", "").strip().lower()
+    if env_mode in {"warn", "strict"}:
+        return env_mode
+    value = profile.get("hook mode", "").strip().lower()
+    if value in {"warn", "strict"}:
+        return value
+    return "warn"
+
+
+def validate_branch(branch: str, strict: bool) -> bool:
+    if not branch:
+        message = "ai-coding-java pre-push: detached HEAD or unknown branch"
+        return report(message, strict)
+    if branch in PROTECTED_BRANCHES:
+        message = (
+            f"ai-coding-java pre-push: pushing protected integration branch '{branch}'. "
+            "Personal development branches should use feature/<name>, bugfix/<name>, "
+            "hotfix/<name>, refactor/<name>, chore/<name>, test/<name>, or release/<version>."
+        )
+        return report(message, strict)
+    if not BRANCH_RE.match(branch):
+        message = (
+            f"ai-coding-java pre-push: non-standard personal development branch '{branch}'. "
+            "Use feature/<name>, bugfix/<name>, hotfix/<name>, refactor/<name>, chore/<name>, "
+            "test/<name>, or release/<version>."
+        )
+        return report(message, strict)
+    print(f"ai-coding-java pre-push: branch ok ({branch})")
+    return True
+
+
+def report(message: str, strict: bool) -> bool:
+    if strict:
+        print(message, file=sys.stderr)
+        print("ai-coding-java pre-push: blocked in strict mode", file=sys.stderr)
+        return False
+    print(message)
+    print("ai-coding-java pre-push: warn mode, push is allowed")
+    return True
+
+
+def run_command(label: str, command: str, root: Path) -> bool:
+    print(f"ai-coding-java pre-push: running {label}: {command}", flush=True)
+    result = subprocess.run(command, cwd=root, text=True, shell=True)
+    if result.returncode != 0:
+        print(f"ai-coding-java pre-push: {label} failed with exit {result.returncode}", file=sys.stderr)
+        return False
+    return True
+
+
+def verify(profile: dict[str, str], root: Path, strict: bool) -> bool:
+    build = profile.get("build command", "")
+    test = profile.get("test command", "")
+    if not strict:
+        if build:
+            print(f"ai-coding-java pre-push: build command configured: {build}")
+        else:
+            print("ai-coding-java pre-push: build command is not configured in .ai-coding-java/project-profile.md")
+        if test:
+            print(f"ai-coding-java pre-push: test command configured: {test}")
+        else:
+            print("ai-coding-java pre-push: test command is not configured in .ai-coding-java/project-profile.md")
+        print("ai-coding-java pre-push: warn mode, compile/test commands are not executed")
+        return True
+
+    if not build:
+        print("ai-coding-java pre-push: missing Build command in strict mode", file=sys.stderr)
+        return False
+    if not run_command("build", build, root):
+        return False
+    if test and not run_command("test", test, root):
+        return False
+    return True
+
+
+def main() -> int:
+    root = repo_root()
+    profile = read_profile(root)
+    strict = hook_mode(profile) == "strict"
+
+    branch_ok = validate_branch(current_branch(root), strict)
+    verify_ok = verify(profile, root, strict)
+    return 0 if branch_ok and verify_ok else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

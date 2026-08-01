@@ -9,14 +9,14 @@
 3. Scoped workflow routing so agents load only relevant rules.
 4. Verification matrix and `Not-tested` reporting format.
 5. Review and delivery report templates.
-6. A lightweight auto-installed Git `pre-commit` hook for deterministic P0 checks.
+6. Lightweight auto-installed Git hooks for deterministic P0 checks and pre-push validation reminders.
 7. Codex and Claude Code compatible project entry guidance.
 
 ## Default Scope
 
 1. Target-project initialization.
 2. AI-readable Java rules and templates.
-3. Lightweight Git `pre-commit` P0 protection.
+3. Lightweight Git `pre-commit` and `pre-push` protection.
 4. Manual or AI-driven verification through the verification matrix.
 5. Root `AGENTS.md` / `CLAUDE.md` marker blocks for runtime discovery.
 
@@ -52,7 +52,7 @@ Target-project initialization also installs:
 python3 .ai-coding-java/scripts/install_git_hooks.py .
 ```
 
-The installed `pre-commit` hook scans staged files and blocks only P0 deterministic findings.
+The installed hooks scan staged files before commit and check personal branch / verification settings before push.
 
 Target-project generated support files should live under `.ai-coding-java/` by default. Root changes are limited to bounded marker blocks in `AGENTS.md` and `CLAUDE.md`.
 

@@ -9,7 +9,7 @@ from datetime import datetime
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MARKER = "ai-coding-java pre-commit"
+HOOKS = ["pre-commit", "pre-push"]
 
 
 def parse_args() -> argparse.Namespace:
@@ -35,22 +35,28 @@ def make_executable(path: Path) -> None:
     path.chmod(mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
-def wrapper_text(hook_path: Path, previous_path: Path | None) -> str:
+def marker(hook_name: str) -> str:
+    return f"ai-coding-java {hook_name}"
+
+
+def wrapper_text(hook_name: str, hook_path: Path, previous_path: Path | None) -> str:
     lines = [
         "#!/usr/bin/env sh",
-        f"# {MARKER}",
+        f"# {marker(hook_name)}",
         'ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"',
-        'if [ -n "$ROOT" ] && [ -x "$ROOT/.ai-coding-java/hooks/pre-commit" ]; then',
-        '  "$ROOT/.ai-coding-java/hooks/pre-commit"',
+        "code=0",
+        f'if [ -n "$ROOT" ] && [ -x "$ROOT/.ai-coding-java/hooks/{hook_name}" ]; then',
+        f'  "$ROOT/.ai-coding-java/hooks/{hook_name}"',
+        "  code=$?",
         f'elif [ -x "{hook_path}" ]; then',
         f'  "{hook_path}"',
-        "else",
-        "  exit 0",
-        "fi",
         "  code=$?",
-        "  if [ \"$code\" -ne 0 ]; then",
-        "    exit \"$code\"",
-        "  fi",
+        "else",
+        f'  echo "ai-coding-java {hook_name}: source hook not found, skip" >&2',
+        "fi",
+        'if [ "$code" -ne 0 ]; then',
+        '  exit "$code"',
+        "fi",
     ]
     if previous_path is not None:
         lines.extend(
@@ -67,43 +73,51 @@ def wrapper_text(hook_path: Path, previous_path: Path | None) -> str:
     return "\n".join(lines)
 
 
-def install(root: Path, force: bool) -> int:
-    git_dir = root / ".git"
-    hooks_dir = git_dir / "hooks"
-    source_hook = root / ".ai-coding-java" / "hooks" / "pre-commit"
+def install_one(root: Path, hooks_dir: Path, hook_name: str, force: bool) -> int:
+    source_hook = root / ".ai-coding-java" / "hooks" / hook_name
     if not source_hook.is_file():
-        source_hook = ROOT / "hooks" / "pre-commit"
-    if not git_dir.exists():
-        print(f"SKIP git hooks: {root} has no .git directory")
-        return 0
+        source_hook = ROOT / "hooks" / hook_name
     if not source_hook.is_file():
-        print(f"FAIL missing ai-coding-java pre-commit hook under {root} or {ROOT}", file=sys.stderr)
+        print(f"FAIL missing ai-coding-java {hook_name} hook under {root} or {ROOT}", file=sys.stderr)
         return 1
 
-    hooks_dir.mkdir(parents=True, exist_ok=True)
     make_executable(source_hook)
-
-    target_hook = hooks_dir / "pre-commit"
+    target_hook = hooks_dir / hook_name
     previous_path: Path | None = None
 
     if target_hook.exists():
         text = target_hook.read_text(encoding="utf-8", errors="ignore")
-        if MARKER in text:
+        if marker(hook_name) in text:
             if not force:
                 print(f"OK git hook already installed {target_hook}")
                 return 0
             target_hook.unlink()
         else:
             stamp = datetime.now().strftime("%Y%m%d%H%M%S")
-            previous_path = hooks_dir / f"pre-commit.before-ai-coding-java.{stamp}"
+            previous_path = hooks_dir / f"{hook_name}.before-ai-coding-java.{stamp}"
             shutil.move(str(target_hook), str(previous_path))
             make_executable(previous_path)
-            print(f"OK preserved existing pre-commit as {previous_path}")
+            print(f"OK preserved existing {hook_name} as {previous_path}")
 
-    target_hook.write_text(wrapper_text(source_hook, previous_path), encoding="utf-8")
+    target_hook.write_text(wrapper_text(hook_name, source_hook, previous_path), encoding="utf-8")
     make_executable(target_hook)
-    print(f"OK installed ai-coding-java pre-commit hook {target_hook}")
+    print(f"OK installed ai-coding-java {hook_name} hook {target_hook}")
     return 0
+
+
+def install(root: Path, force: bool) -> int:
+    git_dir = root / ".git"
+    if not git_dir.exists():
+        print(f"SKIP git hooks: {root} has no .git directory")
+        return 0
+
+    hooks_dir = git_dir / "hooks"
+    hooks_dir.mkdir(parents=True, exist_ok=True)
+    failed = False
+    for hook_name in HOOKS:
+        if install_one(root, hooks_dir, hook_name, force) != 0:
+            failed = True
+    return 1 if failed else 0
 
 
 def main() -> int:

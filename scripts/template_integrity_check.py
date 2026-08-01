@@ -27,6 +27,7 @@ REQUIRED = [
     "docs/git-hooks-guide.md",
     "artifacts/README.md",
     "hooks/pre-commit",
+    "hooks/pre-push",
     "knowledge/README.md",
     "knowledge/company-rules/java-layering.md",
     "knowledge/company-rules/verification-evidence.md",
