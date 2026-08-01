@@ -20,14 +20,15 @@
 12. 知识沉淀指南：[docs/knowledge-guide.md](docs/knowledge-guide.md)
 13. 运行时技能边界：[docs/runtime-skill-boundary.md](docs/runtime-skill-boundary.md)
 14. Git Hooks 指南：[docs/git-hooks-guide.md](docs/git-hooks-guide.md)
-15. 研发一体化轻量流程：[docs/rd-integrated-workflow.md](docs/rd-integrated-workflow.md)
-16. 研发过程产物目录：[artifacts/](artifacts/)
-17. 企业知识库：[knowledge/](knowledge/)
-18. 规则文件：[rules/](rules/)
-19. 工作流：[workflow/agent-workflow.md](workflow/agent-workflow.md)
-20. 交付模板：[templates/](templates/)
-21. 接入说明：[USAGE.md](USAGE.md)
-22. 组件边界：[TOOL.md](TOOL.md)
+15. 远程托管指南：[docs/remote-hosting-guide.md](docs/remote-hosting-guide.md)
+16. 研发一体化轻量流程：[docs/rd-integrated-workflow.md](docs/rd-integrated-workflow.md)
+17. 研发过程产物目录：[artifacts/](artifacts/)
+18. 企业知识库：[knowledge/](knowledge/)
+19. 规则文件：[rules/](rules/)
+20. 工作流：[workflow/agent-workflow.md](workflow/agent-workflow.md)
+21. 交付模板：[templates/](templates/)
+22. 接入说明：[USAGE.md](USAGE.md)
+23. 组件边界：[TOOL.md](TOOL.md)
 
 ## 原则
 
@@ -78,6 +79,8 @@ Phase 4 已提供企业知识库目录、知识条目模板和交付报告到知
 Phase 5 已提供研发一体化轻量流程、过程产物目录和需求/设计/测试/发布影响模板。
 
 Phase 6 已提供自动安装的轻量 Git hooks：`pre-commit` 做 P0 确定性扫描，`pre-push` 做个人开发分支和验证命令预检。
+
+远程托管兼容 GitHub 和 Gitee。推荐 `origin` 指向 GitHub，`gitee` 指向 Gitee，双端保持同一个 `main` 分支。
 
 目标工程识别规则：
 

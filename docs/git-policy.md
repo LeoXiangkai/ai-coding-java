@@ -99,6 +99,19 @@ release/<version>
 
 `main`, `master`, `develop`, and `dev` are treated as integration branches. The default `pre-push` hook warns when pushing directly from those branches; `Hook mode: strict` blocks the push.
 
+## Remote Hosting
+
+The component repository should remain compatible with GitHub and Gitee.
+
+Recommended remote names:
+
+```text
+origin  GitHub
+gitee   Gitee
+```
+
+Keep `main` as the default branch on both hosts. Do not add host-specific workflow requirements to the core template unless they have a portable fallback.
+
 Target project placement rule:
 
 ```text

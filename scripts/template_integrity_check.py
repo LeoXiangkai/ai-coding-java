@@ -25,6 +25,7 @@ REQUIRED = [
     "docs/runtime-skill-boundary.md",
     "docs/rd-integrated-workflow.md",
     "docs/git-hooks-guide.md",
+    "docs/remote-hosting-guide.md",
     "artifacts/README.md",
     "hooks/pre-commit",
     "hooks/pre-push",

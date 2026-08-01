@@ -87,7 +87,7 @@ AGENTS.md
 docs/project-profile.md
 ```
 
-当前常见企业存量 Java 项目参考基线：
+当前常见企业存量 Java 项目建议基线：
 
 ```text
 Java：Java 8

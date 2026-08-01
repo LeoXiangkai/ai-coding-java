@@ -2,7 +2,7 @@
   "project": {
     "name": "ai-coding-java",
     "type": "template-component",
-    "purpose": "Personal reusable enterprise Java AI Coding component for onboarding, rule routing, verification evidence, review output, and lightweight pre-commit protection."
+    "purpose": "Personal reusable enterprise Java AI Coding component for onboarding, rule routing, verification evidence, review output, and lightweight Git prechecks."
   },
   "techStack": {
     "runtime": "Documentation/template component; no Java runtime build currently.",
@@ -48,6 +48,7 @@
         ,
         "Phase 5 now includes optional lightweight RD integration docs, artifact guidance, and requirement/design/test/release-impact brief templates.",
         "Phase 6 now auto-installs lightweight Git pre-commit and pre-push hooks for staged-file P0 scanning, personal branch checks, and verification command reminders.",
+        "Remote hosting is source-host neutral; use origin for GitHub and gitee for Gitee when mirroring is configured.",
         "Target project generated support files should stay under .ai-coding-java/ by default; only reviewed AGENTS.md and CLAUDE.md snippets should touch the target root.",
         "Codex recognizes target rules through AGENTS.md; Claude Code recognizes target rules through CLAUDE.md or an explicit CLAUDE-to-AGENTS delegation."
     ],

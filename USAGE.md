@@ -53,6 +53,19 @@ python3 .ai-coding-java/scripts/static_review_check.py .
 
 Use this before AI semantic review when you need an explicit scan outside commit flow. The same scanner is also used by the auto-installed `pre-commit` hook for staged-file checks.
 
+## GitHub And Gitee
+
+The component works with ordinary Git remotes and does not depend on host-specific features.
+
+Recommended remote names:
+
+```text
+origin  GitHub
+gitee   Gitee
+```
+
+Use [docs/remote-hosting-guide.md](docs/remote-hosting-guide.md) for setup and sync verification.
+
 ## Target Project File Placement
 
 Generated AI Coding support files should stay under `.ai-coding-java/` by default.

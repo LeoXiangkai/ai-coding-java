@@ -11,6 +11,7 @@
 5. Review and delivery report templates.
 6. Lightweight auto-installed Git hooks for deterministic P0 checks and pre-push validation reminders.
 7. Codex and Claude Code compatible project entry guidance.
+8. GitHub and Gitee remote-hosting guidance.
 
 ## Default Scope
 
@@ -19,6 +20,7 @@
 3. Lightweight Git `pre-commit` and `pre-push` protection.
 4. Manual or AI-driven verification through the verification matrix.
 5. Root `AGENTS.md` / `CLAUDE.md` marker blocks for runtime discovery.
+6. Source-host neutral Git usage.
 
 ## Recommended Runtime Use
 
