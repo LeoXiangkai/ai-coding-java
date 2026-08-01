@@ -20,6 +20,7 @@ workflow/
 templates/
 examples/
 scripts/
+artifacts/
 .omx/project-memory.json
 ```
 
@@ -73,6 +74,7 @@ For target business projects, never commit:
 .ai-coding-java/project-profile.md if it contains environment-sensitive details
 .ai-coding-java/AGENTS.ai-coding-java-snippet.md after it has been merged into AGENTS.md
 .ai-coding-java/CLAUDE.ai-coding-java-snippet.md after it has been merged into CLAUDE.md
+.ai-coding-java/artifacts/ when it contains local drafts, raw evidence, private business details, or unsanitized output
 runtime logs
 temporary reports
 real data exports
@@ -97,6 +99,7 @@ Development records are useful, but their destination differs:
 | Current task progress | `.omx/notepad.md`, ignored |
 | Unsanitized knowledge candidate | `.omx/knowledge-candidates/`, ignored |
 | Reusable rule/template/example | docs, rules, workflow, templates, examples; committed |
+| Reusable artifact directory guidance | artifacts/README.md; committed |
 | Verification command result | final report or sanitized docs if reusable |
 | One-off command output/log | ignored runtime logs |
 | Target project generated `.ai-coding-java/` | target policy decides |

@@ -18,10 +18,11 @@ This component itself is intended to be versioned in Git. Business projects may 
 
 ```text
 README.md / AGENTS.md / CLAUDE.md
-docs/       standards, rule index, workflow routing, verification, integration, review, git, knowledge, runtime boundary
+docs/       standards, rule index, RD workflow, verification, integration, review, git, knowledge, runtime boundary
 rules/      Java, SQL, transaction, security/logging, delivery, review-level rules
 workflow/   agent-workflow.md
 templates/  task, review, business-rule, delivery, ADR, project-profile, runtime snippets, knowledge-entry templates
+artifacts/  optional RD process record guidance for target projects
 knowledge/  reusable company rules, bug roots, SQL/transaction cases, project examples
 examples/   target-project snippets, delivery report, static-review fixtures
 scripts/    context, integrity, initialization, static review, knowledge extraction helpers
@@ -43,6 +44,7 @@ Python usage follows the workspace rule: use the machine global Python only. Do 
 5. For project onboarding behavior, keep Codex and Claude Code entry points aligned.
 6. For Java rules, treat `docs/rule-index.md` as the first lightweight routing file and load only matched `rules/`, `workflow/`, or `templates/` files.
 7. Treat skill discovery and `$skill` invocation as global runtime behavior; this component owns only project-side Java rules, verification, review, and delivery templates.
+8. Keep RD integration optional and template-based until hooks are explicitly requested.
 
 ## Verification
 

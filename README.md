@@ -19,12 +19,14 @@
 11. Git 策略：[docs/git-policy.md](docs/git-policy.md)
 12. 知识沉淀指南：[docs/knowledge-guide.md](docs/knowledge-guide.md)
 13. 运行时技能边界：[docs/runtime-skill-boundary.md](docs/runtime-skill-boundary.md)
-14. 企业知识库：[knowledge/](knowledge/)
-15. 规则文件：[rules/](rules/)
-16. 工作流：[workflow/agent-workflow.md](workflow/agent-workflow.md)
-17. 交付模板：[templates/](templates/)
-18. 接入说明：[USAGE.md](USAGE.md)
-19. 组件边界：[TOOL.md](TOOL.md)
+14. 研发一体化轻量流程：[docs/rd-integrated-workflow.md](docs/rd-integrated-workflow.md)
+15. 研发过程产物目录：[artifacts/](artifacts/)
+16. 企业知识库：[knowledge/](knowledge/)
+17. 规则文件：[rules/](rules/)
+18. 工作流：[workflow/agent-workflow.md](workflow/agent-workflow.md)
+19. 交付模板：[templates/](templates/)
+20. 接入说明：[USAGE.md](USAGE.md)
+21. 组件边界：[TOOL.md](TOOL.md)
 
 ## 原则
 
@@ -33,6 +35,7 @@
 3. 按需加载：小任务优先读取 `rule-index.md` 和命中的专项文件。
 4. 轻量辅助：默认不安装阻断式 hooks、CLI 门禁或重型流程。
 5. 证据交付：能验证的必须验证，不能验证的写入 `Not-tested`。
+6. 研发一体化可选：复杂需求可生成轻量过程产物，但默认不启用 hooks 或强制门禁。
 
 ## Skill
 
@@ -70,6 +73,8 @@ Phase 2 已提供项目接入脚本、项目画像模板、AGENTS snippet 和示
 Phase 3 已提供轻量确定性 Review 脚本和自动 Review 指南。
 
 Phase 4 已提供企业知识库目录、知识条目模板和交付报告到知识候选的提取脚本。
+
+Phase 5 已提供研发一体化轻量流程、过程产物目录和需求/设计/测试/发布影响模板，不引入 hooks、评分或内网平台绑定。
 
 目标工程识别规则：
 

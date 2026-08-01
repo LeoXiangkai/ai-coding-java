@@ -3,6 +3,8 @@
 ```text
 Summary:
 
+Requirement / work ID:
+
 Changed files:
 
 Impact:
@@ -16,6 +18,12 @@ Verification:
 - command:
 - result:
 
+RD artifacts:
+- requirement brief:
+- design brief:
+- test case brief:
+- release impact:
+
 Review:
 - P0:
 - P1:
@@ -28,4 +36,3 @@ Not-tested:
 
 Delivery decision:
 ```
-

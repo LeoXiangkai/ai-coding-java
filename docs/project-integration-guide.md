@@ -30,6 +30,7 @@ The script writes `.ai-coding-java/` in the target project and adds small marker
   workflow/
   templates/
   knowledge/
+  artifacts/
   scripts/
     static_review_check.py
     extract_knowledge_candidate.py
@@ -52,3 +53,4 @@ The script writes `.ai-coding-java/` in the target project and adds small marker
 5. Delivery reports include verification evidence and `Not-tested` when needed.
 6. Reusable sanitized knowledge entries are available under `.ai-coding-java/knowledge/` and loaded only when matched.
 7. Target-safe helper scripts live under `.ai-coding-java/scripts/`; no helper script should be written to the target business root by default.
+8. Lightweight RD process records, when useful, live under `.ai-coding-java/artifacts/<work-id>/` and are not generated as a mandatory gate.

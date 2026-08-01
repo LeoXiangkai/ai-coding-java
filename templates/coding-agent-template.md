@@ -21,6 +21,10 @@ External systems:
 
 Verification level: lightweight / standard / strict
 
+RD artifacts: none / requirement / design / test-case / release-impact
+
+Artifact path: .ai-coding-java/artifacts/<work-id>/
+
 Required rules:
 - docs/rule-index.md
 - rules/...
@@ -32,4 +36,3 @@ Expected output:
 - Not-tested
 - remaining risk
 ```
-

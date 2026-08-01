@@ -16,6 +16,7 @@
         "rules": "rules/",
         "workflow": "workflow/",
         "templates": "templates/",
+        "artifacts": "artifacts/",
         "examples": "examples/",
         "knowledge": "knowledge/",
         "scripts": "scripts/"
@@ -43,12 +44,14 @@
         "Phase 3 now includes a lightweight deterministic static review script and good/bad fixtures.",
         "Phase 4 now includes a sanitized knowledge base structure and a delivery-report-to-knowledge-candidate script."
         ,
+        "Phase 5 now includes optional lightweight RD integration docs, artifact guidance, and requirement/design/test/release-impact brief templates.",
         "Target project generated support files should stay under .ai-coding-java/ by default; only reviewed AGENTS.md and CLAUDE.md snippets should touch the target root.",
         "Codex recognizes target rules through AGENTS.md; Claude Code recognizes target rules through CLAUDE.md or an explicit CLAUDE-to-AGENTS delegation."
     ],
   "directives": [
     "Keep AGENTS.md and CLAUDE.md compact and aligned.",
     "Do not copy global skill catalogs, model routing tables, or heavy ai_coding gate systems into this component by default.",
+    "Do not add hooks or hard gates for RD integration unless the user explicitly requests that phase.",
     "Use setup-ai-coding as the general initialization skill name; keep setup-cc only as a compatibility alias."
   ]
 }

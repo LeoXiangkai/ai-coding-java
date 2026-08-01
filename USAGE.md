@@ -51,6 +51,14 @@ Generated AI Coding support files should stay under `.ai-coding-java/` by defaul
 
 The only expected target-root changes are bounded ai-coding-java marker blocks in `AGENTS.md` and `CLAUDE.md`.
 
+When a task needs RD process records, put them under:
+
+```text
+.ai-coding-java/artifacts/<work-id>/
+```
+
+Use `docs/rd-integrated-workflow.md` and the brief templates only for complex requirements, risky refactors, release-sensitive changes, or work that needs traceability. Do not turn artifacts into a mandatory hook or gate by default.
+
 ## Minimal Target `AGENTS.md` Pointer
 
 ```markdown
@@ -87,7 +95,8 @@ Use `.ai-coding-java/docs/verification-matrix.md` before claiming completion.
 4. .ai-coding-java/docs/rule-index.md
 5. matched rule/workflow/template files only
 6. matched reusable knowledge entries only when relevant
-7. relevant code, tests, config, and history
+7. matched artifact guidance only when RD process records are useful
+8. relevant code, tests, config, and history
 ```
 
 ## Expected Delivery Report

@@ -6,7 +6,7 @@ import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
-COPY_DIRS = ["docs", "rules", "workflow", "templates", "knowledge"]
+COPY_DIRS = ["docs", "rules", "workflow", "templates", "knowledge", "artifacts"]
 COPY_FILES = ["README.md", "TOOL.md", "USAGE.md"]
 TARGET_SCRIPTS = ["static_review_check.py", "extract_knowledge_candidate.py"]
 AGENTS_MARKER_START = "<!-- ai-coding-java:AGENTS:START -->"
@@ -93,6 +93,7 @@ Data boundary: {args.data_boundary}
 - External systems:
 - API verification method:
 - P1 waiver owner and record path:
+- RD artifact policy: local-only / committed-after-review / not-used
 
 ## Notes
 
@@ -124,7 +125,7 @@ Loading order:
 2. User task
 3. Project memory/current task notes
 4. `.ai-coding-java/docs/rule-index.md`
-5. Only matched `.ai-coding-java/rules/`, `workflow/`, `templates/`, or `knowledge/` files
+5. Only matched `.ai-coding-java/rules/`, `workflow/`, `templates/`, `knowledge/`, or `artifacts/` files
 6. Relevant code, tests, config, and history
 
 Project business rules, data isolation, environment commands, and API contracts in this `AGENTS.md` override generic ai-coding-java suggestions.
@@ -155,7 +156,7 @@ Claude Code loading guidance:
 1. Read this `CLAUDE.md`.
 2. Read the nearest `AGENTS.md` for Codex-compatible project execution rules when present.
 3. Read `.ai-coding-java/docs/rule-index.md`.
-4. Load only matched `.ai-coding-java/rules/`, `workflow/`, `templates/`, or `knowledge/` files.
+4. Load only matched `.ai-coding-java/rules/`, `workflow/`, `templates/`, `knowledge/`, or `artifacts/` files.
 5. Use `.ai-coding-java/docs/verification-matrix.md` before claiming completion.
 
 Project business rules, data isolation, environment commands, and API contracts in this `CLAUDE.md` or `AGENTS.md` override generic ai-coding-java suggestions.
@@ -171,7 +172,7 @@ Use `.ai-coding-java/docs/rule-index.md` as the first ai-coding-java routing fil
 Project profile: `.ai-coding-java/project-profile.md`.
 Global runtime skills remain owned by Codex, Claude Code, or OMX.
 
-Load only matched `.ai-coding-java/rules/`, `workflow/`, `templates/`, or `knowledge/` files. Project rules in this `AGENTS.md` override generic ai-coding-java suggestions.
+Load only matched `.ai-coding-java/rules/`, `workflow/`, `templates/`, `knowledge/`, or `artifacts/` files. Project rules in this `AGENTS.md` override generic ai-coding-java suggestions.
 """
 
 
@@ -213,7 +214,8 @@ def main() -> int:
     print("1. Review .ai-coding-java/project-profile.md and fill missing commands.")
     print("2. Review the marker blocks added to AGENTS.md and CLAUDE.md.")
     print("3. Run .ai-coding-java/scripts/static_review_check.py when deterministic review is needed.")
-    print("4. Decide whether .ai-coding-java/ stays local-only or is committed.")
+    print("4. Use .ai-coding-java/artifacts/<work-id>/ only when RD process records are useful.")
+    print("5. Decide whether .ai-coding-java/ stays local-only or is committed.")
     return 0
 
 

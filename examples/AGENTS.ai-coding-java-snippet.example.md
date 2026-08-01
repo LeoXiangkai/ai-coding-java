@@ -20,9 +20,11 @@ Loading order:
 2. User task
 3. Project memory/current task notes
 4. `.ai-coding-java/docs/rule-index.md`
-5. Only matched `.ai-coding-java/rules/`, `workflow/`, `templates/`, or `knowledge/` files
+5. Only matched `.ai-coding-java/rules/`, `workflow/`, `templates/`, `knowledge/`, or `artifacts/` files
 6. Relevant code, tests, config, and history
 
 Project business rules, data isolation, environment commands, and API contracts in this `AGENTS.md` override generic ai-coding-java suggestions.
 
 Target-safe helper scripts are under `.ai-coding-java/scripts/`.
+
+Optional RD process records belong under `.ai-coding-java/artifacts/<work-id>/` when the task needs traceability.

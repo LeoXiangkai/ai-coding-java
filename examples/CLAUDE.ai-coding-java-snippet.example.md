@@ -19,9 +19,11 @@ Claude Code loading guidance:
 1. Read this `CLAUDE.md`.
 2. Read the nearest `AGENTS.md` for Codex-compatible project execution rules when present.
 3. Read `.ai-coding-java/docs/rule-index.md`.
-4. Load only matched `.ai-coding-java/rules/`, `workflow/`, `templates/`, or `knowledge/` files.
+4. Load only matched `.ai-coding-java/rules/`, `workflow/`, `templates/`, `knowledge/`, or `artifacts/` files.
 5. Use `.ai-coding-java/docs/verification-matrix.md` before claiming completion.
 
 Project business rules, data isolation, environment commands, and API contracts in this `CLAUDE.md` or `AGENTS.md` override generic ai-coding-java suggestions.
 
 Target-safe helper scripts are under `.ai-coding-java/scripts/`.
+
+Optional RD process records belong under `.ai-coding-java/artifacts/<work-id>/` when the task needs traceability.

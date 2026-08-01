@@ -1029,6 +1029,16 @@ AGENTS.md 必须包含：
 4. 沉淀 SQL / 事务事故经验。
 5. 反哺 Coding Agent 上下文加载。
 
+### Phase 5：研发一体化轻量产物
+
+目标：
+
+1. 把复杂需求串成 Requirement -> Design -> Task/Test -> Implement -> Verify/Review -> Release -> Knowledge。
+2. 过程产物默认放在 `.ai-coding-java/artifacts/<work-id>/`。
+3. 只提供需求、设计、测试、发布影响的轻量模板。
+4. 不默认引入 hooks、评分、内网平台绑定或强制门禁。
+5. 小任务不生成过程产物，继续按 `docs/rule-index.md` 命中专项规则。
+
 ## 20. 总结
 
 ai-coding-java 的核心闭环：

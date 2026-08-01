@@ -18,6 +18,7 @@ Identify:
 2. Allowed and forbidden modules.
 3. Interfaces, tables, data boundaries, external systems, jobs, async flows, files, and caches.
 4. Verification level: lightweight, standard, strict.
+5. Whether the task needs lightweight RD artifacts under `.ai-coding-java/artifacts/<work-id>/`.
 
 ## Context Load
 
@@ -53,3 +54,5 @@ Use P0/P1/P2. Findings need file/line references when reviewing code.
 ## Report
 
 Use `templates/delivery-report-template.md`.
+
+For complex requirements, release-sensitive changes, or work that needs traceability, also use `docs/rd-integrated-workflow.md` and the brief templates. Do not create process artifacts for trivial tasks.
