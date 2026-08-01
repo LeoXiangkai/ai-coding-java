@@ -18,7 +18,7 @@ Claude Code may handle requirement clarification, planning, decomposition, and r
 Example handoff shape:
 
 ```bash
-codex exec --cd /Users/xiangkai/AI_Content/develop/ai-coding-java "<task>"
+codex exec --cd /path/to/ai-coding-java "<task>"
 ```
 
 If Codex invocation fails from Claude Code, first check the local environment and proxy path before changing project files.
