@@ -2,7 +2,7 @@
 
 ## Project
 
-`ai-coding-java` is a personal reusable component for enterprise Java AI Coding workflows. It helps new or existing Java projects initialize AI-readable rules for technology stack confirmation, scoped rule loading, verification evidence, code review output, and lightweight pre-commit protection.
+`ai-coding-java` is a personal reusable component for enterprise Java AI Coding workflows. It helps new or existing Java projects initialize AI-readable rules for technology stack confirmation, scoped rule loading, verification evidence, code review output, and lightweight Git prechecks.
 
 This component is designed to be recognized by both Claude Code and Codex:
 

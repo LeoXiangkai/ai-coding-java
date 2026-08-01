@@ -16,9 +16,10 @@ Data boundary: school + school_year
 - External systems: project-specific
 - API verification method: local start + curl with dev/test data when feasible
 - P1 waiver owner and record path: project owner / delivery report
+- RD artifact policy: local-only
+- Hook mode: warn
 
 ## Notes
 
 - Project `AGENTS.md` and business rules override generic ai-coding-java suggestions.
 - Keep this profile free of secrets and long logs.
-

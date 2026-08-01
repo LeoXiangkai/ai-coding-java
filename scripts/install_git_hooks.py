@@ -30,6 +30,20 @@ def git_root(target: Path) -> Path | None:
     return Path(result.stdout.strip())
 
 
+def git_path(root: Path, rel: str) -> Path | None:
+    result = subprocess.run(
+        ["git", "-C", str(root), "rev-parse", "--git-path", rel],
+        text=True,
+        capture_output=True,
+    )
+    if result.returncode != 0:
+        return None
+    path = Path(result.stdout.strip())
+    if path.is_absolute():
+        return path
+    return root / path
+
+
 def make_executable(path: Path) -> None:
     mode = path.stat().st_mode
     path.chmod(mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
@@ -106,12 +120,11 @@ def install_one(root: Path, hooks_dir: Path, hook_name: str, force: bool) -> int
 
 
 def install(root: Path, force: bool) -> int:
-    git_dir = root / ".git"
-    if not git_dir.exists():
-        print(f"SKIP git hooks: {root} has no .git directory")
+    hooks_dir = git_path(root, "hooks")
+    if hooks_dir is None:
+        print(f"SKIP git hooks: cannot resolve hook directory for {root}")
         return 0
 
-    hooks_dir = git_dir / "hooks"
     hooks_dir.mkdir(parents=True, exist_ok=True)
     failed = False
     for hook_name in HOOKS:

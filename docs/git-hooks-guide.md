@@ -12,7 +12,7 @@ ai-coding-java 初始化到 Git 项目时会自动安装轻量 Git hooks。
 python3 .ai-coding-java/scripts/install_git_hooks.py .
 ```
 
-如果目标目录不是 Git 仓库，安装器会跳过，不影响 `.ai-coding-java/` 规则注入。
+如果目标目录不是 Git 仓库，安装器会跳过，不影响 `.ai-coding-java/` 规则注入。安装路径以 `git rev-parse --git-path hooks` 为准，兼容普通 clone 和 Git worktree。
 
 ## pre-commit
 

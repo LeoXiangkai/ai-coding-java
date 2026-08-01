@@ -28,7 +28,7 @@ python3 /path/to/ai-coding-java/scripts/init_target_project.py /path/to/target-p
 
 By default, the script writes `.ai-coding-java/` and adds small marker blocks to target root `AGENTS.md` and `CLAUDE.md`, so Codex and Claude Code can discover the rules.
 
-If the target is a Git repository, the script also installs `.git/hooks/pre-commit` and `.git/hooks/pre-push` through:
+If the target is a Git repository, the script also installs local `pre-commit` and `pre-push` hooks through:
 
 ```bash
 python3 .ai-coding-java/scripts/install_git_hooks.py .
