@@ -1,6 +1,6 @@
 # ai-coding-java Tooling Contract
 
-`ai-coding-java` is not a CI gate or framework runtime. It is a personal reusable AI Coding component for enterprise Java projects.
+`ai-coding-java` is a personal reusable AI Coding component for enterprise Java projects.
 
 ## What It Provides
 
@@ -12,13 +12,13 @@
 6. A lightweight auto-installed Git `pre-commit` hook for deterministic P0 checks.
 7. Codex and Claude Code compatible project entry guidance.
 
-## What It Does Not Do By Default
+## Default Scope
 
-1. It does not install extra lifecycle hooks by default.
-2. It does not block commits except deterministic P0 findings in the lightweight `pre-commit` hook.
-3. It does not add Java dependencies.
-4. It does not run CI.
-5. It does not replace project `AGENTS.md` or business rules.
+1. Target-project initialization.
+2. AI-readable Java rules and templates.
+3. Lightweight Git `pre-commit` P0 protection.
+4. Manual or AI-driven verification through the verification matrix.
+5. Root `AGENTS.md` / `CLAUDE.md` marker blocks for runtime discovery.
 
 ## Recommended Runtime Use
 
@@ -54,6 +54,6 @@ python3 .ai-coding-java/scripts/install_git_hooks.py .
 
 The installed `pre-commit` hook scans staged files and blocks only P0 deterministic findings.
 
-Target-project generated support files should live under `.ai-coding-java/` by default. Do not write helper scripts into the business project root unless the project explicitly chooses that policy.
+Target-project generated support files should live under `.ai-coding-java/` by default. Root changes are limited to bounded marker blocks in `AGENTS.md` and `CLAUDE.md`.
 
-Recognition note: Codex and Claude Code do not auto-load arbitrary snippet files under `.ai-coding-java/`. The target root `AGENTS.md` and `CLAUDE.md` must point to `.ai-coding-java/docs/rule-index.md`. `scripts/init_target_project.py` always writes bounded marker blocks for this.
+Recognition note: Codex uses root `AGENTS.md`; Claude Code uses root `CLAUDE.md`. `scripts/init_target_project.py` writes bounded marker blocks that point both runtimes to `.ai-coding-java/docs/rule-index.md`.

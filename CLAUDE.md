@@ -38,7 +38,7 @@ For future project initialization, use `$setup-ai-coding`. Treat `$setup-cc` as 
 ## Development Rules
 
 1. Keep this component small and composable.
-2. Do not import unrelated command, gate, dashboard, or lifecycle hook stacks into this component by default.
+2. Keep default project guidance limited to Java rules, verification, review, initialization, and lightweight Git protection.
 3. `AGENTS.md` and `CLAUDE.md` should stay compact and aligned.
 4. Do not add generated logs or runtime state to versioned source.
 5. Do not write secrets.

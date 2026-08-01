@@ -2,7 +2,7 @@
 
 ai-coding-java 初始化到 Git 项目时会自动安装一个轻量 `pre-commit` hook。
 
-目标：在提交前拦截确定性 P0 风险，同时避免把 hooks 做成复杂流程、度量系统或平台绑定。
+目标：在提交前拦截确定性 P0 风险，保持提交前检查轻量、直接、可解释。
 
 ## 自动安装
 
@@ -57,14 +57,9 @@ python3 .ai-coding-java/scripts/static_review_check.py --include-docs <staged fi
 python3 .ai-coding-java/scripts/install_git_hooks.py . --force
 ```
 
-## 边界
+## 后续增强方向
 
-本阶段不安装：
-
-1. `pre-push` 编译/测试 hook。
+1. `pre-push` 编译/测试提醒。
 2. `commit-msg` 交付证据检查。
-3. Claude Code `PreToolUse` 编辑拦截。
-4. 文档审批门禁。
-5. 统计、度量、通知或外部平台上报。
-
-这些属于后续可选增强，不进入第一阶段默认安装。
+3. Agent 编辑时安全检查。
+4. 研发过程产物一致性检查。

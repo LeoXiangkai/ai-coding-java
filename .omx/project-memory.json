@@ -53,8 +53,8 @@
     ],
   "directives": [
     "Keep AGENTS.md and CLAUDE.md compact and aligned.",
-    "Do not copy global skill catalogs, model routing tables, unrelated gate systems, or lifecycle hook stacks into this component by default.",
-    "Do not add RD phase gates, metric reporting, or platform hooks unless the user explicitly requests that phase.",
+    "Keep the shared component focused on Java rules, verification, review, target initialization, and lightweight Git protection.",
+    "Keep RD artifacts template-based and route them only when the task needs traceability.",
     "Use setup-ai-coding as the general initialization skill name; keep setup-cc only as a compatibility alias."
   ]
 }

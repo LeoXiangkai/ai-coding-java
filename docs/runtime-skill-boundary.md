@@ -5,8 +5,8 @@
 ## 结论
 
 1. 技能发现、技能触发、`$skill` 调用、模型选择和全局编排由运行时处理。
-2. ai-coding-java 不复制全局技能目录、模型路由表或长编排协议。
-3. ai-coding-java 只提供项目内 Java 开发规则、上下文加载顺序、验证矩阵、Review 口径和交付模板。
+2. ai-coding-java 提供项目内 Java 开发规则、上下文加载顺序、验证矩阵、Review 口径和交付模板。
+3. 运行时能力通过 Codex、Claude Code 或 OMX 的全局配置提供。
 4. 初始化到业务项目后，根 `AGENTS.md` 和 `CLAUDE.md` 必须指向 `.ai-coding-java/docs/rule-index.md`，让 Codex 和 Claude Code 都能进入同一套项目规则。
 
 ## 常规新需求怎么走
@@ -23,7 +23,7 @@
 -> 按 templates/delivery-report-template.md 汇报
 ```
 
-全局运行时可能会按自身规则加载规划、TDD、Review、提测、提交等技能；ai-coding-java 不强制这些技能必须存在，也不把技能实现写入目标项目。
+全局运行时可以按自身规则加载规划、TDD、Review、提测、提交等技能；项目侧继续使用 ai-coding-java 的规则和验证矩阵。
 
 ## 技能归属
 
@@ -38,14 +38,12 @@
 | 验证矩阵、Review 分级、交付报告模板 | ai-coding-java |
 | 企业知识库条目和项目画像 | ai-coding-java |
 
-## 不做什么
+## 组件职责
 
-ai-coding-java 不应：
-
-1. 内置完整全局技能清单。
-2. 要求所有项目安装相同 hooks 或门禁。
-3. 绑定某个模型、供应商或 CLI 版本。
-4. 把运行时日志、临时计划、调试输出作为项目规范入库。
+1. 维护 Java 项目开发规则。
+2. 维护验证矩阵和交付模板。
+3. 维护目标项目初始化入口。
+4. 维护轻量 Git 提交前保护。
 
 ## 推荐写法
 
