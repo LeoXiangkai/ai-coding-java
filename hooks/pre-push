@@ -123,6 +123,31 @@ def verify(profile: dict[str, str], root: Path, strict: bool) -> bool:
     return True
 
 
+def evidence(profile: dict[str, str], root: Path, strict: bool) -> bool:
+    report_path = profile.get("delivery report path", "")
+    if not report_path:
+        if strict:
+            print("ai-coding-java pre-push: delivery report path is not configured", file=sys.stderr)
+            return False
+        print("ai-coding-java pre-push: delivery report path is not configured in .ai-coding-java/project-profile.md")
+        return True
+    script = root / ".ai-coding-java" / "scripts" / "evidence_check.py"
+    if not script.is_file():
+        print("ai-coding-java pre-push: evidence_check.py not found, skip")
+        return True
+    path = Path(report_path)
+    if not path.is_absolute():
+        path = root / path
+    cmd = [sys.executable, str(script), str(path)]
+    if not strict:
+        cmd.append("--warn-only")
+    result = subprocess.run(cmd, cwd=root, text=True)
+    if result.returncode != 0:
+        print(f"ai-coding-java pre-push: evidence check failed with exit {result.returncode}", file=sys.stderr)
+        return False
+    return True
+
+
 def main() -> int:
     root = repo_root()
     profile = read_profile(root)
@@ -130,7 +155,8 @@ def main() -> int:
 
     branch_ok = validate_branch(current_branch(root), strict)
     verify_ok = verify(profile, root, strict)
-    return 0 if branch_ok and verify_ok else 1
+    evidence_ok = evidence(profile, root, strict)
+    return 0 if branch_ok and verify_ok and evidence_ok else 1
 
 
 if __name__ == "__main__":

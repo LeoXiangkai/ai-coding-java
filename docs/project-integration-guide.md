@@ -36,6 +36,9 @@ The script writes `.ai-coding-java/` in the target project and adds small marker
     check_target_project.py
     artifact_consistency_check.py
     docs_tone_check.py
+    evidence_check.py
+    generate_project_map.py
+    refresh_target_project.py
     install_git_hooks.py
     static_review_check.py
     extract_knowledge_candidate.py
@@ -54,6 +57,24 @@ The script writes `.ai-coding-java/` in the target project and adds small marker
 python3 .ai-coding-java/scripts/check_target_project.py .
 ```
 
+Generate a doctor report when onboarding needs a reviewable record:
+
+```bash
+python3 .ai-coding-java/scripts/check_target_project.py . --report markdown
+```
+
+Generate a lightweight code map for old projects or unfamiliar modules:
+
+```bash
+python3 .ai-coding-java/scripts/generate_project_map.py .
+```
+
+Preview template refresh before updating an existing target:
+
+```bash
+python3 /path/to/ai-coding-java/scripts/refresh_target_project.py . --list-extra
+```
+
 ## Acceptance Criteria
 
 1. Target `AGENTS.md` points to `.ai-coding-java/docs/rule-index.md`.
@@ -67,3 +88,5 @@ python3 .ai-coding-java/scripts/check_target_project.py .
 9. Git targets get auto-installed local `pre-commit` and `pre-push` wrappers in the repository hook directory.
 10. `check_target_project.py` reports zero failures. Warnings are acceptable only when they reflect deliberate local policy, such as missing build/test commands during early onboarding.
 11. Complex tasks can run `artifact_consistency_check.py` against `.ai-coding-java/artifacts/<work-id>` before review or release.
+12. Delivery reports can run `evidence_check.py` before handoff or push when evidence quality matters.
+13. Existing targets can run `refresh_target_project.py` in dry-run mode before applying template updates.

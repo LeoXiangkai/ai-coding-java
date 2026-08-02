@@ -16,6 +16,9 @@ TARGET_SCRIPTS = [
     "check_target_project.py",
     "artifact_consistency_check.py",
     "docs_tone_check.py",
+    "evidence_check.py",
+    "generate_project_map.py",
+    "refresh_target_project.py",
 ]
 AGENTS_MARKER_START = "<!-- ai-coding-java:AGENTS:START -->"
 AGENTS_MARKER_END = "<!-- ai-coding-java:AGENTS:END -->"
@@ -44,7 +47,7 @@ def copy_path(src: Path, dst: Path, force: bool) -> None:
     if src.is_dir():
         if dst.exists():
             shutil.rmtree(dst)
-        shutil.copytree(src, dst)
+        shutil.copytree(src, dst, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
     else:
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dst)
@@ -114,6 +117,7 @@ Data boundary: {args.data_boundary}
 - Cache:
 - External systems:
 - API verification method:
+- Delivery report path:
 - P1 waiver owner and record path:
 - RD artifact policy: local-only / committed-after-review / not-used
 - Hook mode: warn
@@ -241,9 +245,11 @@ def main() -> int:
     print("3. Confirm .git/hooks/pre-commit and .git/hooks/pre-push were installed when the target is a git repository.")
     print("4. Run .ai-coding-java/scripts/static_review_check.py when deterministic review is needed outside commit flow.")
     print("5. Run .ai-coding-java/scripts/check_target_project.py . to verify target harness wiring.")
-    print("6. Use .ai-coding-java/artifacts/<work-id>/ only when RD process records are useful.")
-    print("7. Run .ai-coding-java/scripts/artifact_consistency_check.py .ai-coding-java/artifacts/<work-id> for complex tasks.")
-    print("8. Decide whether .ai-coding-java/ stays local-only or is committed.")
+    print("6. Run .ai-coding-java/scripts/generate_project_map.py . when target code navigation is needed.")
+    print("7. Use .ai-coding-java/artifacts/<work-id>/ only when RD process records are useful.")
+    print("8. Run .ai-coding-java/scripts/artifact_consistency_check.py .ai-coding-java/artifacts/<work-id> for complex tasks.")
+    print("9. Run .ai-coding-java/scripts/evidence_check.py <delivery-report.md> before delivery when evidence quality matters.")
+    print("10. Decide whether .ai-coding-java/ stays local-only or is committed.")
     return 0
 
 

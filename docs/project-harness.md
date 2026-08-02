@@ -18,8 +18,9 @@ Harness 负责：
 2. 向目标根 `AGENTS.md` 和 `CLAUDE.md` 写入 bounded marker block。
 3. 生成 `project-profile.md`，记录技术栈、验证等级、数据边界和模板策略。
 4. 安装目标项目本地 Git hooks。
-5. 提供目标项目只读检查脚本。
-6. 保持 Codex / Claude Code 入口一致。
+5. 提供目标项目只读检查脚本和 doctor 报告。
+6. 提供模板刷新 dry-run、交付证据检查和轻量项目画像。
+7. 保持 Codex / Claude Code 入口一致。
 
 Harness 边界：
 
@@ -42,10 +43,13 @@ Harness 边界：
 | 轻量保护 | 已支持 | `hooks/pre-commit`、`hooks/pre-push` | 默认 warn，P0 commit 风险可阻断 |
 | 复杂需求留痕 | 已支持 | `artifacts/`、`templates/` | 按需使用，不默认门禁 |
 | 目标项目检查 | 已支持 | `scripts/check_target_project.py` | 只读检查注入完整性和关键缺口 |
+| Doctor 报告 | 已支持 | `check_target_project.py --report markdown/json` | 输出可评审的目标接入检查记录 |
 | 产物一致性检查 | 已支持 | `scripts/artifact_consistency_check.py` | 只读检查复杂需求过程产物是否互相追溯 |
+| 交付证据检查 | 已支持 | `scripts/evidence_check.py` | 检查 delivery report 是否包含验证命令、结果和 Not-tested |
 | 组件结构检查 | 已支持 | `scripts/structure_check.py` | 检查本组件文件分层和命名风格 |
-| 安全刷新 | 部分支持 | `init_target_project.py --force` | 当前仅有跳过/覆盖，不提供细粒度 merge |
-| 结构化画像 | 部分支持 | `project-profile.md` | 当前是稳定文本字段，未引入 JSON |
+| 安全刷新 | 已支持 | `scripts/refresh_target_project.py --list-extra` | 默认 dry-run，比对缺失、差异和目标侧额外文件，`--apply` 才复制 |
+| 轻量项目画像 | 已支持 | `scripts/generate_project_map.py` | 只读扫描 Controller、Service、Mapper、配置和定时任务信号 |
+| 结构化画像 | 后续增强 | `project-profile.md` | 当前是稳定文本和 Markdown 画像，后续再考虑 JSON |
 | 采集上报 | 范围外 | 无 | 由外部平台或目标项目自行负责，保持个人轻量组件定位 |
 
 ## 初始化模式
@@ -73,6 +77,7 @@ python3 scripts/init_target_project.py /path/to/project \
 3. 生成 `project-profile.md`。
 4. 写入根 `AGENTS.md` 和 `CLAUDE.md` marker。
 5. 在 Git 仓库中安装 `pre-commit` 和 `pre-push` wrapper。
+6. 目标安全脚本默认放在 `.ai-coding-java/scripts/`。
 
 ## 只读检查
 
@@ -92,6 +97,15 @@ python3 .ai-coding-java/scripts/check_target_project.py .
 
 检查脚本只读，不修改目标项目。失败项用于提示补全，不代表业务代码不可开发。
 
+需要留存检查结果时：
+
+```bash
+python3 .ai-coding-java/scripts/check_target_project.py . --report markdown
+python3 .ai-coding-java/scripts/check_target_project.py . --report json
+```
+
+报告默认写入 `.ai-coding-java/reports/`。
+
 复杂需求产物检查：
 
 ```bash
@@ -100,16 +114,33 @@ python3 .ai-coding-java/scripts/artifact_consistency_check.py .ai-coding-java/ar
 
 该检查确认需求、设计、测试、发布影响和交接文件是否存在关键章节、Work ID 是否一致、测试是否引用需求和设计。它只读报告缺口，不强制小任务生成产物。
 
+交付证据检查：
+
+```bash
+python3 .ai-coding-java/scripts/evidence_check.py .ai-coding-java/reports/delivery-report.md
+```
+
+该检查确认交付报告包含 Summary、Verification、Not-tested，并且 Verification 中有命令和结果。
+
+目标项目画像：
+
+```bash
+python3 .ai-coding-java/scripts/generate_project_map.py .
+```
+
+默认写入 `.ai-coding-java/project-map.md`。它只读扫描 Java、Mapper XML 和应用配置文件，用于老项目注入后的快速导航。
+
 ## 更新策略
 
 当前推荐策略：
 
 1. 先运行只读检查，明确目标项目缺什么。
-2. 小版本模板升级优先重新运行初始化脚本，让已存在文件保持跳过。
-3. 需要覆盖通用模板时才使用 `--force`，并先确认目标项目没有本地改写。
-4. 项目自己的 `AGENTS.md`、`CLAUDE.md`、`project-profile.md` 和业务规则优先于通用建议。
+2. 小版本模板升级先从新版组件源运行 `refresh_target_project.py --list-extra`，明确缺失、差异和目标侧额外文件。
+3. 只在确认差异属于通用模板升级时使用 `refresh_target_project.py --apply`。
+4. 重新运行初始化脚本仍保持已有文件跳过；需要整体覆盖时才使用 `--force`。
+5. 项目自己的 `AGENTS.md`、`CLAUDE.md`、`project-profile.md` 和业务规则优先于通用建议。
 
-暂不提供复杂 merge/update 子命令。原因是本组件目标是轻量辅助，过早做自动合并会引入误覆盖风险。
+暂不提供复杂 merge/update 子命令。原因是本组件目标是轻量辅助，当前用 dry-run 和显式 apply 控制升级风险。
 
 ## 完成标准
 
@@ -121,3 +152,5 @@ python3 .ai-coding-java/scripts/artifact_consistency_check.py .ai-coding-java/ar
 4. Git 仓库已安装 hooks，非 Git 目录明确跳过。
 5. 小任务可通过 `rule-index` 快速命中专项规则。
 6. 复杂需求可按需使用 `artifacts/<work-id>/` 产物模板。
+7. 存量项目可生成 `project-map.md` 辅助代码定位。
+8. 需要交付证据门禁时可运行 `evidence_check.py`。

@@ -41,6 +41,17 @@ Runtime skills such as planning, TDD, review, release, commit, or deployment are
 4. Preserve unrelated user changes.
 5. Write no secrets.
 
+## Drift And Churn
+
+Pause and refresh the lightweight requirement/design record before more code edits when any trigger appears:
+
+1. User feedback changes the original acceptance criteria.
+2. The same defect or requirement is being reworked for a second time.
+3. The same file receives repeated patch-only edits without a clearer design decision.
+4. Test expectations no longer match the current business rule.
+
+For small tasks, update the delivery report or task note. For complex tasks, update `.ai-coding-java/artifacts/<work-id>/requirement-brief.md`, `design-brief.md`, or an ADR before continuing.
+
 ## Verify
 
 Use `docs/verification-matrix.md`.
@@ -56,3 +67,9 @@ Use P0/P1/P2. Findings need file/line references when reviewing code.
 Use `templates/delivery-report-template.md`.
 
 For complex requirements, release-sensitive changes, or work that needs traceability, also use `docs/rd-integrated-workflow.md` and the brief templates. Do not create process artifacts for trivial tasks.
+
+When evidence quality matters, run:
+
+```bash
+python3 .ai-coding-java/scripts/evidence_check.py <delivery-report.md>
+```

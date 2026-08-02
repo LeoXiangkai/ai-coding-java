@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import argparse
+import json
 import subprocess
 import sys
+from datetime import datetime, timezone
 
 
 REQUIRED_FILES = [
@@ -23,6 +25,9 @@ REQUIRED_FILES = [
     ".ai-coding-java/scripts/check_target_project.py",
     ".ai-coding-java/scripts/artifact_consistency_check.py",
     ".ai-coding-java/scripts/docs_tone_check.py",
+    ".ai-coding-java/scripts/evidence_check.py",
+    ".ai-coding-java/scripts/generate_project_map.py",
+    ".ai-coding-java/scripts/refresh_target_project.py",
     ".ai-coding-java/project-profile.md",
 ]
 
@@ -42,13 +47,18 @@ PROFILE_REQUIRED_FIELDS = [
     "- Test command:",
     "- Start command:",
     "- API verification method:",
+    "- Delivery report path:",
     "- Hook mode:",
 ]
+
+RECORDS: list[dict[str, str]] = []
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Read-only ai-coding-java target project check.")
     parser.add_argument("target", nargs="?", default=".", help="Target project directory")
+    parser.add_argument("--report", choices=["markdown", "json"], help="Write a structured doctor report")
+    parser.add_argument("--report-path", help="Report output path; defaults under .ai-coding-java/reports/")
     return parser.parse_args()
 
 
@@ -60,14 +70,17 @@ def rel(path: Path, root: Path) -> str:
 
 
 def print_ok(message: str) -> None:
+    RECORDS.append({"status": "OK", "message": message})
     print(f"OK {message}")
 
 
 def print_warn(message: str) -> None:
+    RECORDS.append({"status": "WARN", "message": message})
     print(f"WARN {message}")
 
 
 def print_fail(message: str) -> None:
+    RECORDS.append({"status": "FAIL", "message": message})
     print(f"FAIL {message}")
 
 
@@ -187,6 +200,52 @@ def check_hooks(root: Path) -> tuple[int, int]:
     return failed, warned
 
 
+def default_report_path(root: Path, report_type: str) -> Path:
+    filename = "harness-doctor.md" if report_type == "markdown" else "harness-doctor.json"
+    return root / ".ai-coding-java" / "reports" / filename
+
+
+def markdown_report(root: Path, failed: int, warned: int) -> str:
+    lines = [
+        "# ai-coding-java Harness Doctor",
+        "",
+        f"Target: {root}",
+        f"Generated at: {datetime.now(timezone.utc).isoformat()}",
+        f"Summary: {failed} fail(s), {warned} warning(s)",
+        "",
+        "| Status | Item |",
+        "|---|---|",
+    ]
+    for item in RECORDS:
+        message = item["message"].replace("|", "\\|")
+        lines.append(f"| {item['status']} | {message} |")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def json_report(root: Path, failed: int, warned: int) -> str:
+    payload = {
+        "target": str(root),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "summary": {"failures": failed, "warnings": warned},
+        "items": RECORDS,
+    }
+    return json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
+
+
+def write_report(root: Path, args: argparse.Namespace, failed: int, warned: int) -> None:
+    if not args.report:
+        return
+    path = Path(args.report_path).expanduser().resolve() if args.report_path else default_report_path(root, args.report)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if args.report == "markdown":
+        content = markdown_report(root, failed, warned)
+    else:
+        content = json_report(root, failed, warned)
+    path.write_text(content, encoding="utf-8")
+    print(f"OK wrote report {path}")
+
+
 def main() -> int:
     args = parse_args()
     root = Path(args.target).expanduser().resolve()
@@ -218,6 +277,7 @@ def main() -> int:
     failed += f
     warned += w
 
+    write_report(root, args, failed, warned)
     print(f"Summary: {failed} fail(s), {warned} warning(s)")
     return 1 if failed else 0
 

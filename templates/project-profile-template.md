@@ -14,6 +14,7 @@ Database:
 Cache:
 External systems:
 API verification method:
+Delivery report path:
 P1 waiver owner and record path:
 RD artifact policy: local-only / committed-after-review / not-used
 Hook mode: warn

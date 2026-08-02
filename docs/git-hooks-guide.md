@@ -47,6 +47,7 @@ python3 .ai-coding-java/scripts/static_review_check.py --include-docs <staged fi
 
 1. 个人开发分支命名。
 2. build/test 命令配置和 strict 模式执行。
+3. 已配置交付报告路径时，检查交付证据质量。
 
 个人开发分支约定：
 
@@ -68,6 +69,12 @@ Hook mode 配置在 `.ai-coding-java/project-profile.md`：
 Hook mode: warn
 ```
 
+交付报告路径可选配置：
+
+```text
+Delivery report path: .ai-coding-java/reports/delivery-report.md
+```
+
 也可以临时使用环境变量：
 
 ```bash
@@ -79,6 +86,7 @@ AI_CODING_HOOK_MODE=strict git push
 1. 检查分支命名并提醒。
 2. 输出已配置的 Build/Test command。
 3. 不执行 compile/test。
+4. 已配置 Delivery report path 时，以 warn-only 方式运行 `evidence_check.py`。
 
 `strict` 模式：
 
@@ -86,7 +94,8 @@ AI_CODING_HOOK_MODE=strict git push
 2. 必须配置 Build command。
 3. 执行 Build command。
 4. Test command 已配置时继续执行。
-5. 命令失败则阻断 push。
+5. 必须配置 Delivery report path，并执行 `evidence_check.py`。
+6. 命令失败则阻断 push。
 
 ## 兼容已有 Hook
 
@@ -106,6 +115,5 @@ python3 .ai-coding-java/scripts/install_git_hooks.py . --force
 
 ## 后续增强方向
 
-1. `commit-msg` 交付证据检查。
-2. Agent 编辑时安全检查。
-3. 研发过程产物一致性检查。
+1. Agent 编辑时安全检查。
+2. 研发过程产物一致性检查自动路由。

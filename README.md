@@ -55,6 +55,7 @@ python3 scripts/context_budget_check.py
 python3 scripts/template_integrity_check.py
 python3 scripts/structure_check.py
 python3 scripts/docs_tone_check.py
+python3 scripts/evidence_check.py examples/delivery-report.example.md
 python3 scripts/static_review_check.py examples/static-review-good
 ```
 
@@ -95,6 +96,24 @@ python3 /path/to/ai-coding-java/scripts/init_target_project.py /path/to/target-p
 python3 /path/to/target-project/.ai-coding-java/scripts/check_target_project.py /path/to/target-project
 ```
 
+需要留存接入检查报告：
+
+```bash
+python3 /path/to/target-project/.ai-coding-java/scripts/check_target_project.py /path/to/target-project --report markdown
+```
+
+存量项目需要快速生成代码地图：
+
+```bash
+python3 /path/to/target-project/.ai-coding-java/scripts/generate_project_map.py /path/to/target-project
+```
+
+已有目标项目升级模板前先 dry-run：
+
+```bash
+python3 /path/to/ai-coding-java/scripts/refresh_target_project.py /path/to/target-project --list-extra
+```
+
 ### 3. 目标项目日常开发
 
 目标项目根 `AGENTS.md` 和 `CLAUDE.md` 会指向：
@@ -126,6 +145,12 @@ python3 .ai-coding-java/scripts/artifact_consistency_check.py .ai-coding-java/ar
 
 该检查只提示缺口，不修改业务代码或过程产物。
 
+交付报告可运行证据检查：
+
+```bash
+python3 .ai-coding-java/scripts/evidence_check.py .ai-coding-java/reports/delivery-report.md
+```
+
 目标项目试注入：
 
 ```bash
@@ -137,9 +162,9 @@ python3 /path/to/target-project/.ai-coding-java/scripts/check_target_project.py 
 
 ```text
 已落地：新项目初始化、存量项目注入、技术栈确认、规则识别、按需路由、轻量 Git 保护、复杂需求留痕、目标项目只读检查
-已落地：组件结构命名检查、复杂需求产物一致性只读检查
+已落地：Doctor 报告、组件结构命名检查、复杂需求产物一致性只读检查、交付证据检查、模板刷新 dry-run、轻量项目画像
 边界清晰：业务代码实现、全局 skill 编排、采集上报、评分平台、外部发布平台由项目或运行时负责
-后续增强：安全刷新、结构化项目画像
+后续增强：结构化 JSON 画像、细粒度 merge/update
 ```
 
 ## 当前落地状态
@@ -180,11 +205,14 @@ docs/project-harness.md          定义初始化、注入、适配、路由、�
 docs/documentation-tone-and-reuse.md 约束首页能力表达和外部借鉴转化方式
 scripts/check_target_project.py  只读检查目标项目注入完整性、入口 marker、profile 和 hooks
 scripts/docs_tone_check.py       检查 README 和文档中的反向能力表达
+scripts/evidence_check.py        检查交付报告是否包含验证证据和 Not-tested 说明
+scripts/generate_project_map.py  只读生成目标 Java 项目代码地图
+scripts/refresh_target_project.py dry-run 比对目标模板缺失、差异和额外文件
 scripts/structure_check.py       检查组件自身文件分层和命名风格
 scripts/artifact_consistency_check.py 检查复杂需求过程产物一致性
 ```
 
-Phase 8 仍保持轻量策略：当前提供 check/doctor，不提供复杂 merge/update 子命令；升级前先检查，避免误覆盖目标项目自定义内容。
+Phase 8 仍保持轻量策略：当前提供 check/doctor、dry-run refresh、evidence check 和 project map，不提供复杂 merge/update 子命令；升级前先检查，避免误覆盖目标项目自定义内容。
 
 远程托管兼容 GitHub 和 Gitee。推荐 `origin` 指向 GitHub，`gitee` 指向 Gitee，双端保持同一个 `main` 分支。
 
