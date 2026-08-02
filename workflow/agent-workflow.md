@@ -5,7 +5,7 @@ This workflow keeps AI Coding lightweight and evidence-based.
 ## Default Flow
 
 ```text
-Intake -> Scope -> Context Load -> Impact Analysis -> Test Plan -> Implement -> Verify -> Review -> Report
+Intake -> Scope -> Context Load -> Design Gate -> Impact Analysis -> Test Plan -> Implement -> Verify -> Review -> Report
 ```
 
 Small tasks may compress steps, but must still report verification and risk.
@@ -18,7 +18,21 @@ Identify:
 2. Allowed and forbidden modules.
 3. Interfaces, tables, data boundaries, external systems, jobs, async flows, files, and caches.
 4. Verification level: lightweight, standard, strict.
-5. Whether the task needs lightweight RD artifacts under `.ai-coding-java/artifacts/<work-id>/`.
+    5. Whether the task needs lightweight RD artifacts under `.ai-coding-java/artifacts/<work-id>/`.
+
+## Design Gate
+
+Before implementation, use `docs/design-first-policy.md` when the task is a new project, complete module, legacy change, cross-module change, or any behavior change with unclear impact.
+
+Implementation must not start until the agent can state:
+
+1. project mode: new project, complete module, legacy change, small fix, or documentation-only;
+2. macro/module design for new projects, or module/impact design for legacy changes;
+3. modules, files, APIs, tables, config, jobs, cache, files, and external systems likely affected;
+4. modules explicitly not changed;
+5. design gaps that block implementation.
+
+If the design is incomplete, update `design-brief.md` or the task note first. Do not compensate with a narrow local implementation.
 
 ## Context Load
 
@@ -40,11 +54,11 @@ Runtime skills such as planning, TDD, review, release, commit, or deployment are
 3. Add no unrequested dependencies.
 4. Preserve unrelated user changes.
 5. Write no secrets.
-6. Implement the real target capability, including tests and integration points. Do not reduce scope to an easier fallback when the requested function is clear.
+6. Implement the real target capability according to the design gate, including tests and integration points. Do not reduce scope to an easier fallback when the requested function is clear.
 
 ## Test Plan
 
-Before or during implementation, use `docs/testing-workflow.md` when the change affects business behavior. Map acceptance criteria to unit, integration, API, SQL, regression, or manual verification before claiming the work is ready.
+Before or during implementation, use `docs/testing-workflow.md` and `docs/tdd-policy.md` when the change affects business behavior. Map acceptance criteria to unit, integration, API, SQL, regression, or manual verification, and choose L0-L3 TDD level before claiming the work is ready.
 
 ## Drift And Churn
 
@@ -55,7 +69,7 @@ Pause and refresh the lightweight requirement/design record before more code edi
 3. The same file receives repeated patch-only edits without a clearer design decision.
 4. Test expectations no longer match the current business rule.
 
-For small tasks, update the delivery report or task note. For complex tasks, update `.ai-coding-java/artifacts/<work-id>/requirement-brief.md`, `design-brief.md`, or an ADR before continuing.
+For small tasks, update the delivery report or task note. For complex tasks, update `.ai-coding-java/artifacts/<work-id>/requirement-brief.md`, `domain-type-model.md`, `design-brief.md`, `architecture-review.md`, `implementation-plan.md`, or an ADR before continuing.
 
 ## Verify
 

@@ -20,7 +20,11 @@ Verification:
 
 RD artifacts:
 - requirement brief:
+- domain type model:
 - design brief:
+- architecture review:
+- implementation plan:
+- test plan:
 - test case brief:
 - release impact:
 

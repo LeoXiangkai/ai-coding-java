@@ -8,7 +8,11 @@ import sys
 KNOWN_FILES = {
     "requirements-checklist.md": ["Scope Clarity", "Acceptance", "Enterprise Java Risk", "Verification"],
     "requirement-brief.md": ["Background", "Goal", "Non-goals", "Acceptance Criteria", "Data Boundary", "Dependencies"],
-    "design-brief.md": ["Scope", "Impact", "Data And Transaction Design", "SQL And Performance", "Rollback Or Fallback"],
+    "github-reference-analysis.md": ["Source", "Reference Summary", "Borrowed Ideas", "Rejected Ideas", "Local Decisions"],
+    "domain-type-model.md": ["Source", "Core Types", "Status And Enums", "Commands", "Queries And Views", "Invariants", "Out Of Scope Types"],
+    "architecture-review.md": ["Source", "Review Result", "Architecture Checks", "External Reference Conversion", "Risks And Decisions", "Required Changes Before Implementation"],
+    "implementation-plan.md": ["Source", "Milestones", "Implementation Tasks", "Test Tasks", "Verification Commands", "Not Planned"],
+    "design-brief.md": ["Source", "Design Gate", "New Project Macro Design", "Module Micro Design", "Existing Project Impact Design", "Scope", "Impact", "Data And Transaction Design", "SQL And Performance", "Rollback Or Fallback"],
     "test-plan.md": ["Source", "Requirement Coverage", "Test Layers", "Test Data", "Commands", "Risk-Based Coverage", "Not Covered"],
     "test-case-brief.md": ["Source", "Test Scope", "Cases", "Automation Plan", "Not Covered"],
     "release-impact.md": ["Change Summary", "Deployment Impact", "Verification Evidence", "Rollback", "Not-tested"],
@@ -16,6 +20,40 @@ KNOWN_FILES = {
 }
 
 PLACEHOLDER_VALUES = {"", "tbd", "todo", "draft", "unconfirmed", "n/a", "na", "none", "-"}
+
+SOURCE_EXPECTATIONS = {
+    "domain-type-model.md": [("Requirement brief:", "requirement-brief.md")],
+    "architecture-review.md": [
+        ("Requirement brief:", "requirement-brief.md"),
+        ("Domain type model:", "domain-type-model.md"),
+        ("Design brief:", "design-brief.md"),
+    ],
+    "implementation-plan.md": [
+        ("Requirement brief:", "requirement-brief.md"),
+        ("Domain type model:", "domain-type-model.md"),
+        ("Architecture review:", "architecture-review.md"),
+        ("Design brief:", "design-brief.md"),
+    ],
+    "design-brief.md": [
+        ("Requirement brief:", "requirement-brief.md"),
+        ("Domain type model:", "domain-type-model.md"),
+    ],
+    "test-plan.md": [
+        ("Requirement brief:", "requirement-brief.md"),
+        ("Domain type model:", "domain-type-model.md"),
+        ("Architecture review:", "architecture-review.md"),
+        ("Implementation plan:", "implementation-plan.md"),
+        ("Design brief:", "design-brief.md"),
+    ],
+    "test-case-brief.md": [
+        ("Requirement brief:", "requirement-brief.md"),
+        ("Domain type model:", "domain-type-model.md"),
+        ("Architecture review:", "architecture-review.md"),
+        ("Implementation plan:", "implementation-plan.md"),
+        ("Design brief:", "design-brief.md"),
+        ("Test plan:", "test-plan.md"),
+    ],
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -143,12 +181,12 @@ def main() -> int:
     elif distinct_ids:
         ok(f"consistent Work ID {next(iter(distinct_ids))}")
 
-    for filename in ["test-plan.md", "test-case-brief.md"]:
-        test_text = texts.get(filename, "")
-        if not test_text:
+    for filename, expectations in SOURCE_EXPECTATIONS.items():
+        artifact_text = texts.get(filename, "")
+        if not artifact_text:
             continue
-        for label, expected in [("Requirement brief:", "requirement-brief.md"), ("Design brief:", "design-brief.md")]:
-            value = file_reference_value(test_text, label)
+        for label, expected in expectations:
+            value = file_reference_value(artifact_text, label)
             if not value:
                 warn(f"{filename} missing source reference {label}")
                 warned += 1

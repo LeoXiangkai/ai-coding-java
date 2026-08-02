@@ -21,7 +21,7 @@ External systems:
 
 Verification level: lightweight / standard / strict
 
-RD artifacts: none / requirement / design / test-plan / test-case / release-impact
+RD artifacts: none / requirement / domain-type / design / architecture-review / implementation-plan / test-plan / test-case / release-impact
 
 Artifact path: .ai-coding-java/artifacts/<work-id>/
 

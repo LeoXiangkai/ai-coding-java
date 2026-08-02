@@ -41,6 +41,10 @@ Use this file only when work crosses sessions, agents, modules, or release steps
 ## Links
 
 Requirement brief:
+Domain type model:
+Architecture review:
+Implementation plan:
 Design brief:
+Test plan:
 Test case brief:
 Release impact:

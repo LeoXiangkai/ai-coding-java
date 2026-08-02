@@ -6,10 +6,15 @@ Status: draft
 ## Source
 
 Requirement brief:
+Domain type model:
+Architecture review:
+Implementation plan:
 Design brief:
 Related APIs:
 Related tables:
 Data boundary:
+TDD level:
+TDD evidence expectation:
 
 ## Requirement Coverage
 

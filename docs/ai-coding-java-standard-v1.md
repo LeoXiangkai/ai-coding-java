@@ -23,6 +23,8 @@ v1.1 定位：
 4. 默认自动安装轻量 Git `pre-commit` 和 `pre-push` 预检。
 5. P0 规则用于阻断明显高风险交付；P1/P2 主要用于 Review 和交付报告，不把日常开发拖成长流程。
 6. 需求测试和代码测试必须进入开发 workflow。清楚的功能目标不能降级成临时脚本、窄实现或后续再补。
+7. 高风险业务变更必须按 `docs/tdd-policy.md` 声明 TDD 等级；核心规则、bugfix、库存、金额、权限、数据隔离和幂等变更按 L2/L3 保留测试优先或 RED/GREEN 证据。
+8. 新项目、完整模块和二开改造必须先完成 `docs/design-first-policy.md` 的设计门；设计不完整时先补宏观/微观设计或模块/影响设计，不直接编码。
 
 ## 2. 规范分层
 
@@ -515,6 +517,7 @@ public void inner() {
 4. Controller / VO / Mapper 变更需要启动服务并 curl 验证。
 5. 修 bug 应优先补回归测试。
 6. 复杂需求应先把验收标准映射到需求测试、单元测试、集成测试、API/SQL 验证和人工验收。
+7. 高风险行为变更应先选择 TDD 等级；L3 必须先有 RED 失败证据，再最小实现到 GREEN。
 
 ## 12. Agent Workflow 设计
 
@@ -1036,9 +1039,9 @@ AGENTS.md 必须包含：
 
 目标：
 
-1. 把复杂需求串成 Requirement -> Design -> Task/Test -> Implement -> Verify/Review -> Release -> Knowledge。
+1. 把复杂需求串成 Requirement -> Domain/Type -> Design -> Architecture Review -> Plan/Test -> Implement -> Verify/Review -> Release -> Knowledge。
 2. 过程产物默认放在 `.ai-coding-java/artifacts/<work-id>/`。
-3. 只提供需求、设计、测试、发布影响的轻量模板。
+3. 只提供需求、类型模型、设计、架构评审、实施计划、测试、发布影响的轻量模板。
 4. 过程产物按任务风险和追溯需要生成。
 5. 小任务继续按 `docs/rule-index.md` 命中专项规则。
 

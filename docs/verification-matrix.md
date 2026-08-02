@@ -2,7 +2,7 @@
 
 验证目标：证明本次变更可运行、行为正确、风险已暴露。不能执行的验证必须写入 `Not-tested`。
 
-测试 workflow 见 `docs/testing-workflow.md`。本矩阵定义最低验证强度，测试 workflow 定义需求测试、代码测试和交付证据如何衔接。
+编码前设计门见 `docs/design-first-policy.md`，测试 workflow 见 `docs/testing-workflow.md`，TDD 分级见 `docs/tdd-policy.md`。本矩阵定义最低验证强度，测试 workflow 定义需求测试、代码测试和交付证据如何衔接。
 
 ## 最小验证矩阵
 
@@ -30,6 +30,7 @@ Requirement acceptance -> Test plan -> Unit/Integration/API/SQL tests -> Verific
 3. Controller / VO / Mapper SQL 变更必须有接口或 SQL 级证据。
 4. bugfix 必须优先考虑回归测试。
 5. 无法自动化的验收必须写入人工验证或 `Not-tested`，不能省略。
+6. L2/L3 任务必须提供测试优先或严格 TDD 证据；无法提供时必须说明原因和替代验证。
 
 ## 验证等级
 

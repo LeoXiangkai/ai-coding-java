@@ -12,26 +12,28 @@
 4. 轻量规则索引：[docs/rule-index.md](docs/rule-index.md)
 5. 工作流路由：[docs/workflow-routing.md](docs/workflow-routing.md)
 6. 验证矩阵：[docs/verification-matrix.md](docs/verification-matrix.md)
-7. 测试验证流程：[docs/testing-workflow.md](docs/testing-workflow.md)
-8. Project Harness：[docs/project-harness.md](docs/project-harness.md)
-9. 项目初始化模板：[docs/project-onboarding-template.md](docs/project-onboarding-template.md)
-10. Review 输出模板：[docs/review-output-template.md](docs/review-output-template.md)
-11. 项目接入指南：[docs/project-integration-guide.md](docs/project-integration-guide.md)
-12. 自动 Review 指南：[docs/auto-review-guide.md](docs/auto-review-guide.md)
-13. Git 策略：[docs/git-policy.md](docs/git-policy.md)
-14. 知识沉淀指南：[docs/knowledge-guide.md](docs/knowledge-guide.md)
-15. 运行时技能边界：[docs/runtime-skill-boundary.md](docs/runtime-skill-boundary.md)
-16. Git Hooks 指南：[docs/git-hooks-guide.md](docs/git-hooks-guide.md)
-17. 远程托管指南：[docs/remote-hosting-guide.md](docs/remote-hosting-guide.md)
-18. 研发一体化轻量流程：[docs/rd-integrated-workflow.md](docs/rd-integrated-workflow.md)
-19. SDD 参考分析：[docs/sdd-reference-analysis.md](docs/sdd-reference-analysis.md)
-20. 研发过程产物目录：[artifacts/](artifacts/)
-21. 企业知识库：[knowledge/](knowledge/)
-22. 规则文件：[rules/](rules/)
-23. 工作流：[workflow/agent-workflow.md](workflow/agent-workflow.md)
-24. 交付模板：[templates/](templates/)
-25. 接入说明：[USAGE.md](USAGE.md)
-26. 组件边界：[TOOL.md](TOOL.md)
+7. 编码前设计门：[docs/design-first-policy.md](docs/design-first-policy.md)
+8. 测试验证流程：[docs/testing-workflow.md](docs/testing-workflow.md)
+9. TDD 分级策略：[docs/tdd-policy.md](docs/tdd-policy.md)
+10. Project Harness：[docs/project-harness.md](docs/project-harness.md)
+11. 项目初始化模板：[docs/project-onboarding-template.md](docs/project-onboarding-template.md)
+12. Review 输出模板：[docs/review-output-template.md](docs/review-output-template.md)
+13. 项目接入指南：[docs/project-integration-guide.md](docs/project-integration-guide.md)
+14. 自动 Review 指南：[docs/auto-review-guide.md](docs/auto-review-guide.md)
+15. Git 策略：[docs/git-policy.md](docs/git-policy.md)
+16. 知识沉淀指南：[docs/knowledge-guide.md](docs/knowledge-guide.md)
+17. 运行时技能边界：[docs/runtime-skill-boundary.md](docs/runtime-skill-boundary.md)
+18. Git Hooks 指南：[docs/git-hooks-guide.md](docs/git-hooks-guide.md)
+19. 远程托管指南：[docs/remote-hosting-guide.md](docs/remote-hosting-guide.md)
+20. 研发一体化轻量流程：[docs/rd-integrated-workflow.md](docs/rd-integrated-workflow.md)
+21. SDD 参考分析：[docs/sdd-reference-analysis.md](docs/sdd-reference-analysis.md)
+22. 研发过程产物目录：[artifacts/](artifacts/)
+23. 企业知识库：[knowledge/](knowledge/)
+24. 规则文件：[rules/](rules/)
+25. 工作流：[workflow/agent-workflow.md](workflow/agent-workflow.md)
+26. 交付模板：[templates/](templates/)
+27. 接入说明：[USAGE.md](USAGE.md)
+28. 组件边界：[TOOL.md](TOOL.md)
 
 ## 原则
 
@@ -43,6 +45,8 @@
 6. 研发一体化按需使用：复杂需求可生成轻量过程产物，小任务继续走规则索引。
 7. 表达正向：README 和能力状态只写已落地、边界清晰、后续增强，外部经验必须转化为适合当前组件的能力和边界。
 8. 完整实现：按真实目标完成设计、实现和测试，不避重就轻、不用临时脚本兜底替代应有能力。
+9. TDD 分级：不把严格 TDD 作为默认门禁，但核心规则、bugfix、库存、金额、权限、数据隔离和幂等变更必须按 L2/L3 执行。
+10. 设计优先：新项目、完整模块和二开改造必须先完成宏观/微观设计或模块/影响设计，设计不完整不进入编码。
 
 ## Skill
 
@@ -103,7 +107,7 @@ python3 /path/to/target-project/.ai-coding-java/scripts/check_target_project.py 
 
 ```text
 小任务：读 rule-index -> 命中专项规则 -> 修改代码 -> 按 verification-matrix 验证 -> delivery report
-复杂需求：补 requirement/design/test-plan/test-case/release/handoff 轻量产物 -> 按产研测测试验证 workflow 实现和验证 -> Review
+复杂需求：补 requirement/domain-type/design/architecture-review/implementation-plan/test-plan/test-case/release/handoff 轻量产物 -> 先过设计门 -> 按产研测测试验证 workflow 和 TDD 分级实现验证 -> Review
 ```
 
 ### 4. 可选辅助检查
@@ -172,8 +176,13 @@ Phase 8 已补齐 Project Harness 层：
 ```text
 docs/project-harness.md          定义初始化、注入、适配、路由、保护、检查的职责边界
 docs/documentation-tone-and-reuse.md 约束首页能力表达和外部经验转化方式
+docs/design-first-policy.md      定义新项目宏观/微观设计、二开模块/影响设计和编码前设计门
 docs/testing-workflow.md         定义产研测一体化测试验证、需求测试、单元测试、集成/API/SQL 验证和交付前证据链路
+docs/tdd-policy.md               定义 L0-L3 测试先行/TDD 分级策略和证据要求
 templates/test-plan-template.md  复杂需求测试计划模板，映射验收标准和各层测试证据
+templates/domain-type-model-template.md 复杂需求类型系统/领域模型模板
+templates/architecture-review-template.md 复杂需求架构评审模板
+templates/implementation-plan-template.md 复杂需求实施计划模板
 scripts/check_target_project.py  只读检查目标项目注入完整性、入口 marker、profile 和 hooks
 scripts/docs_tone_check.py       检查 README 和文档中的反向能力表达
 scripts/evidence_check.py        检查交付报告是否包含验证证据和 Not-tested 说明
@@ -184,6 +193,19 @@ scripts/artifact_consistency_check.py 检查复杂需求过程产物一致性
 ```
 
 Phase 8 仍保持轻量策略：当前提供 check/doctor、dry-run refresh、evidence check 和 project map，不提供复杂 merge/update 子命令；升级前先检查，避免误覆盖目标项目自定义内容。
+
+Phase 9 已补齐设计门、TDD 分级和复杂需求前置设计链路：
+
+```text
+docs/design-first-policy.md                编码前设计完整性门槛
+docs/tdd-policy.md                         L0-L3 测试先行/TDD 分级
+templates/domain-type-model-template.md    领域类型模型模板
+templates/architecture-review-template.md  架构评审模板
+templates/implementation-plan-template.md  实施计划模板
+scripts/artifact_consistency_check.py      检查参考分析、类型模型、架构评审和实施计划
+```
+
+Phase 9 仍保持轻量策略：严格 RED/GREEN/REFACTOR 只在 L3 或用户显式要求时启用，小任务不增加默认门禁。
 
 远程托管兼容 GitHub 和 Gitee。推荐 `origin` 指向 GitHub，`gitee` 指向 Gitee，双端保持同一个 `main` 分支。
 

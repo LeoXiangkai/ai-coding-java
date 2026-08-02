@@ -8,7 +8,7 @@
 
 1. 优先吸收能减少返工的机制。
 2. 默认流程必须短，小任务不能被阶段文档阻塞。
-3. 高风险任务可以启用更完整的需求、设计、测试和交接产物。
+3. 高风险任务可以启用更完整的需求、领域类型模型、设计、架构评审、计划、测试和交接产物。
 4. 只把稳定方法沉淀为模板或检查项，不绑定外部平台或特定 CLI。
 5. 不引入会强制中断个人开发节奏的长门禁。
 
@@ -54,7 +54,7 @@
 
 适合落地为：
 
-1. 需求、设计、测试、发布影响之间的一致性检查说明。
+1. 需求、领域类型模型、设计、架构评审、实施计划、测试、发布影响之间的一致性检查说明。
 2. 后续可选脚本，检查关键字段是否缺失，例如验收标准、验证命令、回滚方式。
 3. Review 阶段的只读检查，不直接修改业务代码。
 
@@ -134,7 +134,7 @@
 
 1. `templates/requirements-checklist-template.md`：只在复杂需求或高风险改动时使用。
 2. `templates/handoff-template.md`：用于跨会话、跨 Agent 或提测前交接。
-3. `docs/rd-integrated-workflow.md` 已增加一致性分析口径：需求、设计、测试、发布影响必须能互相追溯。
+3. `docs/rd-integrated-workflow.md` 已增加一致性分析口径：需求、领域类型模型、设计、架构评审、实施计划、测试、发布影响必须能互相追溯。
 
 下一轮可选：
 
@@ -152,7 +152,7 @@ Intake -> Scope -> Context -> Impact -> Implement -> Verify -> Review -> Report
 复杂需求可扩展为：
 
 ```text
-Requirement -> Design -> Task/Test -> Implement -> Verify/Review -> Release -> Knowledge
+Requirement -> Domain/Type -> Design -> Architecture Review -> Plan/Test -> Implement -> Verify/Review -> Release -> Knowledge
 ```
 
 新增模板只在复杂度、风险或协作成本足够高时启用。小需求不要求生成过程产物，避免把 `ai-coding-java` 变成冗长流程框架。

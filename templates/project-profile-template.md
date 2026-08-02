@@ -13,6 +13,13 @@ Start command:
 Database:
 Cache:
 External systems:
+New project macro modules:
+New project core flows:
+Module micro design entry:
+Legacy module entry points:
+Legacy reuse points:
+Legacy forbidden change scope:
+Secondary development impact check:
 API verification method:
 Delivery report path:
 P1 waiver owner and record path:

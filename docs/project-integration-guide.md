@@ -88,6 +88,6 @@ python3 /path/to/ai-coding-java/scripts/refresh_target_project.py . --list-extra
 9. Git targets get auto-installed local `pre-commit` and `pre-push` wrappers in the repository hook directory.
 10. `check_target_project.py` reports zero failures. Warnings are acceptable only when they reflect deliberate local policy, such as missing build/test commands during early onboarding.
 11. Complex tasks can run `artifact_consistency_check.py` against `.ai-coding-java/artifacts/<work-id>` before review or release.
-12. Complex tasks can use `testing-workflow.md` and `test-plan-template.md` to map requirements to unit, integration, API, SQL, regression, and manual verification.
+12. Complex tasks can use `design-first-policy.md` and `design-brief-template.md` before implementation, then use `testing-workflow.md`, `tdd-policy.md`, and `test-plan-template.md` to map requirements to TDD level, unit, integration, API, SQL, regression, and manual verification.
 13. Delivery reports can run `evidence_check.py` before handoff or push when evidence quality matters.
 14. Existing targets can run `refresh_target_project.py` in dry-run mode before applying template updates.

@@ -6,7 +6,12 @@ Status: draft
 ## Source
 
 Requirement brief:
+Domain type model:
+Architecture review:
+Implementation plan:
 Design brief:
+Test plan:
+TDD level:
 
 ## Test Scope
 

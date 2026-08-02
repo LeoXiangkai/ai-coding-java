@@ -29,10 +29,11 @@ If Codex invocation fails from Claude Code, first check the local environment an
 2. Use `README.md` as the human-facing component index.
 3. Use `docs/rule-index.md` for lightweight rule routing.
 4. Use `docs/project-onboarding-template.md` when initializing a target Java project.
-5. Use `docs/verification-matrix.md` before claiming behavior is verified.
-6. Use `docs/testing-workflow.md` for requirement testing, code testing, API/SQL verification, and delivery evidence mapping.
-7. Use `docs/review-output-template.md` for review results.
-8. Use `rules/`, `workflow/`, and `templates/` as the concrete template package.
+5. Use `docs/design-first-policy.md` before implementation for new projects, complete modules, legacy changes, or unclear behavior changes.
+6. Use `docs/verification-matrix.md` before claiming behavior is verified.
+7. Use `docs/testing-workflow.md` for requirement testing, code testing, API/SQL verification, and delivery evidence mapping.
+8. Use `docs/review-output-template.md` for review results.
+9. Use `rules/`, `workflow/`, and `templates/` as the concrete template package.
 
 For future project initialization, use `$setup-ai-coding`. Treat `$setup-cc` as a legacy alias only.
 

@@ -23,7 +23,13 @@
 -> 按 templates/delivery-report-template.md 汇报
 ```
 
-全局运行时可以按自身规则加载规划、TDD、Review、提测、提交等技能；项目侧继续使用 ai-coding-java 的规则和验证矩阵。
+全局运行时可以按自身规则加载规划、TDD、Review、提测、提交等技能；项目侧继续使用 ai-coding-java 的设计门、规则、TDD 分级和验证矩阵。
+
+TDD 边界：
+
+1. ai-coding-java 负责在 `docs/tdd-policy.md` 中定义 L0-L3 分级和触发条件。
+2. 全局运行时负责在 L3 或用户显式要求 TDD 时执行具体 RED/GREEN/REFACTOR 技能。
+3. 项目交付报告负责记录 TDD 等级、RED/GREEN 证据或无法执行的原因。
 
 ## 技能归属
 

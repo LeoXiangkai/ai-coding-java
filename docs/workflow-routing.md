@@ -16,9 +16,9 @@
 
 | 类型 | 典型输入 | 最小上下文 |
 |---|---|---|
-| feature | 新增功能、页面、接口、流程 | 需求、相关模块、接口/表/权限、测试验证 workflow、验证矩阵；复杂需求再读 `docs/rd-integrated-workflow.md` |
-| bugfix | 修复错误、数据异常、线上问题 | 复现证据、相关代码、回归测试、测试验证 workflow、验证矩阵；复杂问题可补轻量设计和测试产物 |
-| refactor | 重构、优化、拆分 | 目标边界、现有测试、兼容性约束、测试验证 workflow；中高风险重构先写设计简报 |
+| feature | 新增功能、页面、接口、流程 | 需求、设计门、相关模块、接口/表/权限、测试验证 workflow、验证矩阵；复杂需求再读 `docs/rd-integrated-workflow.md` |
+| bugfix | 修复错误、数据异常、线上问题 | 复现证据、影响设计、相关代码、回归测试、测试验证 workflow、验证矩阵；复杂问题可补轻量设计和测试产物 |
+| refactor | 重构、优化、拆分 | 目标边界、设计门、现有测试、兼容性约束、测试验证 workflow；中高风险重构先写设计简报 |
 | sql-change | SQL 查询、Mapper XML、索引 | 表结构、数据隔离、真实数据量、验证矩阵 |
 | ddl-change | 建表、改字段、数据脚本 | 环境、回滚、dev/test 执行证据 |
 | config-change | 配置、开关、部署参数 | 环境差异、默认值、回滚方式 |
@@ -28,7 +28,7 @@
 ## 轻量执行流程
 
 ```text
-Intake -> Scope -> Context -> Impact -> Test Plan -> Implement -> Verify -> Review -> Report
+Intake -> Scope -> Context -> Design Gate -> Impact -> Test Plan -> Implement -> Verify -> Review -> Report
 ```
 
 小改动允许合并步骤，但最终报告必须说明：

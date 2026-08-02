@@ -6,6 +6,9 @@ Project profile: `.ai-coding-java/project-profile.md`
 
 Global runtime skills remain owned by Codex, Claude Code, or OMX. ai-coding-java provides project-side Java rules, verification, review, and delivery templates.
 
+For new projects, complete modules, legacy changes, or unclear behavior changes, pass `.ai-coding-java/docs/design-first-policy.md` before implementation.
+For behavior changes, use `.ai-coding-java/docs/testing-workflow.md` and `.ai-coding-java/docs/tdd-policy.md` to map acceptance criteria to verification layers and choose L0-L3 TDD level.
+
 Confirmed setup:
 
 - Project type: legacy

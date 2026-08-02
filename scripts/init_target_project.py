@@ -100,6 +100,8 @@ def install_git_hooks(target: Path) -> None:
 
 
 def profile_text(args: argparse.Namespace) -> str:
+    new_project_value = "" if args.project_type == "new" else "not applicable for this project type"
+    legacy_value = "" if args.project_type in {"legacy", "maintenance"} else "not applicable for new project"
     return f"""# ai-coding-java Project Profile
 
 Project type: {args.project_type}
@@ -116,6 +118,13 @@ Data boundary: {args.data_boundary}
 - Database:
 - Cache:
 - External systems:
+- New project macro modules: {new_project_value}
+- New project core flows: {new_project_value}
+- Module micro design entry:
+- Legacy module entry points: {legacy_value}
+- Legacy reuse points: {legacy_value}
+- Legacy forbidden change scope: {legacy_value}
+- Secondary development impact check: {legacy_value}
 - API verification method:
 - Delivery report path:
 - P1 waiver owner and record path:
@@ -138,7 +147,8 @@ Project profile: `.ai-coding-java/project-profile.md`
 
 Global runtime skills remain owned by Codex, Claude Code, or OMX. ai-coding-java provides project-side Java rules, verification, review, and delivery templates.
 
-For behavior changes, use `.ai-coding-java/docs/testing-workflow.md` to map acceptance criteria to unit, integration, API, SQL, regression, or manual verification.
+For new projects, complete modules, legacy changes, or unclear behavior changes, pass `.ai-coding-java/docs/design-first-policy.md` before implementation.
+For behavior changes, use `.ai-coding-java/docs/testing-workflow.md` and `.ai-coding-java/docs/tdd-policy.md` to map acceptance criteria to verification layers and choose L0-L3 TDD level.
 
 Confirmed setup:
 
@@ -172,7 +182,8 @@ Project profile: `.ai-coding-java/project-profile.md`
 
 Global runtime skills remain owned by Codex, Claude Code, or OMX. ai-coding-java provides project-side Java rules, verification, review, and delivery templates.
 
-For behavior changes, use `.ai-coding-java/docs/testing-workflow.md` to map acceptance criteria to unit, integration, API, SQL, regression, or manual verification.
+For new projects, complete modules, legacy changes, or unclear behavior changes, pass `.ai-coding-java/docs/design-first-policy.md` before implementation.
+For behavior changes, use `.ai-coding-java/docs/testing-workflow.md` and `.ai-coding-java/docs/tdd-policy.md` to map acceptance criteria to verification layers and choose L0-L3 TDD level.
 
 Confirmed setup:
 
@@ -202,7 +213,8 @@ def agents_pointer() -> str:
 Use `.ai-coding-java/docs/rule-index.md` as the first ai-coding-java routing file.
 Project profile: `.ai-coding-java/project-profile.md`.
 Global runtime skills remain owned by Codex, Claude Code, or OMX.
-For behavior changes, use `.ai-coding-java/docs/testing-workflow.md` before claiming delivery readiness.
+For new projects, complete modules, legacy changes, or unclear behavior changes, pass `.ai-coding-java/docs/design-first-policy.md` before implementation.
+For behavior changes, use `.ai-coding-java/docs/testing-workflow.md` and `.ai-coding-java/docs/tdd-policy.md` before claiming delivery readiness.
 
 Load only matched `.ai-coding-java/rules/`, `workflow/`, `templates/`, `knowledge/`, or `artifacts/` files. Project rules in this `AGENTS.md` override generic ai-coding-java suggestions.
 """
@@ -215,7 +227,8 @@ Use `.ai-coding-java/docs/rule-index.md` as the first ai-coding-java routing fil
 Project profile: `.ai-coding-java/project-profile.md`.
 Read `AGENTS.md` for Codex-compatible execution rules when present.
 Use `.ai-coding-java/docs/verification-matrix.md` before claiming completion.
-For behavior changes, use `.ai-coding-java/docs/testing-workflow.md` before claiming delivery readiness.
+For new projects, complete modules, legacy changes, or unclear behavior changes, pass `.ai-coding-java/docs/design-first-policy.md` before implementation.
+For behavior changes, use `.ai-coding-java/docs/testing-workflow.md` and `.ai-coding-java/docs/tdd-policy.md` before claiming delivery readiness.
 Global runtime skills remain owned by Codex, Claude Code, or OMX.
 """
 
@@ -253,10 +266,11 @@ def main() -> int:
     print("5. Run .ai-coding-java/scripts/check_target_project.py . to verify target harness wiring.")
     print("6. Run .ai-coding-java/scripts/generate_project_map.py . when target code navigation is needed.")
     print("7. Use .ai-coding-java/artifacts/<work-id>/ only when RD process records are useful.")
-    print("8. Use .ai-coding-java/docs/testing-workflow.md and templates/test-plan-template.md for behavior changes.")
-    print("9. Run .ai-coding-java/scripts/artifact_consistency_check.py .ai-coding-java/artifacts/<work-id> for complex tasks.")
-    print("10. Run .ai-coding-java/scripts/evidence_check.py <delivery-report.md> before delivery when evidence quality matters.")
-    print("11. Decide whether .ai-coding-java/ stays local-only or is committed.")
+    print("8. Use .ai-coding-java/docs/design-first-policy.md before new projects, complete modules, legacy changes, or unclear behavior changes.")
+    print("9. Use .ai-coding-java/docs/testing-workflow.md, docs/tdd-policy.md, and templates/test-plan-template.md for behavior changes.")
+    print("10. Run .ai-coding-java/scripts/artifact_consistency_check.py .ai-coding-java/artifacts/<work-id> for complex tasks.")
+    print("11. Run .ai-coding-java/scripts/evidence_check.py <delivery-report.md> before delivery when evidence quality matters.")
+    print("12. Decide whether .ai-coding-java/ stays local-only or is committed.")
     return 0
 
 

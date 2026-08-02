@@ -18,7 +18,7 @@ This component itself is intended to be versioned in Git. Target Java projects m
 
 ```text
 README.md / AGENTS.md / CLAUDE.md
-docs/       standards, rule index, RD workflow, verification, integration, review, git, knowledge, runtime boundary
+docs/       standards, rule index, design gate, RD workflow, verification, integration, review, git, knowledge, runtime boundary
 rules/      Java, SQL, transaction, security/logging, delivery, review-level rules
 workflow/   agent-workflow.md
 templates/  task, review, business-rule, delivery, ADR, project-profile, runtime snippets, knowledge-entry templates
@@ -44,7 +44,7 @@ Python usage follows the workspace rule: use the machine global Python only. Do 
 4. Do not write plaintext secrets, internal credentials, or full sensitive logs.
 5. For project onboarding behavior, keep Codex and Claude Code entry points aligned.
 6. For Java rules, treat `docs/rule-index.md` as the first lightweight routing file and load only matched `rules/`, `workflow/`, or `templates/` files.
-7. Treat skill discovery and `$skill` invocation as global runtime behavior; this component owns only project-side Java rules, testing workflow, verification, review, and delivery templates.
+7. Treat skill discovery and `$skill` invocation as global runtime behavior; this component owns only project-side Java rules, design gate, testing workflow, verification, review, and delivery templates.
 8. Keep the default hook scope lightweight: staged-file P0 scanning at commit time, personal branch and verification-command prechecks at push time.
 9. Implement the real target shape fully; do not choose a smaller substitute or add temporary script fallbacks when a tested component capability is required.
 

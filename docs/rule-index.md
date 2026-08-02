@@ -27,6 +27,8 @@ P2：记录建议，不阻断。
 | ID | 规则 | 触发 |
 |---|---|---|
 | P1-TEST-001 | 核心业务变更必须有业务断言测试 | Service、规则、bugfix |
+| P1-TDD-001 | 高风险业务变更必须声明 TDD 等级，L3 必须保留 RED/GREEN 证据 | 核心规则、bugfix、库存、金额、权限、数据隔离、幂等 |
+| P1-DESIGN-001 | 新项目、完整模块和二开改造编码前必须完成设计门 | 宏观模块、微观模块、既有模块、影响范围、不改范围 |
 | P1-API-001 | Controller / VO 字段变更必须验证接口契约 | API 入参、出参、兼容字段 |
 | P1-SQL-001 | 新增或修改复杂 SQL 必须说明场景和性能风险 | join、分页、排序、聚合 |
 | P1-IDEMP-001 | 批量、异步、外部回调必须说明幂等边界 | job、MQ、HTTP 回调、重试 |
@@ -53,16 +55,19 @@ P2：记录建议，不阻断。
 | 安全 / 日志 / 配置 | `rules/security-logging-rule.md`、`rules/delivery-rule.md` |
 | 新项目初始化 / 存量项目注入 | `docs/project-harness.md`、`docs/project-onboarding-template.md`、`docs/project-integration-guide.md`、`templates/project-business-rule-template.md` |
 | 任务执行路由 | `workflow/agent-workflow.md`、`docs/workflow-routing.md` |
-| 需求测试 / 代码测试 / 测试计划 | `docs/testing-workflow.md`、`docs/verification-matrix.md`、`templates/test-plan-template.md`、`templates/test-case-brief-template.md` |
+| 编码前设计 / 新项目宏观设计 / 二开影响设计 | `docs/design-first-policy.md`、`docs/rd-integrated-workflow.md`、`templates/domain-type-model-template.md`、`templates/design-brief-template.md`、`templates/architecture-review-template.md`、`templates/implementation-plan-template.md` |
+| 需求测试 / 代码测试 / 测试计划 / TDD 分级 | `docs/testing-workflow.md`、`docs/tdd-policy.md`、`docs/verification-matrix.md`、`templates/test-plan-template.md`、`templates/test-case-brief-template.md` |
 | Git hook / commit-push 预检 | `docs/git-hooks-guide.md`、`docs/auto-review-guide.md` |
-| 复杂需求 / 研发一体化 | `docs/rd-integrated-workflow.md`、`templates/requirement-brief-template.md`、`templates/requirements-checklist-template.md`、`templates/design-brief-template.md`、`templates/test-plan-template.md`、`templates/test-case-brief-template.md`、`templates/handoff-template.md` |
-| 复杂需求产物一致性检查 | `docs/rd-integrated-workflow.md`、`templates/requirement-brief-template.md`、`templates/design-brief-template.md`、`templates/test-plan-template.md`、`templates/test-case-brief-template.md`、`templates/release-impact-template.md`、`templates/handoff-template.md` |
-| 目标漂移 / 反复返工 / 补丁震荡 | `workflow/agent-workflow.md`、`docs/rd-integrated-workflow.md`、`templates/requirement-brief-template.md`、`templates/design-brief-template.md`、`templates/adr-template.md` |
+| 复杂需求 / 研发一体化 | `docs/rd-integrated-workflow.md`、`docs/design-first-policy.md`、`docs/tdd-policy.md`、`templates/requirement-brief-template.md`、`templates/requirements-checklist-template.md`、`templates/domain-type-model-template.md`、`templates/design-brief-template.md`、`templates/architecture-review-template.md`、`templates/implementation-plan-template.md`、`templates/test-plan-template.md`、`templates/test-case-brief-template.md`、`templates/handoff-template.md` |
+| 复杂需求产物一致性检查 | `docs/rd-integrated-workflow.md`、`templates/requirement-brief-template.md`、`templates/domain-type-model-template.md`、`templates/architecture-review-template.md`、`templates/implementation-plan-template.md`、`templates/design-brief-template.md`、`templates/test-plan-template.md`、`templates/test-case-brief-template.md`、`templates/release-impact-template.md`、`templates/handoff-template.md` |
+| 目标漂移 / 反复返工 / 补丁震荡 | `workflow/agent-workflow.md`、`docs/design-first-policy.md`、`docs/rd-integrated-workflow.md`、`templates/requirement-brief-template.md`、`templates/design-brief-template.md`、`templates/adr-template.md` |
+| 项目定位变化 / 业务目标重定向 | `docs/rd-integrated-workflow.md`、`docs/design-first-policy.md`、`docs/testing-workflow.md`、`docs/tdd-policy.md`、`templates/requirement-brief-template.md`、`templates/domain-type-model-template.md`、`templates/design-brief-template.md`、`templates/architecture-review-template.md`、`templates/implementation-plan-template.md`、`templates/test-plan-template.md`、`templates/handoff-template.md` |
+| 类型系统探索 / 架构设计 / 架构评审 / 落地方案 | `docs/design-first-policy.md`、`docs/rd-integrated-workflow.md`、`templates/domain-type-model-template.md`、`templates/design-brief-template.md`、`templates/architecture-review-template.md`、`templates/implementation-plan-template.md`、`templates/test-plan-template.md` |
 | 交付证据检查 | `templates/delivery-report-template.md`、`rules/delivery-rule.md`、`docs/verification-matrix.md` |
 | 目标项目画像 / 代码地图 | `docs/project-harness.md`、`docs/project-integration-guide.md` |
 | 组件结构 / 文件命名检查 | `docs/structure-and-naming.md`、`docs/project-harness.md` |
 | 文档表达 / 外部经验转化检查 | `docs/documentation-tone-and-reuse.md`、`docs/sdd-reference-analysis.md` |
-| 研发一体化规范演进 / 流程取舍 | `docs/sdd-reference-analysis.md`、`docs/rd-integrated-workflow.md`、`docs/runtime-skill-boundary.md` |
+| 研发一体化规范演进 / 流程取舍 | `docs/sdd-reference-analysis.md`、`docs/rd-integrated-workflow.md`、`docs/design-first-policy.md`、`docs/tdd-policy.md`、`docs/runtime-skill-boundary.md` |
 | 发布影响说明 | `templates/release-impact-template.md`、`rules/delivery-rule.md`、`docs/verification-matrix.md` |
 | 运行时技能边界 | `docs/runtime-skill-boundary.md` |
 | Review | `rules/review-level.md`、`templates/ai-review-template.md`、`docs/review-output-template.md` |
