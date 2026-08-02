@@ -10,6 +10,8 @@
 
 # Generated or local-only artifacts
 *.log
+__pycache__/
+*.pyc
 .worktrees/
 node_modules/
 target/

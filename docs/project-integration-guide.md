@@ -33,6 +33,8 @@ The script writes `.ai-coding-java/` in the target project and adds small marker
   artifacts/
   hooks/
   scripts/
+    check_target_project.py
+    artifact_consistency_check.py
     install_git_hooks.py
     static_review_check.py
     extract_knowledge_candidate.py
@@ -45,6 +47,11 @@ The script writes `.ai-coding-java/` in the target project and adds small marker
 3. Keep `AGENTS.ai-coding-java-snippet.md` and `CLAUDE.ai-coding-java-snippet.md` as review copies.
 4. Confirm whether `.ai-coding-java/` stays local-only or is committed.
 5. Run a small real task through `rule-index -> matched rules -> verification -> delivery report`.
+6. Run the read-only target check:
+
+```bash
+python3 .ai-coding-java/scripts/check_target_project.py .
+```
 
 ## Acceptance Criteria
 
@@ -57,3 +64,5 @@ The script writes `.ai-coding-java/` in the target project and adds small marker
 7. Target-safe helper scripts live under `.ai-coding-java/scripts/`; no helper script should be written to the target business root by default.
 8. Lightweight RD process records, when useful, live under `.ai-coding-java/artifacts/<work-id>/` and are not generated as a mandatory gate.
 9. Git targets get auto-installed local `pre-commit` and `pre-push` wrappers in the repository hook directory.
+10. `check_target_project.py` reports zero failures. Warnings are acceptable only when they reflect deliberate local policy, such as missing build/test commands during early onboarding.
+11. Complex tasks can run `artifact_consistency_check.py` against `.ai-coding-java/artifacts/<work-id>` before review or release.

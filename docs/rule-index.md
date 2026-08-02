@@ -50,10 +50,12 @@ P2：记录建议，不阻断。
 | Mapper XML / SQL | `rules/sql-rule.md`、`rules/delivery-rule.md`、`docs/verification-matrix.md` |
 | DDL / 数据脚本 | `rules/sql-rule.md`、`rules/delivery-rule.md`、`docs/verification-matrix.md` |
 | 安全 / 日志 / 配置 | `rules/security-logging-rule.md`、`rules/delivery-rule.md` |
-| 新项目初始化 | `docs/project-onboarding-template.md`、`templates/project-business-rule-template.md` |
+| 新项目初始化 / 存量项目注入 | `docs/project-harness.md`、`docs/project-onboarding-template.md`、`docs/project-integration-guide.md`、`templates/project-business-rule-template.md` |
 | 任务执行路由 | `workflow/agent-workflow.md`、`docs/workflow-routing.md` |
 | Git hook / commit-push 预检 | `docs/git-hooks-guide.md`、`docs/auto-review-guide.md` |
 | 复杂需求 / 研发一体化 | `docs/rd-integrated-workflow.md`、`templates/requirement-brief-template.md`、`templates/requirements-checklist-template.md`、`templates/design-brief-template.md`、`templates/test-case-brief-template.md`、`templates/handoff-template.md` |
+| 复杂需求产物一致性检查 | `docs/rd-integrated-workflow.md`、`templates/requirement-brief-template.md`、`templates/design-brief-template.md`、`templates/test-case-brief-template.md`、`templates/release-impact-template.md`、`templates/handoff-template.md` |
+| 组件结构 / 文件命名检查 | `docs/structure-and-naming.md`、`docs/project-harness.md` |
 | 研发一体化规范演进 / 流程取舍 | `docs/sdd-reference-analysis.md`、`docs/rd-integrated-workflow.md`、`docs/runtime-skill-boundary.md` |
 | 发布影响说明 | `templates/release-impact-template.md`、`rules/delivery-rule.md`、`docs/verification-matrix.md` |
 | 运行时技能边界 | `docs/runtime-skill-boundary.md` |

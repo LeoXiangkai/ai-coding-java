@@ -43,6 +43,8 @@ These files are local runtime state or temporary development artifacts and shoul
 .omx/knowledge-candidates/
 .Codex/
 *.log
+__pycache__/
+*.pyc
 .worktrees/
 node_modules/
 target/

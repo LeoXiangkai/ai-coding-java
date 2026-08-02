@@ -9,7 +9,13 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 COPY_DIRS = ["docs", "rules", "workflow", "templates", "knowledge", "artifacts", "hooks"]
 COPY_FILES = ["README.md", "TOOL.md", "USAGE.md"]
-TARGET_SCRIPTS = ["static_review_check.py", "extract_knowledge_candidate.py", "install_git_hooks.py"]
+TARGET_SCRIPTS = [
+    "static_review_check.py",
+    "extract_knowledge_candidate.py",
+    "install_git_hooks.py",
+    "check_target_project.py",
+    "artifact_consistency_check.py",
+]
 AGENTS_MARKER_START = "<!-- ai-coding-java:AGENTS:START -->"
 AGENTS_MARKER_END = "<!-- ai-coding-java:AGENTS:END -->"
 CLAUDE_MARKER_START = "<!-- ai-coding-java:CLAUDE:START -->"
@@ -196,6 +202,7 @@ def claude_pointer() -> str:
     return """## ai-coding-java
 
 Use `.ai-coding-java/docs/rule-index.md` as the first ai-coding-java routing file for Java development rules.
+Project profile: `.ai-coding-java/project-profile.md`.
 Read `AGENTS.md` for Codex-compatible execution rules when present.
 Use `.ai-coding-java/docs/verification-matrix.md` before claiming completion.
 Global runtime skills remain owned by Codex, Claude Code, or OMX.
@@ -232,8 +239,10 @@ def main() -> int:
     print("2. Review the marker blocks added to AGENTS.md and CLAUDE.md.")
     print("3. Confirm .git/hooks/pre-commit and .git/hooks/pre-push were installed when the target is a git repository.")
     print("4. Run .ai-coding-java/scripts/static_review_check.py when deterministic review is needed outside commit flow.")
-    print("5. Use .ai-coding-java/artifacts/<work-id>/ only when RD process records are useful.")
-    print("6. Decide whether .ai-coding-java/ stays local-only or is committed.")
+    print("5. Run .ai-coding-java/scripts/check_target_project.py . to verify target harness wiring.")
+    print("6. Use .ai-coding-java/artifacts/<work-id>/ only when RD process records are useful.")
+    print("7. Run .ai-coding-java/scripts/artifact_consistency_check.py .ai-coding-java/artifacts/<work-id> for complex tasks.")
+    print("8. Decide whether .ai-coding-java/ stays local-only or is committed.")
     return 0
 
 

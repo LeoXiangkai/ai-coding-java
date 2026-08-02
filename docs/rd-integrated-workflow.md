@@ -76,6 +76,14 @@ Requirement -> Design -> Task/Test -> Implement -> Verify/Review -> Release -> K
 
 复杂需求或发布前建议做一次只读一致性分析：需求、设计、测试、发布影响和交付报告应能互相追溯。发现 P0 风险时必须处理；P1/P2 记录风险、建议和未验证项。
 
+可使用以下脚本检查过程产物一致性：
+
+```bash
+python3 .ai-coding-java/scripts/artifact_consistency_check.py .ai-coding-java/artifacts/<work-id>
+```
+
+该脚本只读检查，不修改产物；小任务不需要运行。
+
 ### Release
 
 发布前至少说明：
