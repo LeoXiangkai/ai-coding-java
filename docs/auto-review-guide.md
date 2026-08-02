@@ -1,6 +1,6 @@
 # Auto Review Guide
 
-This guide covers Phase 3: lightweight deterministic checks plus AI semantic review.
+This guide covers lightweight deterministic checks plus AI semantic review.
 
 ## Deterministic Checks
 

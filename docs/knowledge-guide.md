@@ -1,6 +1,6 @@
 # Knowledge Guide
 
-This guide covers Phase 4: reusable knowledge capture and feedback into Agent context.
+This guide covers reusable knowledge capture and feedback into Agent context.
 
 ## Goal
 

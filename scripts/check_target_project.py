@@ -50,6 +50,10 @@ PROFILE_REQUIRED_FIELDS = [
     "Verification level:",
     "Template policy:",
     "Data boundary:",
+    "- Hook mode:",
+]
+
+PROFILE_RECOMMENDED_FIELDS = [
     "- Build command:",
     "- Test command:",
     "- Start command:",
@@ -62,7 +66,6 @@ PROFILE_REQUIRED_FIELDS = [
     "- Secondary development impact check:",
     "- API verification method:",
     "- Delivery report path:",
-    "- Hook mode:",
 ]
 
 RECORDS: list[dict[str, str]] = []
@@ -91,6 +94,11 @@ def print_ok(message: str) -> None:
 def print_warn(message: str) -> None:
     RECORDS.append({"status": "WARN", "message": message})
     print(f"WARN {message}")
+
+
+def print_info(message: str) -> None:
+    RECORDS.append({"status": "INFO", "message": message})
+    print(f"INFO {message}")
 
 
 def print_fail(message: str) -> None:
@@ -172,6 +180,16 @@ def check_profile(root: Path) -> tuple[int, int]:
             warned += 1
         else:
             print_ok(f"project-profile field {field}")
+    for field in PROFILE_RECOMMENDED_FIELDS:
+        matching = [line for line in text.splitlines() if line.startswith(field)]
+        if not matching:
+            print_info(f"project-profile missing recommended field {field}")
+            continue
+        value = value_after_colon(matching[0])
+        if not value or value == "unconfirmed":
+            print_info(f"project-profile unconfirmed recommended field {field}")
+        else:
+            print_ok(f"project-profile recommended field {field}")
     return failed, warned
 
 

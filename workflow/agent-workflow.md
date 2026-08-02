@@ -18,13 +18,17 @@ Identify:
 2. Allowed and forbidden modules.
 3. Interfaces, tables, data boundaries, external systems, jobs, async flows, files, and caches.
 4. Verification level: lightweight, standard, strict.
-    5. Whether the task needs lightweight RD artifacts under `.ai-coding-java/artifacts/<work-id>/`.
+5. Whether the task needs lightweight RD artifacts under `.ai-coding-java/artifacts/<work-id>/`.
+
+## OPC Default
+
+OPC is the personal fast-delivery mode. Keep the default path short: use the design gate only when the change is new-project, complete-module, legacy-impact, cross-module, or unclear; use full RD artifacts only when traceability is worth the cost.
 
 ## Design Gate
 
 Before implementation, use `docs/design-first-policy.md` when the task is a new project, complete module, legacy change, cross-module change, or any behavior change with unclear impact.
 
-Implementation must not start until the agent can state:
+Implementation must not start for design-gated work until the agent can state:
 
 1. project mode: new project, complete module, legacy change, small fix, or documentation-only;
 2. macro/module design for new projects, or module/impact design for legacy changes;

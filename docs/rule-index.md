@@ -54,7 +54,7 @@ P2：记录建议，不阻断。
 | DDL / 数据脚本 | `rules/sql-rule.md`、`rules/delivery-rule.md`、`docs/verification-matrix.md` |
 | 安全 / 日志 / 配置 | `rules/security-logging-rule.md`、`rules/delivery-rule.md` |
 | 新项目初始化 / 存量项目注入 | `docs/project-harness.md`、`docs/project-onboarding-template.md`、`docs/project-integration-guide.md`、`templates/project-business-rule-template.md` |
-| 任务执行路由 | `workflow/agent-workflow.md`、`docs/workflow-routing.md` |
+| 任务执行流程 | `workflow/agent-workflow.md` |
 | 编码前设计 / 新项目宏观设计 / 二开影响设计 | `docs/design-first-policy.md`、`docs/rd-integrated-workflow.md`、`templates/domain-type-model-template.md`、`templates/design-brief-template.md`、`templates/architecture-review-template.md`、`templates/implementation-plan-template.md` |
 | 需求测试 / 代码测试 / 测试计划 / TDD 分级 | `docs/testing-workflow.md`、`docs/tdd-policy.md`、`docs/verification-matrix.md`、`templates/test-plan-template.md`、`templates/test-case-brief-template.md` |
 | Git hook / commit-push 预检 | `docs/git-hooks-guide.md`、`docs/auto-review-guide.md` |

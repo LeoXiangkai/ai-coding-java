@@ -45,7 +45,7 @@ Requirement acceptance -> Test plan -> Code and tests -> Integration/API/SQL ver
 
 ## 开发前
 
-开始实现前，Agent 必须先通过 `docs/design-first-policy.md` 的设计门，再判断测试形态：
+开始实现前，Agent 先判断当前任务是否属于 `docs/design-first-policy.md` 的设计门范围；属于设计门范围的任务先补设计，再判断测试形态：
 
 1. 需求是否有可验证的 Given/When/Then 或等价验收清单。
 2. 每条验收标准应落到需求测试、单元测试、集成测试、API、SQL、回归或人工验收中的哪一类。
@@ -75,12 +75,7 @@ Requirement acceptance -> Test plan -> Code and tests -> Integration/API/SQL ver
 6. 测试数据要覆盖正常、边界、异常、权限或数据隔离路径。
 7. 不能只写 mock 调用次数断言；测试必须断言业务结果、状态变化或输出契约。
 
-按 TDD 等级执行：
-
-1. L0：可跳过测试先行，但交付报告仍需说明验证方式。
-2. L1：先写测试计划或轻量验证清单，再实现。
-3. L2：实现前优先补 focused test、集成测试或回归测试；不能补时记录替代验证。
-4. L3：必须先记录 RED 失败证据，再实现 GREEN，最后保持测试全绿。
+TDD 等级只按 `docs/tdd-policy.md` 判定和执行。本文件不重复 L0-L3 细则。
 
 如果项目暂时没有测试框架，不能用“没有测试框架”跳过风险说明；应在交付报告中写明替代验证和剩余风险。
 

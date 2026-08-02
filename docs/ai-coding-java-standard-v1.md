@@ -116,7 +116,6 @@ ai-coding-java/
   docs/
     ai-coding-java-standard-v1.md
     rule-index.md
-    workflow-routing.md
     verification-matrix.md
     project-onboarding-template.md
     review-output-template.md
@@ -996,54 +995,19 @@ AGENTS.md 必须包含：
 6. 补充测试。
 ```
 
-## 19. 落地路线
+## 19. 当前能力闭环
 
-### Phase 1：基础规范落地
+ai-coding-java 当前提供：
 
-目标：
+1. 目标项目初始化和 Codex / Claude Code 入口 marker。
+2. `docs/rule-index.md` 轻量规则路由。
+3. Java / SQL / 事务 / 安全 / 交付 / Review 规则。
+4. `docs/design-first-policy.md` 编码前设计门。
+5. `docs/testing-workflow.md`、`docs/tdd-policy.md` 和 `docs/verification-matrix.md` 测试验证闭环。
+6. 复杂需求按需产物：Requirement -> Domain/Type -> Design -> Architecture Review -> Plan/Test -> Implement -> Verify/Review -> Release -> Knowledge。
+7. 轻量 Git hooks、目标项目 doctor、交付证据检查、静态 Review 和项目画像。
 
-1. 建立 ai-coding-java 模板。
-2. 建立公司 Java 技术栈规则。
-3. 建立 SQL / 事务 / 安全硬规则。
-4. 建立 Review 输出模板。
-
-### Phase 2：项目接入
-
-目标：
-
-1. 项目 AGENTS.md 指向模板。
-2. 项目补充业务规则、数据边界、接口契约。
-3. Coding Agent 按 diff 路由规则。
-4. 交付报告标准化。
-
-### Phase 3：自动 Review
-
-目标：
-
-1. 接入确定性检查。
-2. 接入 AI Review。
-3. P0/P1 阻断策略落地。
-4. 验证证据标准化。
-
-### Phase 4：企业知识库
-
-目标：
-
-1. 沉淀公司级技术规则。
-2. 沉淀项目级业务规则。
-3. 沉淀 Bug 根因。
-4. 沉淀 SQL / 事务事故经验。
-5. 反哺 Coding Agent 上下文加载。
-
-### Phase 5：研发一体化轻量产物
-
-目标：
-
-1. 把复杂需求串成 Requirement -> Domain/Type -> Design -> Architecture Review -> Plan/Test -> Implement -> Verify/Review -> Release -> Knowledge。
-2. 过程产物默认放在 `.ai-coding-java/artifacts/<work-id>/`。
-3. 只提供需求、类型模型、设计、架构评审、实施计划、测试、发布影响的轻量模板。
-4. 过程产物按任务风险和追溯需要生成。
-5. 小任务继续按 `docs/rule-index.md` 命中专项规则。
+OPC 默认保持短流程；只有新项目、完整模块、二开改造、影响不清或高风险变更才启用完整设计和研发产物。
 
 ## 20. 总结
 

@@ -14,7 +14,6 @@ REQUIRED = [
     "USAGE.md",
     "docs/ai-coding-java-standard-v1.md",
     "docs/rule-index.md",
-    "docs/workflow-routing.md",
     "docs/verification-matrix.md",
     "docs/design-first-policy.md",
     "docs/testing-workflow.md",

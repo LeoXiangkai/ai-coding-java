@@ -68,15 +68,7 @@ Requirement -> Domain/Type -> Design -> Architecture Review -> Plan/Test -> Impl
 
 ### Design
 
-必须明确：
-
-1. 本次是新项目、完整模块、二开改造、小修还是纯文档。
-2. 新项目必须有宏观模块设计和核心模块微观设计。
-3. 二开项目必须有既有模块、复用点、修改点、不改范围和影响设计。
-4. 受影响模块、接口、表、任务、缓存、文件和外部系统。
-5. 事务、幂等、并发和失败处理。
-6. SQL 性能、兼容性、数据迁移和回滚风险。
-7. 设计是否足够进入实现；不足时先补设计，不进入编码。
+设计门以 `docs/design-first-policy.md` 为准。新项目写宏观/微观设计，二开项目写模块/影响设计；设计不足时先补设计，不进入编码。
 
 ### Architecture Review
 
@@ -90,13 +82,7 @@ Requirement -> Domain/Type -> Design -> Architecture Review -> Plan/Test -> Impl
 
 ### Plan/Test
 
-任务要能独立验证。测试 workflow 见 `docs/testing-workflow.md`，TDD 分级见 `docs/tdd-policy.md`。测试用例优先从验收标准派生，至少覆盖：
-
-1. 正常路径。
-2. 边界条件。
-3. 异常和失败路径。
-4. 权限或数据隔离。
-5. 回归场景。
+任务要能独立验证。测试 workflow 见 `docs/testing-workflow.md`，TDD 分级见 `docs/tdd-policy.md`。
 
 复杂需求可使用 `templates/requirements-checklist-template.md`，用来确认验收标准、非目标、数据边界、权限、兼容性和发布影响是否清楚。Checklist 是前置澄清工具，不是小任务的默认阻塞门禁。
 

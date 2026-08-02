@@ -1,6 +1,6 @@
 # Project Integration Guide
 
-This guide covers Phase 2: injecting `ai-coding-java` into a real Java project.
+This guide covers target project injection for `ai-coding-java`.
 
 ## Default Command
 
@@ -46,7 +46,7 @@ The script writes `.ai-coding-java/` in the target project and adds small marker
 
 ## Required Manual Review
 
-1. Fill missing build, test, start, database, cache, and endpoint verification commands in `project-profile.md`.
+1. Fill missing build, test, start, database, cache, endpoint verification, and design-entry fields in `project-profile.md` when they apply.
 2. Review the generated marker blocks in root `AGENTS.md` and `CLAUDE.md`.
 3. Keep `AGENTS.ai-coding-java-snippet.md` and `CLAUDE.ai-coding-java-snippet.md` as review copies.
 4. Confirm whether `.ai-coding-java/` stays local-only or is committed.
@@ -86,7 +86,7 @@ python3 /path/to/ai-coding-java/scripts/refresh_target_project.py . --list-extra
 7. Target-safe helper scripts live under `.ai-coding-java/scripts/`; no helper script should be written to the target business root by default.
 8. Lightweight RD process records, when useful, live under `.ai-coding-java/artifacts/<work-id>/` and are not generated as a mandatory gate.
 9. Git targets get auto-installed local `pre-commit` and `pre-push` wrappers in the repository hook directory.
-10. `check_target_project.py` reports zero failures. Warnings are acceptable only when they reflect deliberate local policy, such as missing build/test commands during early onboarding.
+10. `check_target_project.py` reports zero failures. Recommended profile fields may remain INFO during early onboarding when they are not yet known or not applicable.
 11. Complex tasks can run `artifact_consistency_check.py` against `.ai-coding-java/artifacts/<work-id>` before review or release.
 12. Complex tasks can use `design-first-policy.md` and `design-brief-template.md` before implementation, then use `testing-workflow.md`, `tdd-policy.md`, and `test-plan-template.md` to map requirements to TDD level, unit, integration, API, SQL, regression, and manual verification.
 13. Delivery reports can run `evidence_check.py` before handoff or push when evidence quality matters.

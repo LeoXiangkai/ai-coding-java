@@ -22,14 +22,14 @@ Harness 负责：
 6. 提供模板刷新 dry-run、交付证据检查和轻量项目画像。
 7. 保持 Codex / Claude Code 入口一致。
 
-Harness 边界：
+协作边界：
 
-1. 全局 `$skill` 发现、模型选择或运行时编排。
-2. 替代业务项目自己的架构、权限、数据边界和发布规则。
-3. 自动修改业务代码。
-4. 强制生成所有研发过程产物。
-5. 采集上报、评分平台或外部治理平台绑定。
-6. 生产部署、数据库变更执行或远程平台发布。
+1. 全局 `$skill` 发现、模型选择和运行时编排由 Codex、Claude Code 或 OMX 负责。
+2. 业务项目自己的架构、权限、数据边界和发布规则由目标项目负责。
+3. 业务代码修改由具体开发任务按项目规则执行，Harness 只注入辅助规则、模板和检查脚本。
+4. 研发过程产物按需生成，小任务继续走轻量规则路由。
+5. 采集上报、评分平台和外部治理平台对接由目标项目或外部平台负责。
+6. 生产部署、数据库变更执行和远程平台发布由目标项目发布机制负责。
 
 ## 能力矩阵
 
@@ -52,7 +52,7 @@ Harness 边界：
 | 安全刷新 | 已落地 | `scripts/refresh_target_project.py --list-extra` | 默认 dry-run，比对缺失、差异和目标侧额外文件，`--apply` 才复制 |
 | 轻量项目画像 | 已落地 | `scripts/generate_project_map.py` | 只读扫描 Controller、Service、Mapper、配置和定时任务信号 |
 | 结构化画像 | 后续增强 | `project-profile.md` | 当前是稳定文本和 Markdown 画像，后续再考虑 JSON |
-| 采集上报 | 范围外 | 无 | 由外部平台或目标项目自行负责，保持个人轻量组件定位 |
+| 外部治理对接 | 边界清晰 | 目标项目 / 外部平台 | 平台接入由目标项目按需完成，组件保留本地轻量检查 |
 
 ## 初始化模式
 
@@ -93,7 +93,7 @@ python3 .ai-coding-java/scripts/check_target_project.py .
 
 1. `.ai-coding-java/` 关键文件是否存在。
 2. 根 `AGENTS.md` 和 `CLAUDE.md` 是否包含 marker 并指向 `rule-index.md`。
-3. `project-profile.md` 是否仍有未确认的关键字段。
+3. `project-profile.md` 必需字段是否完整，推荐字段是否仍需补充。
 4. Git hooks 是否安装。
 5. 设计门、TDD 分级、测试计划、复杂需求模板和交付模板是否存在。
 
@@ -150,7 +150,7 @@ python3 .ai-coding-java/scripts/generate_project_map.py .
 
 1. 根 `AGENTS.md` 能把 Codex 路由到 `.ai-coding-java/docs/rule-index.md`。
 2. 根 `CLAUDE.md` 能把 Claude Code 路由到同一规则入口，或明确委托读取 `AGENTS.md`。
-3. `project-profile.md` 已确认技术栈、验证等级、数据边界、构建/测试/启动命令或缺失原因。
+3. `project-profile.md` 已确认技术栈、验证等级、数据边界和 Hook 模式；推荐字段按项目阶段补齐或说明不适用。
 4. Git 仓库已安装 hooks，非 Git 目录明确跳过。
 5. 小任务可通过 `rule-index` 快速命中专项规则。
 6. 复杂需求可按需使用 `artifacts/<work-id>/` 产物模板，并用 `design-brief.md` 证明新项目宏观/微观设计或二开模块/影响设计完整。
