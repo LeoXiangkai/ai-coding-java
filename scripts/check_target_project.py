@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 REQUIRED_FILES = [
     ".ai-coding-java/docs/rule-index.md",
     ".ai-coding-java/docs/verification-matrix.md",
+    ".ai-coding-java/docs/testing-workflow.md",
     ".ai-coding-java/docs/project-harness.md",
     ".ai-coding-java/docs/runtime-skill-boundary.md",
     ".ai-coding-java/workflow/agent-workflow.md",
@@ -17,6 +18,7 @@ REQUIRED_FILES = [
     ".ai-coding-java/templates/requirement-brief-template.md",
     ".ai-coding-java/templates/requirements-checklist-template.md",
     ".ai-coding-java/templates/design-brief-template.md",
+    ".ai-coding-java/templates/test-plan-template.md",
     ".ai-coding-java/templates/test-case-brief-template.md",
     ".ai-coding-java/templates/release-impact-template.md",
     ".ai-coding-java/templates/handoff-template.md",

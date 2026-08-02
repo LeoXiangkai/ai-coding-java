@@ -25,7 +25,7 @@ Requirement -> Design -> Task/Test -> Implement -> Verify/Review -> Release -> K
 |---|---|---|---|
 | Requirement | 澄清做什么、为什么做、验收标准是什么 | 需求简报 | `.ai-coding-java/artifacts/<work-id>/requirement-brief.md` |
 | Design | 确认影响面、数据边界、接口和技术取舍 | 设计简报 | `.ai-coding-java/artifacts/<work-id>/design-brief.md` |
-| Task/Test | 拆任务并前置测试/验收用例 | 测试用例简表、复杂需求 checklist | `.ai-coding-java/artifacts/<work-id>/test-case-brief.md` |
+| Task/Test | 拆任务并前置测试/验收用例 | 测试计划、测试用例简表、复杂需求 checklist | `.ai-coding-java/artifacts/<work-id>/test-plan.md`、`test-case-brief.md` |
 | Implement | 按既有分层和规则实现 | 代码 diff | 业务代码目录 |
 | Verify/Review | 证明行为正确并暴露风险 | 验证证据、Review 结论 | 交付报告或 `.ai-coding-java/artifacts/<work-id>/` |
 | Release | 说明发布影响、回滚和验收证据 | 发布影响说明 | `.ai-coding-java/artifacts/<work-id>/release-impact.md` |
@@ -56,7 +56,7 @@ Requirement -> Design -> Task/Test -> Implement -> Verify/Review -> Release -> K
 
 ### Task/Test
 
-任务要能独立验证。测试用例优先从验收标准派生，至少覆盖：
+任务要能独立验证。测试 workflow 见 `docs/testing-workflow.md`。测试用例优先从验收标准派生，至少覆盖：
 
 1. 正常路径。
 2. 边界条件。
@@ -65,6 +65,8 @@ Requirement -> Design -> Task/Test -> Implement -> Verify/Review -> Release -> K
 5. 回归场景。
 
 复杂需求可使用 `templates/requirements-checklist-template.md`，用来确认验收标准、非目标、数据边界、权限、兼容性和发布影响是否清楚。Checklist 是前置澄清工具，不是小任务的默认阻塞门禁。
+
+复杂需求或高风险变更建议先使用 `templates/test-plan-template.md`，把需求验收、单元测试、集成测试、API/curl、SQL/数据验证、回归测试和人工验收串成一条证据链。测试计划不是形式文档；它用于防止开发后再临时补验证。
 
 ### Implement
 

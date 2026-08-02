@@ -9,6 +9,7 @@ KNOWN_FILES = {
     "requirements-checklist.md": ["Scope Clarity", "Acceptance", "Enterprise Java Risk", "Verification"],
     "requirement-brief.md": ["Background", "Goal", "Non-goals", "Acceptance Criteria", "Data Boundary", "Dependencies"],
     "design-brief.md": ["Scope", "Impact", "Data And Transaction Design", "SQL And Performance", "Rollback Or Fallback"],
+    "test-plan.md": ["Source", "Requirement Coverage", "Test Layers", "Test Data", "Commands", "Risk-Based Coverage", "Not Covered"],
     "test-case-brief.md": ["Source", "Test Scope", "Cases", "Automation Plan", "Not Covered"],
     "release-impact.md": ["Change Summary", "Deployment Impact", "Verification Evidence", "Rollback", "Not-tested"],
     "handoff.md": ["Current Objective", "Completed", "Verification", "Open Risks", "Not Tested", "Next Step"],
@@ -142,18 +143,20 @@ def main() -> int:
     elif distinct_ids:
         ok(f"consistent Work ID {next(iter(distinct_ids))}")
 
-    test_text = texts.get("test-case-brief.md", "")
-    if test_text:
+    for filename in ["test-plan.md", "test-case-brief.md"]:
+        test_text = texts.get(filename, "")
+        if not test_text:
+            continue
         for label, expected in [("Requirement brief:", "requirement-brief.md"), ("Design brief:", "design-brief.md")]:
             value = file_reference_value(test_text, label)
             if not value:
-                warn(f"test-case-brief.md missing source reference {label}")
+                warn(f"{filename} missing source reference {label}")
                 warned += 1
             elif expected not in value:
-                warn(f"test-case-brief.md source {label} does not reference {expected}")
+                warn(f"{filename} source {label} does not reference {expected}")
                 warned += 1
             else:
-                ok(f"test-case-brief.md source {label}")
+                ok(f"{filename} source {label}")
 
     release_text = texts.get("release-impact.md", "")
     if release_text and "Verification Evidence" in release_text and not has_meaningful_section(release_text, "Verification Evidence"):

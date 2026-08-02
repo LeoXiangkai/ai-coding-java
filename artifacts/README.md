@@ -9,6 +9,7 @@
   requirements-checklist.md
   requirement-brief.md
   design-brief.md
+  test-plan.md
   test-case-brief.md
   release-impact.md
   handoff.md

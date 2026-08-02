@@ -42,6 +42,7 @@ Harness 边界：
 | 按需路由 | 已落地 | `docs/rule-index.md` | 小任务只加载命中文件 |
 | 轻量保护 | 已落地 | `hooks/pre-commit`、`hooks/pre-push` | 默认 warn，P0 commit 风险可阻断 |
 | 复杂需求留痕 | 已落地 | `artifacts/`、`templates/` | 按需使用，不默认门禁 |
+| 产研测测试验证 workflow | 已落地 | `docs/testing-workflow.md`、`templates/test-plan-template.md` | 编码前映射验收标准，编码中同步测试，交付前核验证据 |
 | 目标项目检查 | 已落地 | `scripts/check_target_project.py` | 只读检查注入完整性和关键缺口 |
 | Doctor 报告 | 已落地 | `check_target_project.py --report markdown/json` | 输出可评审的目标接入检查记录 |
 | 产物一致性检查 | 已落地 | `scripts/artifact_consistency_check.py` | 只读检查复杂需求过程产物是否互相追溯 |
@@ -93,7 +94,7 @@ python3 .ai-coding-java/scripts/check_target_project.py .
 2. 根 `AGENTS.md` 和 `CLAUDE.md` 是否包含 marker 并指向 `rule-index.md`。
 3. `project-profile.md` 是否仍有未确认的关键字段。
 4. Git hooks 是否安装。
-5. 复杂需求模板和交付模板是否存在。
+5. 测试计划、复杂需求模板和交付模板是否存在。
 
 检查脚本只读，不修改目标项目。失败项用于提示补全，不代表业务代码不可开发。
 
@@ -112,7 +113,7 @@ python3 .ai-coding-java/scripts/check_target_project.py . --report json
 python3 .ai-coding-java/scripts/artifact_consistency_check.py .ai-coding-java/artifacts/<work-id>
 ```
 
-该检查确认需求、设计、测试、发布影响和交接文件是否存在关键章节、Work ID 是否一致、测试是否引用需求和设计。它只读报告缺口，不强制小任务生成产物。
+该检查确认需求、设计、测试计划、测试用例、发布影响和交接文件是否存在关键章节、Work ID 是否一致、测试是否引用需求和设计。它只读报告缺口，不强制小任务生成产物。
 
 交付证据检查：
 
@@ -151,6 +152,6 @@ python3 .ai-coding-java/scripts/generate_project_map.py .
 3. `project-profile.md` 已确认技术栈、验证等级、数据边界、构建/测试/启动命令或缺失原因。
 4. Git 仓库已安装 hooks，非 Git 目录明确跳过。
 5. 小任务可通过 `rule-index` 快速命中专项规则。
-6. 复杂需求可按需使用 `artifacts/<work-id>/` 产物模板。
+6. 复杂需求可按需使用 `artifacts/<work-id>/` 产物模板，并用 `test-plan.md` 建立验收标准到测试证据的映射。
 7. 存量项目可生成 `project-map.md` 辅助代码定位。
 8. 需要交付证据门禁时可运行 `evidence_check.py`。

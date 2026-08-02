@@ -9,6 +9,8 @@ Project profile: `.ai-coding-java/project-profile.md`
 
 Global runtime skills remain owned by Codex, Claude Code, or OMX. ai-coding-java provides project-side Java rules, verification, review, and delivery templates.
 
+For behavior changes, use `.ai-coding-java/docs/testing-workflow.md` to map acceptance criteria to unit, integration, API, SQL, regression, or manual verification.
+
 Loading order:
 
 1. This `AGENTS.md`

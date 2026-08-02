@@ -30,8 +30,9 @@ If Codex invocation fails from Claude Code, first check the local environment an
 3. Use `docs/rule-index.md` for lightweight rule routing.
 4. Use `docs/project-onboarding-template.md` when initializing a target Java project.
 5. Use `docs/verification-matrix.md` before claiming behavior is verified.
-6. Use `docs/review-output-template.md` for review results.
-7. Use `rules/`, `workflow/`, and `templates/` as the concrete template package.
+6. Use `docs/testing-workflow.md` for requirement testing, code testing, API/SQL verification, and delivery evidence mapping.
+7. Use `docs/review-output-template.md` for review results.
+8. Use `rules/`, `workflow/`, and `templates/` as the concrete template package.
 
 For future project initialization, use `$setup-ai-coding`. Treat `$setup-cc` as a legacy alias only.
 
@@ -42,6 +43,7 @@ For future project initialization, use `$setup-ai-coding`. Treat `$setup-cc` as 
 3. `AGENTS.md` and `CLAUDE.md` should stay compact and aligned.
 4. Do not add generated logs or runtime state to versioned source.
 5. Do not write secrets.
+6. Implement the real requested capability fully; do not replace it with a narrower workaround or temporary validation script.
 
 ## Verification
 

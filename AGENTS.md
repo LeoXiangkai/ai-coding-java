@@ -44,8 +44,9 @@ Python usage follows the workspace rule: use the machine global Python only. Do 
 4. Do not write plaintext secrets, internal credentials, or full sensitive logs.
 5. For project onboarding behavior, keep Codex and Claude Code entry points aligned.
 6. For Java rules, treat `docs/rule-index.md` as the first lightweight routing file and load only matched `rules/`, `workflow/`, or `templates/` files.
-7. Treat skill discovery and `$skill` invocation as global runtime behavior; this component owns only project-side Java rules, verification, review, and delivery templates.
+7. Treat skill discovery and `$skill` invocation as global runtime behavior; this component owns only project-side Java rules, testing workflow, verification, review, and delivery templates.
 8. Keep the default hook scope lightweight: staged-file P0 scanning at commit time, personal branch and verification-command prechecks at push time.
+9. Implement the real target shape fully; do not choose a smaller substitute or add temporary script fallbacks when a tested component capability is required.
 
 ## Verification
 
@@ -62,20 +63,7 @@ Also run targeted checks when relevant:
 rg -n "v1\\.0|reference-baseline|TODO|FIXME" README.md AGENTS.md CLAUDE.md TOOL.md USAGE.md docs rules workflow templates scripts
 ```
 
-For target-project initialization script changes, also run a temporary-directory dry integration:
-
-```bash
-tmpdir=$(mktemp -d)
-python3 scripts/init_target_project.py "$tmpdir" --project-type legacy
-python3 scripts/template_integrity_check.py
-```
-
-For static review script changes, run:
-
-```bash
-python3 scripts/static_review_check.py examples/static-review-good
-python3 scripts/static_review_check.py examples/static-review-bad
-```
+For target-project initialization script changes, also run a temporary-directory dry integration or the focused target script checks described in the touched document.
 
 For knowledge extraction changes, run:
 

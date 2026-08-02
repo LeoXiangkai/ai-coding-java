@@ -81,12 +81,13 @@ python3 /path/to/ai-coding-java/scripts/refresh_target_project.py . --list-extra
 2. Target `CLAUDE.md` points to `.ai-coding-java/docs/rule-index.md`, or explicitly delegates to `AGENTS.md`.
 3. Project profile records technology stack, verification level, data boundary, and template policy.
 4. Codex and Claude Code can route Controller, Service, Mapper SQL, security/logging, and review tasks to matched files.
-5. Delivery reports include verification evidence and `Not-tested` when needed.
+5. Delivery reports include test and verification evidence, with `Not-tested` when needed.
 6. Reusable sanitized knowledge entries are available under `.ai-coding-java/knowledge/` and loaded only when matched.
 7. Target-safe helper scripts live under `.ai-coding-java/scripts/`; no helper script should be written to the target business root by default.
 8. Lightweight RD process records, when useful, live under `.ai-coding-java/artifacts/<work-id>/` and are not generated as a mandatory gate.
 9. Git targets get auto-installed local `pre-commit` and `pre-push` wrappers in the repository hook directory.
 10. `check_target_project.py` reports zero failures. Warnings are acceptable only when they reflect deliberate local policy, such as missing build/test commands during early onboarding.
 11. Complex tasks can run `artifact_consistency_check.py` against `.ai-coding-java/artifacts/<work-id>` before review or release.
-12. Delivery reports can run `evidence_check.py` before handoff or push when evidence quality matters.
-13. Existing targets can run `refresh_target_project.py` in dry-run mode before applying template updates.
+12. Complex tasks can use `testing-workflow.md` and `test-plan-template.md` to map requirements to unit, integration, API, SQL, regression, and manual verification.
+13. Delivery reports can run `evidence_check.py` before handoff or push when evidence quality matters.
+14. Existing targets can run `refresh_target_project.py` in dry-run mode before applying template updates.

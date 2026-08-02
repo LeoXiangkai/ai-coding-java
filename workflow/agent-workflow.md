@@ -5,7 +5,7 @@ This workflow keeps AI Coding lightweight and evidence-based.
 ## Default Flow
 
 ```text
-Intake -> Scope -> Context Load -> Impact Analysis -> Implement -> Verify -> Review -> Report
+Intake -> Scope -> Context Load -> Impact Analysis -> Test Plan -> Implement -> Verify -> Review -> Report
 ```
 
 Small tasks may compress steps, but must still report verification and risk.
@@ -40,6 +40,11 @@ Runtime skills such as planning, TDD, review, release, commit, or deployment are
 3. Add no unrequested dependencies.
 4. Preserve unrelated user changes.
 5. Write no secrets.
+6. Implement the real target capability, including tests and integration points. Do not reduce scope to an easier fallback when the requested function is clear.
+
+## Test Plan
+
+Before or during implementation, use `docs/testing-workflow.md` when the change affects business behavior. Map acceptance criteria to unit, integration, API, SQL, regression, or manual verification before claiming the work is ready.
 
 ## Drift And Churn
 
