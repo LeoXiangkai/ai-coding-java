@@ -35,20 +35,20 @@ Harness 边界：
 
 | 能力 | 状态 | 当前入口 | 说明 |
 |---|---|---|---|
-| 新项目初始化 | 已支持 | `scripts/init_target_project.py --project-type new` | 注入 `.ai-coding-java/` 和根入口 marker |
-| 存量项目注入 | 已支持 | `scripts/init_target_project.py --project-type legacy` | 默认保留已有文件，除 marker block 外不改业务代码 |
-| 技术栈确认 | 已支持 | `--stack`、`project-profile.md` | 由初始化参数或人工补全确认 |
-| 规则识别 | 已支持 | `AGENTS.md` / `CLAUDE.md` marker | 指向 `.ai-coding-java/docs/rule-index.md` |
-| 按需路由 | 已支持 | `docs/rule-index.md` | 小任务只加载命中文件 |
-| 轻量保护 | 已支持 | `hooks/pre-commit`、`hooks/pre-push` | 默认 warn，P0 commit 风险可阻断 |
-| 复杂需求留痕 | 已支持 | `artifacts/`、`templates/` | 按需使用，不默认门禁 |
-| 目标项目检查 | 已支持 | `scripts/check_target_project.py` | 只读检查注入完整性和关键缺口 |
-| Doctor 报告 | 已支持 | `check_target_project.py --report markdown/json` | 输出可评审的目标接入检查记录 |
-| 产物一致性检查 | 已支持 | `scripts/artifact_consistency_check.py` | 只读检查复杂需求过程产物是否互相追溯 |
-| 交付证据检查 | 已支持 | `scripts/evidence_check.py` | 检查 delivery report 是否包含验证命令、结果和 Not-tested |
-| 组件结构检查 | 已支持 | `scripts/structure_check.py` | 检查本组件文件分层和命名风格 |
-| 安全刷新 | 已支持 | `scripts/refresh_target_project.py --list-extra` | 默认 dry-run，比对缺失、差异和目标侧额外文件，`--apply` 才复制 |
-| 轻量项目画像 | 已支持 | `scripts/generate_project_map.py` | 只读扫描 Controller、Service、Mapper、配置和定时任务信号 |
+| 新项目初始化 | 已落地 | `scripts/init_target_project.py --project-type new` | 注入 `.ai-coding-java/` 和根入口 marker |
+| 存量项目注入 | 已落地 | `scripts/init_target_project.py --project-type legacy` | 默认保留已有文件，除 marker block 外不改业务代码 |
+| 技术栈确认 | 已落地 | `--stack`、`project-profile.md` | 由初始化参数或人工补全确认 |
+| 规则识别 | 已落地 | `AGENTS.md` / `CLAUDE.md` marker | 指向 `.ai-coding-java/docs/rule-index.md` |
+| 按需路由 | 已落地 | `docs/rule-index.md` | 小任务只加载命中文件 |
+| 轻量保护 | 已落地 | `hooks/pre-commit`、`hooks/pre-push` | 默认 warn，P0 commit 风险可阻断 |
+| 复杂需求留痕 | 已落地 | `artifacts/`、`templates/` | 按需使用，不默认门禁 |
+| 目标项目检查 | 已落地 | `scripts/check_target_project.py` | 只读检查注入完整性和关键缺口 |
+| Doctor 报告 | 已落地 | `check_target_project.py --report markdown/json` | 输出可评审的目标接入检查记录 |
+| 产物一致性检查 | 已落地 | `scripts/artifact_consistency_check.py` | 只读检查复杂需求过程产物是否互相追溯 |
+| 交付证据检查 | 已落地 | `scripts/evidence_check.py` | 检查 delivery report 是否包含验证命令、结果和 Not-tested |
+| 组件结构检查 | 已落地 | `scripts/structure_check.py` | 检查本组件文件分层和命名风格 |
+| 安全刷新 | 已落地 | `scripts/refresh_target_project.py --list-extra` | 默认 dry-run，比对缺失、差异和目标侧额外文件，`--apply` 才复制 |
+| 轻量项目画像 | 已落地 | `scripts/generate_project_map.py` | 只读扫描 Controller、Service、Mapper、配置和定时任务信号 |
 | 结构化画像 | 后续增强 | `project-profile.md` | 当前是稳定文本和 Markdown 画像，后续再考虑 JSON |
 | 采集上报 | 范围外 | 无 | 由外部平台或目标项目自行负责，保持个人轻量组件定位 |
 

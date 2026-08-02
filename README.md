@@ -61,7 +61,7 @@ python3 scripts/static_review_check.py examples/static-review-good
 
 ## 如何使用
 
-### 1. 维护本组件
+### 1. 维护
 
 修改 `docs/`、`rules/`、`workflow/`、`templates/`、`scripts/` 后，至少运行：
 
@@ -70,13 +70,6 @@ python3 scripts/context_budget_check.py
 python3 scripts/template_integrity_check.py
 python3 scripts/structure_check.py
 python3 scripts/docs_tone_check.py
-```
-
-涉及静态 Review 规则时，再运行：
-
-```bash
-python3 scripts/static_review_check.py examples/static-review-good
-python3 scripts/static_review_check.py examples/static-review-bad
 ```
 
 ### 2. 初始化到目标 Java 项目
@@ -90,28 +83,10 @@ python3 /path/to/ai-coding-java/scripts/init_target_project.py /path/to/target-p
   --data-boundary "school + school_year"
 ```
 
-初始化后检查目标项目接入状态：
+初始化后先运行 doctor：
 
 ```bash
 python3 /path/to/target-project/.ai-coding-java/scripts/check_target_project.py /path/to/target-project
-```
-
-需要留存接入检查报告：
-
-```bash
-python3 /path/to/target-project/.ai-coding-java/scripts/check_target_project.py /path/to/target-project --report markdown
-```
-
-存量项目需要快速生成代码地图：
-
-```bash
-python3 /path/to/target-project/.ai-coding-java/scripts/generate_project_map.py /path/to/target-project
-```
-
-已有目标项目升级模板前先 dry-run：
-
-```bash
-python3 /path/to/ai-coding-java/scripts/refresh_target_project.py /path/to/target-project --list-extra
 ```
 
 ### 3. 目标项目日常开发
@@ -129,34 +104,26 @@ python3 /path/to/ai-coding-java/scripts/refresh_target_project.py /path/to/targe
 复杂需求：补 requirement/design/test/release/handoff 轻量产物 -> 实现 -> 验证 -> Review
 ```
 
-### 4. 复杂需求交付前检查
-
-复杂需求过程产物放在：
-
-```text
-.ai-coding-java/artifacts/<work-id>/
-```
-
-交付前可运行只读一致性检查：
+### 4. 可选辅助检查
 
 ```bash
+# 留存目标接入 doctor 报告
+python3 .ai-coding-java/scripts/check_target_project.py . --report markdown
+
+# 生成存量项目代码地图
+python3 .ai-coding-java/scripts/generate_project_map.py .
+
+# 升级已有目标模板前 dry-run
+python3 /path/to/ai-coding-java/scripts/refresh_target_project.py . --list-extra
+
+# 检查复杂需求过程产物
 python3 .ai-coding-java/scripts/artifact_consistency_check.py .ai-coding-java/artifacts/<work-id>
-```
 
-该检查只提示缺口，不修改业务代码或过程产物。
-
-交付报告可运行证据检查：
-
-```bash
+# 检查交付报告证据
 python3 .ai-coding-java/scripts/evidence_check.py .ai-coding-java/reports/delivery-report.md
 ```
 
-目标项目试注入：
-
-```bash
-python3 scripts/init_target_project.py /path/to/target-project --project-type legacy
-python3 /path/to/target-project/.ai-coding-java/scripts/check_target_project.py /path/to/target-project
-```
+详细接入说明见 [docs/project-integration-guide.md](docs/project-integration-guide.md)。
 
 ## Harness 能力状态
 
