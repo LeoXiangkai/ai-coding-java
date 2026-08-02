@@ -15,6 +15,7 @@ TARGET_SCRIPTS = [
     "install_git_hooks.py",
     "check_target_project.py",
     "artifact_consistency_check.py",
+    "docs_tone_check.py",
 ]
 AGENTS_MARKER_START = "<!-- ai-coding-java:AGENTS:START -->"
 AGENTS_MARKER_END = "<!-- ai-coding-java:AGENTS:END -->"

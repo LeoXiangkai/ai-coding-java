@@ -40,6 +40,7 @@
 4. 轻量辅助：初始化后自动安装 Git `pre-commit` 和 `pre-push` 预检。
 5. 证据交付：能验证的必须验证，不能验证的写入 `Not-tested`。
 6. 研发一体化按需使用：复杂需求可生成轻量过程产物，小任务继续走规则索引。
+7. 表达正向：README 和能力状态只写已落地、边界清晰、后续增强，借鉴内容必须转化为适合当前组件的能力和边界。
 
 ## Skill
 
@@ -53,8 +54,77 @@
 python3 scripts/context_budget_check.py
 python3 scripts/template_integrity_check.py
 python3 scripts/structure_check.py
+python3 scripts/docs_tone_check.py
 python3 scripts/static_review_check.py examples/static-review-good
 ```
+
+## 如何使用
+
+### 1. 维护本组件
+
+修改 `docs/`、`rules/`、`workflow/`、`templates/`、`scripts/` 后，至少运行：
+
+```bash
+python3 scripts/context_budget_check.py
+python3 scripts/template_integrity_check.py
+python3 scripts/structure_check.py
+python3 scripts/docs_tone_check.py
+```
+
+涉及静态 Review 规则时，再运行：
+
+```bash
+python3 scripts/static_review_check.py examples/static-review-good
+python3 scripts/static_review_check.py examples/static-review-bad
+```
+
+### 2. 初始化到目标 Java 项目
+
+```bash
+python3 /path/to/ai-coding-java/scripts/init_target_project.py /path/to/target-project \
+  --project-type legacy \
+  --stack "Java 8 + Spring Boot 2.x + Maven + MyBatis + MySQL + Redis" \
+  --verification-level standard \
+  --template-policy local-auxiliary \
+  --data-boundary "school + school_year"
+```
+
+初始化后检查目标项目接入状态：
+
+```bash
+python3 /path/to/target-project/.ai-coding-java/scripts/check_target_project.py /path/to/target-project
+```
+
+### 3. 目标项目日常开发
+
+目标项目根 `AGENTS.md` 和 `CLAUDE.md` 会指向：
+
+```text
+.ai-coding-java/docs/rule-index.md
+```
+
+日常任务按以下方式使用：
+
+```text
+小任务：读 rule-index -> 命中专项规则 -> 修改代码 -> 按 verification-matrix 验证 -> delivery report
+复杂需求：补 requirement/design/test/release/handoff 轻量产物 -> 实现 -> 验证 -> Review
+```
+
+### 4. 复杂需求交付前检查
+
+复杂需求过程产物放在：
+
+```text
+.ai-coding-java/artifacts/<work-id>/
+```
+
+交付前可运行只读一致性检查：
+
+```bash
+python3 .ai-coding-java/scripts/artifact_consistency_check.py .ai-coding-java/artifacts/<work-id>
+```
+
+该检查只提示缺口，不修改业务代码或过程产物。
 
 目标项目试注入：
 
@@ -66,10 +136,10 @@ python3 /path/to/target-project/.ai-coding-java/scripts/check_target_project.py 
 ## Harness 能力状态
 
 ```text
-已支持：新项目初始化、存量项目注入、技术栈确认、规则识别、按需路由、轻量 Git 保护、复杂需求留痕、目标项目只读检查
-已支持：组件结构命名检查、复杂需求产物一致性只读检查
-部分支持：安全刷新、结构化项目画像
-不支持：业务代码自动修改、全局 skill 编排、采集上报、评分平台、外部发布平台绑定
+已落地：新项目初始化、存量项目注入、技术栈确认、规则识别、按需路由、轻量 Git 保护、复杂需求留痕、目标项目只读检查
+已落地：组件结构命名检查、复杂需求产物一致性只读检查
+边界清晰：业务代码实现、全局 skill 编排、采集上报、评分平台、外部发布平台由项目或运行时负责
+后续增强：安全刷新、结构化项目画像
 ```
 
 ## 当前落地状态
@@ -107,7 +177,9 @@ Phase 8 已补齐 Project Harness 层：
 
 ```text
 docs/project-harness.md          定义初始化、注入、适配、路由、保护、检查的职责边界
+docs/documentation-tone-and-reuse.md 约束首页能力表达和外部借鉴转化方式
 scripts/check_target_project.py  只读检查目标项目注入完整性、入口 marker、profile 和 hooks
+scripts/docs_tone_check.py       检查 README 和文档中的反向能力表达
 scripts/structure_check.py       检查组件自身文件分层和命名风格
 scripts/artifact_consistency_check.py 检查复杂需求过程产物一致性
 ```

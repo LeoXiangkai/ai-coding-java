@@ -56,6 +56,7 @@ P2：记录建议，不阻断。
 | 复杂需求 / 研发一体化 | `docs/rd-integrated-workflow.md`、`templates/requirement-brief-template.md`、`templates/requirements-checklist-template.md`、`templates/design-brief-template.md`、`templates/test-case-brief-template.md`、`templates/handoff-template.md` |
 | 复杂需求产物一致性检查 | `docs/rd-integrated-workflow.md`、`templates/requirement-brief-template.md`、`templates/design-brief-template.md`、`templates/test-case-brief-template.md`、`templates/release-impact-template.md`、`templates/handoff-template.md` |
 | 组件结构 / 文件命名检查 | `docs/structure-and-naming.md`、`docs/project-harness.md` |
+| 文档表达 / 外部借鉴转化检查 | `docs/documentation-tone-and-reuse.md`、`docs/sdd-reference-analysis.md` |
 | 研发一体化规范演进 / 流程取舍 | `docs/sdd-reference-analysis.md`、`docs/rd-integrated-workflow.md`、`docs/runtime-skill-boundary.md` |
 | 发布影响说明 | `templates/release-impact-template.md`、`rules/delivery-rule.md`、`docs/verification-matrix.md` |
 | 运行时技能边界 | `docs/runtime-skill-boundary.md` |

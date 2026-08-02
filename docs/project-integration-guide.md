@@ -35,6 +35,7 @@ The script writes `.ai-coding-java/` in the target project and adds small marker
   scripts/
     check_target_project.py
     artifact_consistency_check.py
+    docs_tone_check.py
     install_git_hooks.py
     static_review_check.py
     extract_knowledge_candidate.py

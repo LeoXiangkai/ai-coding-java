@@ -22,6 +22,7 @@ REQUIRED_FILES = [
     ".ai-coding-java/scripts/install_git_hooks.py",
     ".ai-coding-java/scripts/check_target_project.py",
     ".ai-coding-java/scripts/artifact_consistency_check.py",
+    ".ai-coding-java/scripts/docs_tone_check.py",
     ".ai-coding-java/project-profile.md",
 ]
 
