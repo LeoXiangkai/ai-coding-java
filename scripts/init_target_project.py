@@ -148,6 +148,7 @@ Project profile: `.ai-coding-java/project-profile.md`
 
 Global runtime skills remain owned by Codex, Claude Code, or OMX. ai-coding-java provides project-side Java rules, verification, review, and delivery templates.
 
+For new requirements, complete modules, cross-module changes, legacy behavior changes, or unclear behavior changes, invoke global `$grilling` before design-gated implementation.
 For new projects, complete modules, legacy changes, or unclear behavior changes, pass `.ai-coding-java/docs/design-first-policy.md` before implementation.
 For behavior changes, use `.ai-coding-java/docs/testing-workflow.md` and `.ai-coding-java/docs/tdd-policy.md` to map acceptance criteria to verification layers and choose L0-L3 TDD level.
 
@@ -183,6 +184,7 @@ Project profile: `.ai-coding-java/project-profile.md`
 
 Global runtime skills remain owned by Codex, Claude Code, or OMX. ai-coding-java provides project-side Java rules, verification, review, and delivery templates.
 
+For new requirements, complete modules, cross-module changes, legacy behavior changes, or unclear behavior changes, invoke global `$grilling` before design-gated implementation.
 For new projects, complete modules, legacy changes, or unclear behavior changes, pass `.ai-coding-java/docs/design-first-policy.md` before implementation.
 For behavior changes, use `.ai-coding-java/docs/testing-workflow.md` and `.ai-coding-java/docs/tdd-policy.md` to map acceptance criteria to verification layers and choose L0-L3 TDD level.
 
@@ -214,6 +216,7 @@ def agents_pointer() -> str:
 Use `.ai-coding-java/docs/rule-index.md` as the first ai-coding-java routing file.
 Project profile: `.ai-coding-java/project-profile.md`.
 Global runtime skills remain owned by Codex, Claude Code, or OMX.
+For new requirements, complete modules, cross-module changes, legacy behavior changes, or unclear behavior changes, invoke global `$grilling` before design-gated implementation.
 For new projects, complete modules, legacy changes, or unclear behavior changes, pass `.ai-coding-java/docs/design-first-policy.md` before implementation.
 For behavior changes, use `.ai-coding-java/docs/testing-workflow.md` and `.ai-coding-java/docs/tdd-policy.md` before claiming delivery readiness.
 
@@ -228,6 +231,7 @@ Use `.ai-coding-java/docs/rule-index.md` as the first ai-coding-java routing fil
 Project profile: `.ai-coding-java/project-profile.md`.
 Read `AGENTS.md` for Codex-compatible execution rules when present.
 Use `.ai-coding-java/docs/verification-matrix.md` before claiming completion.
+For new requirements, complete modules, cross-module changes, legacy behavior changes, or unclear behavior changes, invoke global `$grilling` before design-gated implementation.
 For new projects, complete modules, legacy changes, or unclear behavior changes, pass `.ai-coding-java/docs/design-first-policy.md` before implementation.
 For behavior changes, use `.ai-coding-java/docs/testing-workflow.md` and `.ai-coding-java/docs/tdd-policy.md` before claiming delivery readiness.
 Global runtime skills remain owned by Codex, Claude Code, or OMX.
@@ -278,11 +282,12 @@ def main() -> int:
     print("5. Run .ai-coding-java/scripts/check_target_project.py . to verify target harness wiring.")
     print("6. Run .ai-coding-java/scripts/generate_project_map.py . when target code navigation is needed.")
     print("7. Use .ai-coding-java/artifacts/<work-id>/ only when RD process records are useful.")
-    print("8. Use .ai-coding-java/docs/design-first-policy.md before new projects, complete modules, legacy changes, or unclear behavior changes.")
-    print("9. Use .ai-coding-java/docs/testing-workflow.md, docs/tdd-policy.md, and templates/test-plan-template.md for behavior changes.")
-    print("10. Run .ai-coding-java/scripts/artifact_consistency_check.py .ai-coding-java/artifacts/<work-id> for complex tasks.")
-    print("11. Run .ai-coding-java/scripts/evidence_check.py <delivery-report.md> before delivery when evidence quality matters.")
-    print("12. Decide whether .ai-coding-java/ stays local-only or is committed.")
+    print("8. Invoke global $grilling before new requirements, complete modules, legacy behavior changes, or unclear behavior changes.")
+    print("9. Use .ai-coding-java/docs/design-first-policy.md before new projects, complete modules, legacy changes, or unclear behavior changes.")
+    print("10. Use .ai-coding-java/docs/testing-workflow.md, docs/tdd-policy.md, and templates/test-plan-template.md for behavior changes.")
+    print("11. Run .ai-coding-java/scripts/artifact_consistency_check.py .ai-coding-java/artifacts/<work-id> for complex tasks.")
+    print("12. Run .ai-coding-java/scripts/evidence_check.py <delivery-report.md> before delivery when evidence quality matters.")
+    print("13. Decide whether .ai-coding-java/ stays local-only or is committed.")
     return 0
 
 

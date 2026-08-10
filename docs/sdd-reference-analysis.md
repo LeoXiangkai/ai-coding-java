@@ -152,10 +152,10 @@ Intake -> Scope -> Context -> Impact -> Implement -> Verify -> Review -> Report
 复杂需求可扩展为：
 
 ```text
-Requirement -> Domain/Type -> Design -> Architecture Review -> Plan/Test -> Implement -> Verify/Review -> Release -> Knowledge
+Requirement Grilling -> Requirement -> Domain/Type -> Design -> Architecture Review -> Plan/Test -> Implement -> Verify/Review -> Release -> Knowledge
 ```
 
-新增模板只在复杂度、风险或协作成本足够高时启用。小需求不要求生成过程产物，避免把 `ai-coding-java` 变成冗长流程框架。
+新需求、完整模块或不清晰行为变更先通过全局 `$grilling` 做需求拷问；新增模板只在复杂度、风险或协作成本足够高时启用。小需求不要求生成过程产物，避免把 `ai-coding-java` 变成冗长流程框架。
 
 ## 参考链接
 

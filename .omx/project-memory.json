@@ -53,7 +53,8 @@
         "Remote hosting is source-host neutral; use origin for GitHub and gitee for Gitee when mirroring is configured.",
         "Target project generated support files should stay under .ai-coding-java/ by default; only reviewed AGENTS.md and CLAUDE.md snippets should touch the target root.",
         "Codex recognizes target rules through AGENTS.md; Claude Code recognizes target rules through CLAUDE.md or an explicit CLAUDE-to-AGENTS delegation.",
-        "The repository carries setup-ai-coding as a versioned skill source; global skill entries should symlink to skills/setup-ai-coding/ to avoid duplicate maintenance."
+        "The repository carries setup-ai-coding as a versioned skill source; global skill entries should symlink to skills/setup-ai-coding/ to avoid duplicate maintenance.",
+        "New requirements, complete modules, legacy behavior changes, and unclear behavior changes should invoke global $grilling before design-gated implementation."
     ],
   "directives": [
     "Keep AGENTS.md and CLAUDE.md compact and aligned.",

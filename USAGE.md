@@ -89,6 +89,8 @@ When a task needs RD process records, put them under:
 
 Use `docs/rd-integrated-workflow.md` and the brief templates only for complex requirements, risky refactors, release-sensitive changes, or work that needs traceability. Do not turn artifacts into a mandatory hook or gate by default.
 
+For new requirements, complete modules, legacy behavior changes, or unclear behavior changes, invoke global `$grilling` before design-gated implementation.
+
 ## Minimal Target `AGENTS.md` Pointer
 
 ```markdown
@@ -103,6 +105,8 @@ Load only matching rules:
 - Security or logging: security-logging + review
 
 Project business rules, data isolation, environment commands, and API contracts in this `AGENTS.md` override generic ai-coding-java suggestions.
+
+For new requirements, complete modules, legacy behavior changes, or unclear behavior changes, invoke global `$grilling` before design-gated implementation.
 ```
 
 ## Minimal Target `CLAUDE.md` Pointer
@@ -114,6 +118,7 @@ Use `.ai-coding-java/docs/rule-index.md` as the first ai-coding-java routing fil
 
 Read the nearest `AGENTS.md` for Codex-compatible project execution rules when present.
 Use `.ai-coding-java/docs/verification-matrix.md` before claiming completion.
+For new requirements, complete modules, legacy behavior changes, or unclear behavior changes, invoke global `$grilling` before design-gated implementation.
 ```
 
 ## Agent Loading Order

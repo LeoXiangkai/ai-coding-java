@@ -5,10 +5,10 @@ This workflow keeps AI Coding lightweight and evidence-based.
 ## Default Flow
 
 ```text
-Intake -> Scope -> Context Load -> Design Gate -> Impact Analysis -> Test Plan -> Implement -> Verify -> Review -> Report
+Intake -> Requirement Grilling -> Scope -> Context Load -> Design Gate -> Impact Analysis -> Test Plan -> Implement -> Verify -> Review -> Report
 ```
 
-Small tasks may compress steps, but must still report verification and risk.
+Small tasks may compress steps, but must still report verification and risk. New requirements, complete modules, cross-module changes, legacy behavior changes, and unclear behavior changes must not skip Requirement Grilling before implementation.
 
 ## Intake
 
@@ -19,6 +19,22 @@ Identify:
 3. Interfaces, tables, data boundaries, external systems, jobs, async flows, files, and caches.
 4. Verification level: lightweight, standard, strict.
 5. Whether the task needs lightweight RD artifacts under `.ai-coding-java/artifacts/<work-id>/`.
+
+## Requirement Grilling
+
+Before developing a new requirement, invoke global `$grilling` after initial intake and before design-gated implementation.
+
+Use it when the task is a new feature, complete module, cross-page/cross-interface/cross-table change, legacy behavior change, or any request whose goal, non-goal, acceptance criteria, impact boundary, or release risk is not already explicit.
+
+The grilling round must settle enough decisions to state:
+
+1. target outcome and non-goals;
+2. user-visible acceptance criteria;
+3. affected and forbidden modules;
+4. data, permission, compatibility, external-system, and release constraints;
+5. open decisions that block design or implementation.
+
+Skip only for documentation-only edits, wording/comment/style changes, no-behavior config changes, clearly bounded small bugfixes with existing evidence, pure analysis, or Review-only tasks.
 
 ## OPC Default
 

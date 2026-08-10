@@ -9,12 +9,13 @@
 1. 组件维护入口：`AGENTS.md`、`CLAUDE.md`
 2. 目标项目规则入口：`docs/rule-index.md`
 3. 执行主流程：`workflow/agent-workflow.md`
-4. 编码前设计门：`docs/design-first-policy.md`
-5. 测试与 TDD：`docs/testing-workflow.md`、`docs/tdd-policy.md`
-6. 最低验证：`docs/verification-matrix.md`
-7. 复杂需求链路：`docs/rd-integrated-workflow.md`
-8. 接入与能力边界：`docs/project-integration-guide.md`、`docs/project-harness.md`
-9. 可安装 skill 源：`skills/setup-ai-coding/SKILL.md`
+4. 新需求前置拷问：全局 `$grilling`
+5. 编码前设计门：`docs/design-first-policy.md`
+6. 测试与 TDD：`docs/testing-workflow.md`、`docs/tdd-policy.md`
+7. 最低验证：`docs/verification-matrix.md`
+8. 复杂需求链路：`docs/rd-integrated-workflow.md`
+9. 接入与能力边界：`docs/project-integration-guide.md`、`docs/project-harness.md`
+10. 可安装 skill 源：`skills/setup-ai-coding/SKILL.md`
 
 ## 使用方式
 
@@ -50,7 +51,8 @@ Java 项目且尚未接入，它会继续调用本组件的 `scripts/init_target
 
 ```text
 小任务：AGENTS/CLAUDE -> rule-index -> 命中规则 -> 实现 -> verification-matrix -> delivery report
-复杂需求：Requirement -> Domain/Type -> Design -> Architecture Review -> Plan/Test -> Implement -> Verify/Review -> Release
+新需求：Intake -> $grilling -> Design Gate -> Test Plan -> Implement -> Verify/Review -> Report
+复杂需求：Requirement Grilling -> Requirement -> Domain/Type -> Design -> Architecture Review -> Plan/Test -> Implement -> Verify/Review -> Release
 ```
 
 ## OPC 模式
@@ -58,7 +60,7 @@ Java 项目且尚未接入，它会继续调用本组件的 `scripts/init_target
 OPC 指个人主导的快速交付模式。默认策略是轻量、可验证、不中断节奏：
 
 1. 小任务不生成完整研发产物，但必须说明影响和验证。
-2. 新项目、完整模块、二开改造和影响不清的行为变更必须先过设计门。
+2. 新需求、完整模块、二开改造和影响不清的行为变更必须先用全局 `$grilling` 完成需求拷问，再过设计门。
 3. 高风险业务点按 TDD L2/L3 执行；普通任务用测试计划或验证清单即可。
 4. Git hooks 默认 warn，P0 确定性问题在 commit 前拦截。
 5. 无法验证的内容写入 `Not-tested`，不包装成已验证。

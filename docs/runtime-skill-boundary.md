@@ -18,6 +18,7 @@
 全局运行时识别任务和可用技能
 -> 读取项目根 AGENTS.md / CLAUDE.md
 -> 进入 .ai-coding-java/docs/rule-index.md
+-> 对新需求、完整模块或不清晰行为变更先执行 $grilling 需求拷问
 -> 读取 workflow/agent-workflow.md 和命中的专项规则
 -> 修改代码
 -> 按 docs/verification-matrix.md 验证
@@ -25,6 +26,12 @@
 ```
 
 全局运行时可以按自身规则加载规划、TDD、Review、提测、提交等技能；项目侧继续使用 ai-coding-java 的设计门、规则、TDD 分级和验证矩阵。
+
+Grilling 边界：
+
+1. 新功能、完整模块、跨模块需求、二开行为改造或需求边界不清时，进入设计门和实现前必须先调用全局 `$grilling`，用轮次问题确认目标、非目标、验收标准、影响范围和阻塞歧义。
+2. 文案、注释、无行为配置、小范围明确 bugfix、纯分析或 Review 可跳过 `$grilling`，但仍要按项目规则说明范围和验证。
+3. `$grilling` 的技能发现、问题轮次和用户确认由全局运行时负责；ai-coding-java 只规定它在 Java 新需求流程中的前置位置。
 
 TDD 边界：
 

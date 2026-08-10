@@ -24,7 +24,7 @@ v1.1 定位：
 5. P0 规则用于阻断明显高风险交付；P1/P2 主要用于 Review 和交付报告，不把日常开发拖成长流程。
 6. 需求测试和代码测试必须进入开发 workflow。清楚的功能目标不能降级成临时脚本、窄实现或后续再补。
 7. 高风险业务变更必须按 `docs/tdd-policy.md` 声明 TDD 等级；核心规则、bugfix、库存、金额、权限、数据隔离和幂等变更按 L2/L3 保留测试优先或 RED/GREEN 证据。
-8. 新项目、完整模块和二开改造必须先完成 `docs/design-first-policy.md` 的设计门；设计不完整时先补宏观/微观设计或模块/影响设计，不直接编码。
+8. 新需求、完整模块、二开改造和不清晰行为变更必须先通过全局 `$grilling` 完成需求拷问，再进入 `docs/design-first-policy.md` 的设计门；设计不完整时先补宏观/微观设计或模块/影响设计，不直接编码。
 
 ## 2. 规范分层
 
@@ -1002,12 +1002,13 @@ ai-coding-java 当前提供：
 1. 目标项目初始化和 Codex / Claude Code 入口 marker。
 2. `docs/rule-index.md` 轻量规则路由。
 3. Java / SQL / 事务 / 安全 / 交付 / Review 规则。
-4. `docs/design-first-policy.md` 编码前设计门。
-5. `docs/testing-workflow.md`、`docs/tdd-policy.md` 和 `docs/verification-matrix.md` 测试验证闭环。
-6. 复杂需求按需产物：Requirement -> Domain/Type -> Design -> Architecture Review -> Plan/Test -> Implement -> Verify/Review -> Release -> Knowledge。
-7. 轻量 Git hooks、目标项目 doctor、交付证据检查、静态 Review 和项目画像。
+4. 全局 `$grilling` 新需求前置拷问。
+5. `docs/design-first-policy.md` 编码前设计门。
+6. `docs/testing-workflow.md`、`docs/tdd-policy.md` 和 `docs/verification-matrix.md` 测试验证闭环。
+7. 复杂需求按需产物：Requirement Grilling -> Requirement -> Domain/Type -> Design -> Architecture Review -> Plan/Test -> Implement -> Verify/Review -> Release -> Knowledge。
+8. 轻量 Git hooks、目标项目 doctor、交付证据检查、静态 Review 和项目画像。
 
-OPC 默认保持短流程；只有新项目、完整模块、二开改造、影响不清或高风险变更才启用完整设计和研发产物。
+OPC 默认保持短流程；只有新需求、新项目、完整模块、二开改造、影响不清或高风险变更才启用 `$grilling`、完整设计和研发产物。
 
 ## 20. 总结
 

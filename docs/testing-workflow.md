@@ -45,7 +45,7 @@ Requirement acceptance -> Test plan -> Code and tests -> Integration/API/SQL ver
 
 ## 开发前
 
-开始实现前，Agent 先判断当前任务是否属于 `docs/design-first-policy.md` 的设计门范围；属于设计门范围的任务先补设计，再判断测试形态：
+开始实现前，Agent 先判断当前任务是否属于新需求、完整模块、二开行为改造或不清晰行为变更；命中时先调用全局 `$grilling` 确认需求边界。然后判断是否属于 `docs/design-first-policy.md` 的设计门范围；属于设计门范围的任务先补设计，再判断测试形态：
 
 1. 需求是否有可验证的 Given/When/Then 或等价验收清单。
 2. 每条验收标准应落到需求测试、单元测试、集成测试、API、SQL、回归或人工验收中的哪一类。

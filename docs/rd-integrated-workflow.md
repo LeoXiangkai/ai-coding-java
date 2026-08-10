@@ -18,11 +18,12 @@
 ## 轻量阶段
 
 ```text
-Requirement -> Domain/Type -> Design -> Architecture Review -> Plan/Test -> Implement -> Verify/Review -> Release -> Knowledge
+Requirement Grilling -> Requirement -> Domain/Type -> Design -> Architecture Review -> Plan/Test -> Implement -> Verify/Review -> Release -> Knowledge
 ```
 
 | 阶段 | 目标 | 推荐产物 | 位置 |
 |---|---|---|---|
+| Requirement Grilling | 用 `$grilling` 压测目标、非目标、验收标准、影响范围和阻塞歧义 | 用户确认的问答结论或需求简报补充 | 任务记录、需求简报或 `.ai-coding-java/artifacts/<work-id>/requirement-brief.md` |
 | Requirement | 澄清做什么、为什么做、验收标准是什么 | 需求简报 | `.ai-coding-java/artifacts/<work-id>/requirement-brief.md` |
 | Domain/Type | 探索领域对象、状态、操作、约束和边界 | 类型系统/领域模型说明 | `.ai-coding-java/artifacts/<work-id>/domain-type-model.md` |
 | Design | 确认新项目宏观/微观设计，或二开项目模块和影响设计 | 设计简报 | `.ai-coding-java/artifacts/<work-id>/design-brief.md` |
@@ -46,6 +47,8 @@ Requirement -> Domain/Type -> Design -> Architecture Review -> Plan/Test -> Impl
 5. 交付报告必须明确本次目标重定向后的验证证据。
 
 ### Requirement
+
+新需求、完整模块、跨模块需求或需求边界不清时，先调用全局 `$grilling`。必须等用户确认已达到共同理解后，才能把结论沉淀到需求简报、设计简报或任务记录并进入实现。
 
 必须明确：
 
