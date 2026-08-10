@@ -8,6 +8,7 @@
 2. ai-coding-java 提供项目内 Java 开发规则、上下文加载顺序、验证矩阵、Review 口径和交付模板。
 3. 运行时能力通过 Codex、Claude Code 或 OMX 的全局配置提供。
 4. 初始化到业务项目后，根 `AGENTS.md` 和 `CLAUDE.md` 必须指向 `.ai-coding-java/docs/rule-index.md`，让 Codex 和 Claude Code 都能进入同一套项目规则。
+5. `$setup-ai-coding` 初始化当前项目工作区，并在 Java 项目中调用 `scripts/init_target_project.py` 接入 `.ai-coding-java/`；非 Java 项目和组件源仓库跳过注入。
 
 ## 常规新需求怎么走
 
@@ -43,6 +44,15 @@ TDD 边界：
 | 任务类型到规则文件的路由 | ai-coding-java |
 | 验证矩阵、Review 分级、交付报告模板 | ai-coding-java |
 | 企业知识库条目和项目画像 | ai-coding-java |
+
+## setup 与目标注入
+
+`setup-ai-coding` 把工作区初始化和 Java 规则组件接入放在同一轮执行：
+
+1. `python3 scripts/install_setup_ai_coding_skill.py` 把全局 `~/.agents/skills/setup-ai-coding` 和 `~/.claude/skills/setup-ai-coding` 软链到本仓库的 `skills/setup-ai-coding/`，让新机器能识别 `$setup-ai-coding`。
+2. `$setup-ai-coding` 初始化当前项目的 `AGENTS.md`、`CLAUDE.local.md`、`.omx/`、ignore 与权限等工作区约定。
+3. 如果当前项目是 Java 项目且不是 `ai-coding-java` 组件源，`$setup-ai-coding` 继续调用 `scripts/init_target_project.py /path/to/target-project ... --claude-entry local` 创建 `.ai-coding-java/`，并把 Claude marker 写入 `CLAUDE.local.md`。
+4. 目标 `.ai-coding-java/` 不携带 `setup-ai-coding` 副本；需要安装或刷新全局 skill 时，从 `ai-coding-java` 组件仓库运行安装脚本。
 
 ## 组件职责
 

@@ -12,7 +12,7 @@ This component itself is intended to be versioned in Git. Target Java projects m
 - Claude Code reads `CLAUDE.md` as the collaboration entry point.
 - Shared stable facts live in `.omx/project-memory.json`.
 - Current task notes live in `.omx/notepad.md`.
-- General project initialization should use `$setup-ai-coding`; legacy `$setup-cc` is only a compatibility alias.
+- General project workspace initialization should use `$setup-ai-coding`; this repo carries its source at `skills/setup-ai-coding/SKILL.md`.
 
 ## Structure
 
@@ -27,6 +27,7 @@ knowledge/  reusable company rules, bug roots, SQL/transaction cases, project ex
 examples/   target-project snippets, delivery report, static-review fixtures
 scripts/    context, integrity, initialization, hook install, static review, knowledge extraction helpers
 hooks/      lightweight target-project git hooks
+skills/     installable global skill sources, currently setup-ai-coding
 .omx/       project-memory.json and current notepad
 ```
 
@@ -77,7 +78,7 @@ Record stable, non-sensitive project facts in `.omx/project-memory.json`. Keep `
 
 Use `docs/git-policy.md` to decide whether a development record belongs in Git. In this component repo, commit reusable template source and sanitized examples; ignore runtime state, logs, `.omx/notepad.md`, `.omx/knowledge-candidates/`, and `.Codex/`.
 
-For target projects, `scripts/init_target_project.py` writes bounded marker blocks into root `AGENTS.md` and `CLAUDE.md`, pointing both runtimes to `.ai-coding-java/docs/rule-index.md`.
+For target projects, `scripts/init_target_project.py` writes bounded marker blocks pointing runtimes to `.ai-coding-java/docs/rule-index.md`. `$setup-ai-coding` includes this injection for Java targets by calling that script with `--claude-entry local`, while skipping the `ai-coding-java` component repo itself and non-Java projects.
 
 Run the budget check before claiming initialization or template restructuring is complete:
 

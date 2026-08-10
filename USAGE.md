@@ -2,16 +2,17 @@
 
 ## Initialize A Target Java Project
 
-1. In the target repository, run or follow `$setup-ai-coding`.
-2. Confirm project type:
+1. Run or follow `$setup-ai-coding` in the target repository; Java targets get `.ai-coding-java/` through this flow and write the Claude marker to `CLAUDE.local.md`.
+2. If the machine lacks `$setup-ai-coding`, run `scripts/install_setup_ai_coding_skill.py` from the `ai-coding-java` component repository.
+3. Confirm project type:
    - new project
    - legacy project
    - maintenance project
-3. Confirm technology stack from suggestions or custom input.
-4. Confirm build, test, start, database, cache, and external-system dependencies.
-5. Confirm data isolation boundary, such as tenant, organization, school, year, or region.
-6. Confirm default verification level: lightweight, standard, or strict.
-7. Decide template placement:
+4. Confirm technology stack from suggestions or custom input.
+5. Confirm build, test, start, database, cache, and external-system dependencies.
+6. Confirm data isolation boundary, such as tenant, organization, school, year, or region.
+7. Confirm default verification level: lightweight, standard, or strict.
+8. Decide template placement:
    - local auxiliary `.ai-coding-java/` not committed
    - committed project rule package after review
 
@@ -27,6 +28,14 @@ python3 /path/to/ai-coding-java/scripts/init_target_project.py /path/to/target-p
 ```
 
 By default, the script writes `.ai-coding-java/` and adds small marker blocks to target root `AGENTS.md` and `CLAUDE.md`, so Codex and Claude Code can discover the rules.
+
+`$setup-ai-coding` calls this injection path for Java projects. Use the scripted command directly when you want explicit control over parameters or refresh behavior.
+
+When direct injection should avoid changing team `CLAUDE.md`, add:
+
+```bash
+--claude-entry local
+```
 
 If the target is a Git repository, the script also installs local `pre-commit` and `pre-push` hooks through:
 

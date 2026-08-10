@@ -36,6 +36,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--verification-level", default="standard", choices=["lightweight", "standard", "strict"])
     parser.add_argument("--template-policy", default="local-auxiliary", choices=["local-auxiliary", "committed"])
     parser.add_argument("--data-boundary", default="unconfirmed", help="Tenant/org/school/year/etc. data boundary")
+    parser.add_argument("--claude-entry", default="team", choices=["team", "local", "skip"], help="Where to write the Claude Code marker")
     parser.add_argument("--force", action="store_true", help="Overwrite existing .ai-coding-java files")
     return parser.parse_args()
 
@@ -255,12 +256,23 @@ def main() -> int:
     write_text(dest / "CLAUDE.ai-coding-java-snippet.md", claude_snippet(args), args.force)
 
     upsert_marked_block(target / "AGENTS.md", AGENTS_MARKER_START, AGENTS_MARKER_END, agents_pointer())
-    upsert_marked_block(target / "CLAUDE.md", CLAUDE_MARKER_START, CLAUDE_MARKER_END, claude_pointer())
+    if args.claude_entry == "team":
+        claude_entry = target / "CLAUDE.md"
+        upsert_marked_block(claude_entry, CLAUDE_MARKER_START, CLAUDE_MARKER_END, claude_pointer())
+    elif args.claude_entry == "local":
+        claude_entry = target / "CLAUDE.local.md"
+        upsert_marked_block(claude_entry, CLAUDE_MARKER_START, CLAUDE_MARKER_END, claude_pointer())
+    else:
+        claude_entry = None
+        print("SKIP Claude Code marker by --claude-entry skip")
     install_git_hooks(target)
 
     print("\nNext steps:")
     print("1. Review .ai-coding-java/project-profile.md and fill missing commands.")
-    print("2. Review the marker blocks added to AGENTS.md and CLAUDE.md.")
+    if claude_entry is None:
+        print("2. Review the marker block added to AGENTS.md; Claude Code marker was skipped.")
+    else:
+        print(f"2. Review the marker blocks added to AGENTS.md and {claude_entry.name}.")
     print("3. Confirm .git/hooks/pre-commit and .git/hooks/pre-push were installed when the target is a git repository.")
     print("4. Run .ai-coding-java/scripts/static_review_check.py when deterministic review is needed outside commit flow.")
     print("5. Run .ai-coding-java/scripts/check_target_project.py . to verify target harness wiring.")

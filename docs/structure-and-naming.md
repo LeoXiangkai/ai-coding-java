@@ -15,6 +15,7 @@
 | `artifacts/` | 目标项目过程产物目录说明 | `README.md` 为入口 |
 | `knowledge/` | 可复用规则、案例和经验 | 分类目录 + kebab-case `.md` |
 | `examples/` | 脱敏示例和测试夹具 | 与示例目标一致 |
+| `skills/` | 可安装的全局 skill 源文件 | `skills/<kebab-name>/SKILL.md` |
 
 ## 命名规则
 
@@ -24,6 +25,7 @@
 4. Git hooks 使用 Git 标准名，例如 `pre-commit`、`pre-push`。
 5. 根入口文件保留常规大写命名：`README.md`、`AGENTS.md`、`CLAUDE.md`、`TOOL.md`、`USAGE.md`。
 6. 示例文件可以保留运行时识别需要的大写片段，例如 `AGENTS.ai-coding-java-snippet.example.md`。
+7. Skill 源文件统一放在 `skills/<skill-name>/SKILL.md`，当前只维护 `setup-ai-coding`。
 
 ## 文件放置原则
 

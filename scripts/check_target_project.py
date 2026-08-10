@@ -154,6 +154,28 @@ def check_marker_file(path: Path, start: str, end: str, root: Path) -> tuple[int
     return failed, warned
 
 
+def has_valid_marker(path: Path, start: str, end: str) -> bool:
+    if not path.is_file():
+        return False
+    text = read_text(path)
+    return start in text and end in text and text.find(start) < text.find(end) and RULE_INDEX_REF in text
+
+
+def check_claude_marker(root: Path) -> tuple[int, int]:
+    team_path = root / "CLAUDE.md"
+    local_path = root / "CLAUDE.local.md"
+    if has_valid_marker(team_path, CLAUDE_MARKER_START, CLAUDE_MARKER_END):
+        return check_marker_file(team_path, CLAUDE_MARKER_START, CLAUDE_MARKER_END, root)
+    if has_valid_marker(local_path, CLAUDE_MARKER_START, CLAUDE_MARKER_END):
+        return check_marker_file(local_path, CLAUDE_MARKER_START, CLAUDE_MARKER_END, root)
+    if team_path.is_file():
+        return check_marker_file(team_path, CLAUDE_MARKER_START, CLAUDE_MARKER_END, root)
+    if local_path.is_file():
+        return check_marker_file(local_path, CLAUDE_MARKER_START, CLAUDE_MARKER_END, root)
+    print_fail("missing Claude Code entry CLAUDE.md or CLAUDE.local.md")
+    return 1, 0
+
+
 def value_after_colon(line: str) -> str:
     if ":" not in line:
         return ""
@@ -297,7 +319,7 @@ def main() -> int:
     failed += f
     warned += w
 
-    f, w = check_marker_file(root / "CLAUDE.md", CLAUDE_MARKER_START, CLAUDE_MARKER_END, root)
+    f, w = check_claude_marker(root)
     failed += f
     warned += w
 

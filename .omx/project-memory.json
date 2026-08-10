@@ -19,12 +19,14 @@
         "artifacts": "artifacts/",
         "examples": "examples/",
         "knowledge": "knowledge/",
-        "scripts": "scripts/"
+        "scripts": "scripts/",
+        "skills": "skills/"
     },
     "build": {
         "budgetCheck": "python3 scripts/context_budget_check.py",
         "integrityCheck": "python3 scripts/template_integrity_check.py",
         "targetInit": "python3 scripts/init_target_project.py <target>",
+        "setupSkillInstall": "python3 scripts/install_setup_ai_coding_skill.py",
         "staticReview": "python3 scripts/static_review_check.py <target>",
         "hookInstall": "python3 scripts/install_git_hooks.py <target>",
         "knowledgeCandidate": "python3 scripts/extract_knowledge_candidate.py <delivery-report>"
@@ -36,7 +38,7 @@
     "projectRulesFirst": true,
     "notTestedMustBeExplicit": true,
     "setupSkill": "setup-ai-coding",
-    "legacySetupSkill": "setup-cc"
+    "setupSkillSource": "skills/setup-ai-coding/SKILL.md"
   },
     "notes": [
         "The component itself is intended to be versioned in Git.",
@@ -50,12 +52,14 @@
         "Phase 6 now auto-installs lightweight Git pre-commit and pre-push hooks for staged-file P0 scanning, personal branch checks, and verification command reminders.",
         "Remote hosting is source-host neutral; use origin for GitHub and gitee for Gitee when mirroring is configured.",
         "Target project generated support files should stay under .ai-coding-java/ by default; only reviewed AGENTS.md and CLAUDE.md snippets should touch the target root.",
-        "Codex recognizes target rules through AGENTS.md; Claude Code recognizes target rules through CLAUDE.md or an explicit CLAUDE-to-AGENTS delegation."
+        "Codex recognizes target rules through AGENTS.md; Claude Code recognizes target rules through CLAUDE.md or an explicit CLAUDE-to-AGENTS delegation.",
+        "The repository carries setup-ai-coding as a versioned skill source; global skill entries should symlink to skills/setup-ai-coding/ to avoid duplicate maintenance."
     ],
   "directives": [
     "Keep AGENTS.md and CLAUDE.md compact and aligned.",
     "Keep the shared component focused on Java rules, verification, review, target initialization, and lightweight Git protection.",
     "Keep RD artifacts template-based and route them only when the task needs traceability.",
-    "Use setup-ai-coding as the general initialization skill name; keep setup-cc only as a compatibility alias."
+    "Use setup-ai-coding as the general initialization skill name.",
+    "$setup-ai-coding initializes a project workspace and calls scripts/init_target_project.py with --claude-entry local for Java target .ai-coding-java/ injection; non-Java projects and the component repo itself skip injection."
   ]
 }

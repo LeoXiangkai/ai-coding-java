@@ -6,7 +6,7 @@ import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
-REQUIRED_DIRS = ["docs", "rules", "workflow", "templates", "scripts", "hooks", "artifacts", "knowledge", "examples"]
+REQUIRED_DIRS = ["docs", "rules", "workflow", "templates", "scripts", "hooks", "artifacts", "knowledge", "examples", "skills"]
 ROOT_FILES = {"README.md", "AGENTS.md", "CLAUDE.md", "TOOL.md", "USAGE.md"}
 KEBAB_MD = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*\.md$")
 SNAKE_PY = re.compile(r"^[a-z0-9]+(?:_[a-z0-9]+)*\.py$")
@@ -122,6 +122,12 @@ def main() -> int:
                 failed += check_docs_like(rel, path)
             else:
                 ok(f"name {rel}")
+        elif top == "skills":
+            if len(parts) == 3 and parts[2] == "SKILL.md" and KEBAB_MD.match(f"{parts[1]}.md"):
+                ok(f"name {rel}")
+            else:
+                fail(f"{rel} should be skills/<kebab-name>/SKILL.md")
+                failed += 1
 
     print(f"Summary: {failed} structure issue(s)")
     return 1 if failed else 0

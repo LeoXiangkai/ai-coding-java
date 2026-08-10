@@ -12,6 +12,7 @@
 6. Lightweight auto-installed Git hooks for deterministic P0 checks and pre-push validation reminders.
 7. Codex and Claude Code compatible project entry guidance.
 8. GitHub and Gitee remote-hosting guidance.
+9. A versioned `setup-ai-coding` skill source with global symlink installer.
 
 ## Default Scope
 
@@ -35,12 +36,14 @@ python3 scripts/static_review_check.py examples/static-review-good
 For a target Java project:
 
 ```text
-1. Run or follow $setup-ai-coding in the target project.
-2. Run scripts/init_target_project.py from this component or copy the package manually.
+1. Run or follow $setup-ai-coding in the target project; it initializes the workspace and injects .ai-coding-java for Java targets, using CLAUDE.local.md for the Claude marker.
+2. If $setup-ai-coding is missing, run scripts/install_setup_ai_coding_skill.py from the ai-coding-java component repository.
 3. Confirm project stack and verification level.
 4. Add a short pointer from the target AGENTS.md to the injected ai-coding-java rules.
 5. Load docs/rule-index.md first, then only the matching rule or knowledge files.
 ```
+
+Direct use of `scripts/init_target_project.py` remains available for explicit injection or refresh workflows. Use `--claude-entry local` when the injection is personal/local.
 
 For target project static review:
 

@@ -35,7 +35,7 @@ If Codex invocation fails from Claude Code, first check the local environment an
 8. Use `docs/review-output-template.md` for review results.
 9. Use `rules/`, `workflow/`, and `templates/` as the concrete template package.
 
-For future project initialization, use `$setup-ai-coding`. Treat `$setup-cc` as a legacy alias only.
+For future project workspace initialization, use `$setup-ai-coding`. Its source is versioned at `skills/setup-ai-coding/SKILL.md`.
 
 ## Development Rules
 

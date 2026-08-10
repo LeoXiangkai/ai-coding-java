@@ -83,8 +83,10 @@ REQUIRED = [
     "scripts/evidence_check.py",
     "scripts/generate_project_map.py",
     "scripts/refresh_target_project.py",
+    "scripts/install_setup_ai_coding_skill.py",
     "scripts/static_review_check.py",
     "scripts/extract_knowledge_candidate.py",
+    "skills/setup-ai-coding/SKILL.md",
     ".omx/project-memory.json",
 ]
 

@@ -51,6 +51,7 @@ Harness 负责：
 | 组件结构检查 | 已落地 | `scripts/structure_check.py` | 检查本组件文件分层和命名风格 |
 | 安全刷新 | 已落地 | `scripts/refresh_target_project.py --list-extra` | 默认 dry-run，比对缺失、差异和目标侧额外文件，`--apply` 才复制 |
 | 轻量项目画像 | 已落地 | `scripts/generate_project_map.py` | 只读扫描 Controller、Service、Mapper、配置和定时任务信号 |
+| setup skill 源 | 已落地 | `skills/setup-ai-coding/SKILL.md`、`scripts/install_setup_ai_coding_skill.py` | 新机器缺少全局 `$setup-ai-coding` 时显式安装软链接 |
 | 结构化画像 | 后续增强 | `project-profile.md` | 当前是稳定文本和 Markdown 画像，后续再考虑 JSON |
 | 外部治理对接 | 边界清晰 | 目标项目 / 外部平台 | 平台接入由目标项目按需完成，组件保留本地轻量检查 |
 
@@ -71,6 +72,9 @@ python3 scripts/init_target_project.py /path/to/project \
   --project-type legacy \
   --template-policy local-auxiliary
 ```
+
+`$setup-ai-coding` 集成调用该脚本时使用 `--claude-entry local`，避免默认修改目标项目的团队
+`CLAUDE.md`。直接运行脚本时默认仍写 `CLAUDE.md`，适用于要入库共享的项目规则接入。
 
 初始化脚本默认：
 

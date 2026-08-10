@@ -14,6 +14,7 @@
 6. 最低验证：`docs/verification-matrix.md`
 7. 复杂需求链路：`docs/rd-integrated-workflow.md`
 8. 接入与能力边界：`docs/project-integration-guide.md`、`docs/project-harness.md`
+9. 可安装 skill 源：`skills/setup-ai-coding/SKILL.md`
 
 ## 使用方式
 
@@ -33,6 +34,17 @@ python3 /path/to/ai-coding-java/scripts/init_target_project.py /path/to/target-p
 ```bash
 python3 /path/to/target-project/.ai-coding-java/scripts/check_target_project.py /path/to/target-project
 ```
+
+安装或刷新 `$setup-ai-coding` 全局 skill 软链接：
+
+```bash
+python3 /path/to/ai-coding-java/scripts/install_setup_ai_coding_skill.py
+```
+
+说明：`$setup-ai-coding` 会先初始化当前项目的 Codex / Claude Code / OMX 工作区；如果当前项目是
+Java 项目且尚未接入，它会继续调用本组件的 `scripts/init_target_project.py` 生成 `.ai-coding-java/`。
+这个集成路径会把 Claude Code marker 写入 `CLAUDE.local.md`，避免默认改团队 `CLAUDE.md`。也可以直接运行
+上面的脚本做显式注入。
 
 目标项目日常开发：
 
@@ -60,6 +72,7 @@ OPC 指个人主导的快速交付模式。默认策略是轻量、可验证、�
 3. 编码前设计门：新项目宏观/微观设计，二开模块/影响设计。
 4. 产研测测试验证 workflow、TDD 分级、验证矩阵和交付证据模板。
 5. 自动安装轻量 Git hooks、目标项目 doctor、模板刷新 dry-run、项目画像、复杂需求产物一致性检查。
+6. 提供 `setup-ai-coding` skill 源和软链接安装脚本，避免新机器缺少全局初始化入口或多处维护漂移。
 
 边界清晰：
 
