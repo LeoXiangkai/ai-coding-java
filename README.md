@@ -15,7 +15,8 @@
 7. 最低验证：`docs/verification-matrix.md`
 8. 复杂需求链路：`docs/rd-integrated-workflow.md`
 9. 接入与能力边界：`docs/project-integration-guide.md`、`docs/project-harness.md`
-10. 可安装 skill 源：`skills/setup-ai-coding/SKILL.md`
+10. 全栈多仓 TAP 协作：`docs/tap-fullstack-collaboration.md`
+11. 可安装 skill 源：`skills/setup-ai-coding/SKILL.md`
 
 ## 使用方式
 
@@ -34,6 +35,15 @@ python3 /path/to/ai-coding-java/scripts/init_target_project.py /path/to/target-p
 
 ```bash
 python3 /path/to/target-project/.ai-coding-java/scripts/check_target_project.py /path/to/target-project
+```
+
+全栈多仓任务需要 TAP 协作通道时：
+
+```bash
+python3 /path/to/ai-coding-java/scripts/init_tap_fullstack.py /path/to/system-root \
+  --channel-name fullstack \
+  --repo server=/path/to/system-root/code/server:cc_server_agent \
+  --repo web=/path/to/system-root/code/web:cc_web_agent
 ```
 
 安装或刷新 `$setup-ai-coding` 全局 skill 软链接：
@@ -75,6 +85,7 @@ OPC 指个人主导的快速交付模式。默认策略是轻量、可验证、�
 4. 产研测测试验证 workflow、TDD 分级、验证矩阵和交付证据模板。
 5. 自动安装轻量 Git hooks、目标项目 doctor、模板刷新 dry-run、项目画像、复杂需求产物一致性检查。
 6. 提供 `setup-ai-coding` skill 源和软链接安装脚本，避免新机器缺少全局初始化入口或多处维护漂移。
+7. 提供可选 TAP 全栈协作初始化脚本，支持多仓共享 comms、Claude `.mcp.json`、`sync-tap-pending` 壳和 Codex wrapper 注入。
 
 边界清晰：
 

@@ -19,6 +19,7 @@ TARGET_SCRIPTS = [
     "evidence_check.py",
     "generate_project_map.py",
     "refresh_target_project.py",
+    "init_tap_fullstack.py",
 ]
 AGENTS_MARKER_START = "<!-- ai-coding-java:AGENTS:START -->"
 AGENTS_MARKER_END = "<!-- ai-coding-java:AGENTS:END -->"

@@ -62,6 +62,19 @@ python3 .ai-coding-java/scripts/static_review_check.py .
 
 Use this before AI semantic review when you need an explicit scan outside commit flow. The same scanner is also used by the auto-installed `pre-commit` hook for staged-file checks.
 
+## TAP Fullstack Collaboration
+
+For frontend/backend multi-repository tasks, initialize an optional TAP channel from the component repository:
+
+```bash
+python3 /path/to/ai-coding-java/scripts/init_tap_fullstack.py /path/to/system-root \
+  --channel-name fullstack \
+  --repo server=/path/to/system-root/code/server:cc_server_agent \
+  --repo web=/path/to/system-root/code/web:cc_web_agent
+```
+
+This creates shared `.tap/<channel>-comms`, per-repository `tap-config.json`, Claude `.mcp.json`, Claude `sync-tap-pending` slash-command shells, and Codex `.tap-comms/bin/codex-tap` wrappers without editing global Codex config. See `docs/tap-fullstack-collaboration.md`.
+
 ## GitHub And Gitee
 
 The component works with ordinary Git remotes and does not depend on host-specific features.

@@ -34,7 +34,8 @@ If Codex invocation fails from Claude Code, first check the local environment an
 7. Use `docs/verification-matrix.md` before claiming behavior is verified.
 8. Use `docs/testing-workflow.md` for requirement testing, code testing, API/SQL verification, and delivery evidence mapping.
 9. Use `docs/review-output-template.md` for review results.
-10. Use `rules/`, `workflow/`, and `templates/` as the concrete template package.
+10. Use `docs/tap-fullstack-collaboration.md` for optional frontend/backend multi-repository TAP channels.
+11. Use `rules/`, `workflow/`, and `templates/` as the concrete template package.
 
 For future project workspace initialization, use `$setup-ai-coding`. Its source is versioned at `skills/setup-ai-coding/SKILL.md`.
 
