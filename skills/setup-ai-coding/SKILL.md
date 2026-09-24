@@ -105,6 +105,13 @@ git log --format='%an' -- CLAUDE.md | sort -u   # 谁写的
 5. 抽样读 2-3 个入口/典型业务文件，提取分层、命名、错误处理、测试习惯。
 6. **提取并实跑验证** build / test / 启动命令——只写验证过的，没验证的显式标 `Not-tested`。
 7. 检查记忆状态：`.omx/`、CC 自动记忆（`~/.claude/projects/<encoded-cwd>/memory/`）是否已有内容。
+8. **全局前置自检（只读）**：全局规则硬依赖以下工具，逐个 `test -x`，缺失只列出、不代装：
+   `~/.claude/bin/git-safe`（git 写操作）、`~/.claude/bin/codex-cc`（Codex 派工）、`cc-source`（来源门禁，`command -v`）。
+9. **本地自测入口探测**（Java / 后端项目）：
+   - DDL / 数据脚本工具：`test -x .claude/scripts/db-cli.sh`，并看它读取哪些环境变量（如 `DBCLI_YML`）。
+     **只记录位置与变量名，不生成脚本、不写任何凭据**；缺失标 `Not-tested: db-cli 未接入`。
+   - 启动参数：从 `.vscode/launch.json`、`.idea/runConfigurations/`、`application-*.yml`（profile 名与
+     `server.port`）提取；只把实跑验证过的启动命令写进产物，其余标 `Not-tested`。
 
 > 常见坑：既有文档里的工具链路径可能是**别的操作系统遗留**（如 Windows `D:\...` 出现在 macOS 仓库）。
 > 实跑一次 `mvn -v` / `node -v` 之类核实，别照抄。
@@ -124,6 +131,7 @@ git log --format='%an' -- CLAUDE.md | sort -u   # 谁写的
 | `.omx/notepad.md` | 当前任务记忆 | 缺失则创建 |
 | `.claude/settings.local.json` | 敏感文件读取阻断 | 按需创建 |
 | `.git/info/exclude` 或 `.gitignore` | 排除运行时/本地产物 | 按第零阶段的情况选 |
+| `.worktrees/REGISTRY.md` | worktree 登记（全局 worktree 规则第一步必读） | 缺失则建空表 |
 
 > ⚠️ **不再生成 `.claudeignore`**：原生 Claude Code **不读取**该文件，Codex 也不读。
 > 官方排除机制是 `.gitignore` / `.git/info/exclude` + `permissions.deny` + `claudeMdExcludes`。
@@ -164,7 +172,8 @@ git log --format='%an' -- CLAUDE.md | sort -u   # 谁写的
 项目**没有** `CLAUDE.md` 时同样写 `CLAUDE.local.md`，只是把"见同目录 CLAUDE.md"那句去掉——
 不要因为"位置空着"就顺手建一个 `CLAUDE.md`。真需要团队共享版本时，由用户显式提出。
 
-本文件该写什么：冲突裁决顺序、已验证的工具链与命令、能力路由、本仓特有的坑、记忆分层。
+本文件该写什么：冲突裁决顺序、**当前基线分支**（见下）、已验证的工具链与命令、DDL 工具位置
+（或 `Not-tested: db-cli 未接入`）、能力路由、本仓特有的坑、记忆分层。
 不写的：项目通用规范（属于 `CLAUDE.md` 或 `AGENTS.md`）、全局 skill 目录、model 表。
 
 #### `@AGENTS.md` 全量导入的判断门槛（写在 `CLAUDE.local.md` 里，不写进 `CLAUDE.md`）
@@ -177,6 +186,31 @@ team-worker 协议 / lore commit protocol）——对 CC 是纯噪音，全量�
 - **≤ 5KB 且主体是项目事实** → 可以写 `@AGENTS.md`
 - **> 5KB 或主体是编排协议** → **不写 `@import`**，改指针式引用：说明 AGENTS.md 是 Codex 侧入口、
   项目事实只在 `OMX:AGENTS-INIT:MANUAL` 块，需要时按需 Read 那一段
+
+#### 当前基线分支声明
+
+全局 git 规则要求基线分支名由项目声明，而非写进规则或记忆。推断候选：
+`git symbolic-ref --short refs/remotes/origin/HEAD`，无远程时取当前分支；**向用户确认一次**后，
+在 `CLAUDE.local.md` 与 AGENTS.md 的 `OMX:AGENTS-INIT:MANUAL` 块各写一行：
+
+```markdown
+当前基线分支：<branch>
+```
+
+换基线时只改这一行。不要写 `git config branch.<task>.baseline`——那是创建任务分支时的运行时记录。
+
+#### `.worktrees/REGISTRY.md` 骨架
+
+缺失时创建（`.worktrees/` 已在排除清单内，不产生 tracked 改动），字段与全局 worktree 规则一致：
+
+```markdown
+# Worktree Registry
+
+| 目录 | 分支 | 类型 | 任务 | 范围 | 状态 | 基线 | 运行中 | 更新时间 |
+|------|------|------|------|------|------|------|--------|----------|
+```
+
+已存在时不改动，只核对与 `git worktree list` 是否一致，不一致写进输出。
 
 ### 3. `.omx/` 记忆层
 
@@ -443,6 +477,9 @@ done
 12. **钩子选择与 `core.hooksPath` 结果写进输出**：`git config --get core.hooksPath` 的值（若有）、
     是否执行了 `install_git_hooks.py`、用户是否同意安装，逐项写进最终报告。
 
+13. **基线与登记**：`grep -n "当前基线分支" CLAUDE.local.md` 命中一行；`.worktrees/REGISTRY.md` 存在且
+    `git check-ignore .worktrees/REGISTRY.md` 通过。
+
 ---
 
 ## 无 OMX 兜底
@@ -462,6 +499,9 @@ done
 - Java 项目的 `.ai-coding-java/` 接入结果；非 Java 或组件源仓库必须写明跳过原因。
 - Git 钩子是否安装及理由（`--hooks skip` 默认跳过 / `core.hooksPath` 阻断跳过 / 用户同意后已安装）。
 - worktree 适配方式：是否需要软链、已软链的文件清单。
+- 当前基线分支（用户确认值）与 `REGISTRY.md` 状态（新建 / 已存在且一致 / 不一致项）。
+- 全局前置自检结果：缺失的全局工具清单（未代装）。
+- 本地自测入口：`db-cli.sh` 位置与环境变量名、启动命令与 profile / 端口，未验证项标 `Not-tested`。
 - 三层记忆路径。
 - 能力路由结论。
 - **验证证据**（命令 + 实际输出，不是"应该没问题"）。
