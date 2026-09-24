@@ -212,28 +212,35 @@ notepad 只放当前任务，不归档长流程日志。
 
 ### 4. 排除规则与权限
 
-**情况 C（团队仓）——用 `.git/info/exclude`**，做到零 tracked 改动：
+**情况 C（团队仓）——用 `.git/info/exclude`**，做到零 tracked 改动（**情况 B 同 C**，同样写
+`.git/info/exclude`）：
 
 ```
 AGENTS.md
 CLAUDE.local.md
-.omx/
+.ai-coding-java
+.omx
 .claude/
 .worktrees/
 ```
 
 > 注意 gitignore 语义：`AGENTS.md` 无前导斜杠时匹配**任意层级**，子目录那几份一并覆盖。
+> `.ai-coding-java`、`.omx` **不带尾斜杠**：带斜杠只匹配目录，匹配不到 worktree 适配阶段建的同名软链。
 
-**情况 A（个人仓）——可追加到 `.gitignore`**（整块加注释标来源，已存在条目不重复）：
+**情况 A（个人仓）——先问用户 `AGENTS.md` / `.claude/` / `.ai-coding-java/` 是否入库**，默认只排除
+`CLAUDE.local.md`、`.omx/`、`.worktrees/` 和运行时产物（追加到 `.gitignore`，整块加注释标来源，
+已存在条目不重复）：
+
+> 理由：个人仓通常希望这些文件入库；默认忽略 `.claude/` 会挡住项目级 skills/settings 入库。
 
 ```gitignore
 # setup-ai-coding 生成的本地协作配置
 CLAUDE.local.md
-AGENTS.md
-.claude/
-.omx/
+.omx
 .worktrees/
 ```
+
+用户明确表示不希望入库时，再按需追加 `AGENTS.md` / `.claude/` / `.ai-coding-java`（不带尾斜杠）条目。
 
 > **注意清单里没有 `CLAUDE.md`**：本 skill 默认不产出它，所以也没有理由去 ignore 它。
 > 若项目已有 tracked 的 `CLAUDE.md`，把它加进 ignore 也不会生效（gitignore 对已跟踪文件无效）。
@@ -297,6 +304,9 @@ test -n "$AI_CODING_JAVA_HOME" && test -f "$AI_CODING_JAVA_HOME/scripts/init_tar
 test -f /Users/xiangkai/AI_Content/develop/ai-coding-java/scripts/init_target_project.py
 ```
 
+> 最后一条硬编码路径是**本机默认兜底**；其他机器上组件路径不同时，请设置环境变量
+> `AI_CODING_JAVA_HOME` 指向本机的 `ai-coding-java` 根目录。
+
 找不到组件源时，不要创建临时替代目录；输出 `Not-tested: ai-coding-java source not found`。
 
 ### 初始化命令
@@ -310,7 +320,11 @@ python3 <ai-coding-java-root>/scripts/init_target_project.py <project-root> \
   --verification-level standard \
   --template-policy local-auxiliary \
   --data-boundary "unconfirmed" \
-  --claude-entry local
+  --claude-entry local \
+  --hooks skip \
+  --build-cmd "<第一阶段已实跑验证的 build 命令，未验证留空>" \
+  --test-cmd "<第一阶段已实跑验证的 test 命令，未验证留空>" \
+  --start-cmd "<第一阶段已实跑验证的 start 命令，未验证留空>"
 ```
 
 参数选择：
@@ -320,12 +334,55 @@ python3 <ai-coding-java-root>/scripts/init_target_project.py <project-root> \
 3. `data-boundary`：除非项目规则已明确租户/组织/学校/年度等边界，否则写 `unconfirmed`。
 4. `--claude-entry local` 是 `$setup-ai-coding` 的固定选择，避免默认修改团队 `CLAUDE.md`。
 5. 不加 `--force`，除非用户明确要求覆盖 `.ai-coding-java/`。
+6. `--hooks skip` 是 `$setup-ai-coding` 的固定选择：钩子安装改为下面"git 钩子"小节里的显式征求同意步骤，不在初始化命令里静默装上。
+7. `--build-cmd` / `--test-cmd` / `--start-cmd` 只填第一阶段**已实跑验证**的命令；没有验证过的参数留空，不要编造。
 
 初始化后立即运行：
 
 ```bash
 python3 <project-root>/.ai-coding-java/scripts/check_target_project.py <project-root>
 ```
+
+结果要求：`fail` 数必须为 0。`project-profile.md` 中数据边界等仍未确认的字段，在最终输出里显式列为
+`Not-tested`，不得编造确认值。
+
+### git 钩子
+
+默认**不装** git 钩子（初始化命令固定带 `--hooks skip`）。钩子会在 `pre-commit` 时做 P0/P1 静态检查，
+P0 命中会**拦截提交**；仓库已有同名钩子时会被自动备份（`.before-ai-coding-java.<timestamp>` 后缀）并
+串联执行，不会丢失原钩子。
+
+向用户说明上述行为后，**用户同意**才执行：
+
+```bash
+python3 .ai-coding-java/scripts/install_git_hooks.py .
+```
+
+安装前先查一次 `git config core.hooksPath`：非空（如 husky 场景）时安装脚本会自动打印 `SKIP` 并跳过——
+钩子目录可能被跟踪，强行安装会产生带本机绝对路径的 tracked 改动。这种情况下不要用
+`--allow-hooks-path` 强行绕过，除非用户明确要求。
+
+---
+
+## 第四点五阶段：worktree 适配
+
+被排除机制（`.git/info/exclude` 或 `.gitignore`）挡住的未跟踪文件**不会出现在新建的 worktree 里**，
+派 Codex `--cd <worktree>` 时会读不到 `AGENTS.md`。新建 worktree 后执行：
+
+```bash
+for f in AGENTS.md CLAUDE.local.md .ai-coding-java .omx; do
+  [ -e "<main>/$f" ] && [ ! -e "<worktree>/$f" ] && ln -s "<main>/$f" "<worktree>/$f"
+done
+```
+
+说明：
+
+- `.git/info/exclude` 在 common dir（`.git/`）里，对所有 worktree 生效，软链本身不会出现在
+  `git status` 里。
+- `.omx/notepad.md` 因此是**跨 worktree 共享**的；需要按 worktree 隔离当前任务记忆时，只软链
+  `.omx/project-memory.json`，`notepad.md` 单独在各 worktree 内建各自的文件。
+
+验证：worktree 内 `git status --short` 为空，且 `test -f AGENTS.md` 成立。
 
 ---
 
@@ -351,7 +408,8 @@ python3 <project-root>/.ai-coding-java/scripts/check_target_project.py <project-
 
 1. 列出新增 / 修改的文件。
 2. **`git status --short` 与 `git diff --stat HEAD`**——情况 C 下两者都必须为空（零 tracked 改动）。
-3. **`git check-ignore <每个产物>`** 逐个确认真被排除，不是"以为排除了"。
+3. **`git check-ignore <每个产物>`** 逐个确认真被排除，不是"以为排除了"（含 `git check-ignore
+   .ai-coding-java` 当该目录被排除时）。
 4. **反向确认**团队文件仍 `git ls-files --error-unmatch CLAUDE.md .gitignore` 通过。
 5. JSON 合法性：`python3 -c "import json;json.load(open('.omx/project-memory.json'))"`，
    `.claude/settings.local.json` 同理。
@@ -382,6 +440,9 @@ python3 <project-root>/.ai-coding-java/scripts/check_target_project.py <project-
     **禁掉全部读取类工具**（排除现场 grep，最关键）、**`-p` 起新 session**（记忆在会话启动时加载，
     当前会话内新建的记忆文件本会话看不到，**不能在当前会话自测**）。
 
+12. **钩子选择与 `core.hooksPath` 结果写进输出**：`git config --get core.hooksPath` 的值（若有）、
+    是否执行了 `install_git_hooks.py`、用户是否同意安装，逐项写进最终报告。
+
 ---
 
 ## 无 OMX 兜底
@@ -399,6 +460,8 @@ python3 <project-root>/.ai-coding-java/scripts/check_target_project.py <project-
 - Codex 与 Claude Code 的入口行为摘要；Claude Code 入口应为 `CLAUDE.local.md`，
   若本次动了 `CLAUDE.md`，必须写明是用户哪一句显式要求的。
 - Java 项目的 `.ai-coding-java/` 接入结果；非 Java 或组件源仓库必须写明跳过原因。
+- Git 钩子是否安装及理由（`--hooks skip` 默认跳过 / `core.hooksPath` 阻断跳过 / 用户同意后已安装）。
+- worktree 适配方式：是否需要软链、已软链的文件清单。
 - 三层记忆路径。
 - 能力路由结论。
 - **验证证据**（命令 + 实际输出，不是"应该没问题"）。

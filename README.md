@@ -54,8 +54,9 @@ python3 /path/to/ai-coding-java/scripts/install_setup_ai_coding_skill.py
 
 说明：`$setup-ai-coding` 会先初始化当前项目的 Codex / Claude Code / OMX 工作区；如果当前项目是
 Java 项目且尚未接入，它会继续调用本组件的 `scripts/init_target_project.py` 生成 `.ai-coding-java/`。
-这个集成路径会把 Claude Code marker 写入 `CLAUDE.local.md`，避免默认改团队 `CLAUDE.md`。也可以直接运行
-上面的脚本做显式注入。
+这个集成路径会把 Claude Code marker 写入 `CLAUDE.local.md`，避免默认改团队 `CLAUDE.md`；同时固定带
+`--hooks skip`，钩子安装改为征得用户同意后再单独执行。也可以直接运行上面的脚本做显式注入，可选
+`--hooks {install,skip}` 与 `--build-cmd` / `--test-cmd` / `--start-cmd` 参数。
 
 目标项目日常开发：
 

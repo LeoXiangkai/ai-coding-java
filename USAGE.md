@@ -37,13 +37,17 @@ When direct injection should avoid changing team `CLAUDE.md`, add:
 --claude-entry local
 ```
 
-If the target is a Git repository, the script also installs local `pre-commit` and `pre-push` hooks through:
+Optional `--hooks {install,skip}` (default `install`) controls whether hooks are installed during this
+call, and `--build-cmd` / `--test-cmd` / `--start-cmd` fill the corresponding `project-profile.md` fields.
+
+If the target is a Git repository and `--hooks install` is used, the script also installs local
+`pre-commit` and `pre-push` hooks through:
 
 ```bash
 python3 .ai-coding-java/scripts/install_git_hooks.py .
 ```
 
-`pre-commit` scans staged files and blocks deterministic P0 findings. `pre-push` checks personal development branch naming and build/test command settings.
+`pre-commit` scans staged files and blocks deterministic P0 findings. `pre-push` checks personal development branch naming and build/test command settings. When `core.hooksPath` is already set (e.g. husky), the installer prints `SKIP` and does not write anything unless `--allow-hooks-path` is passed.
 
 It also writes snippets for review:
 

@@ -43,7 +43,7 @@ For a target Java project:
 5. Load docs/rule-index.md first, then only the matching rule or knowledge files.
 ```
 
-Direct use of `scripts/init_target_project.py` remains available for explicit injection or refresh workflows. Use `--claude-entry local` when the injection is personal/local.
+Direct use of `scripts/init_target_project.py` remains available for explicit injection or refresh workflows. Use `--claude-entry local` when the injection is personal/local, and `--hooks skip` when hook installation should wait for explicit user consent (`$setup-ai-coding` always passes `--hooks skip`).
 
 For target project static review:
 
@@ -51,13 +51,13 @@ For target project static review:
 python3 .ai-coding-java/scripts/static_review_check.py .
 ```
 
-Target-project initialization also installs:
+Target-project initialization installs hooks when `--hooks install` (the script default) is used:
 
 ```bash
 python3 .ai-coding-java/scripts/install_git_hooks.py .
 ```
 
-The installed hooks scan staged files before commit and check personal branch / verification settings before push.
+The installed hooks scan staged files before commit and check personal branch / verification settings before push. When `core.hooksPath` is already set, the installer skips and prints `SKIP` instead of writing tracked files.
 
 Target-project generated support files should live under `.ai-coding-java/` by default. Root changes are limited to bounded marker blocks in `AGENTS.md` and `CLAUDE.md`.
 

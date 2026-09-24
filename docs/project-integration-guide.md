@@ -15,7 +15,7 @@ python3 /path/to/ai-coding-java/scripts/init_target_project.py /path/to/target-p
 
 The script writes `.ai-coding-java/` in the target project and adds small marker blocks to the target root `AGENTS.md` and `CLAUDE.md` so Codex and Claude Code can discover the rules immediately after initialization.
 
-When invoked through `$setup-ai-coding`, the same script should use `--claude-entry local`, so the Claude Code marker goes to `CLAUDE.local.md` and existing team `CLAUDE.md` is left untouched.
+When invoked through `$setup-ai-coding`, the same script should use `--claude-entry local`, so the Claude Code marker goes to `CLAUDE.local.md` and existing team `CLAUDE.md` is left untouched. It should also pass `--hooks skip` (hook installation is deferred to an explicit consent step) and populate `--build-cmd` / `--test-cmd` / `--start-cmd` only with commands already verified in an earlier discovery step.
 
 ## Generated Target Files
 

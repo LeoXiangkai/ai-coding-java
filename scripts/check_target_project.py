@@ -232,7 +232,30 @@ def git_path(root: Path, name: str) -> Path | None:
     return path
 
 
+def core_hooks_path(root: Path) -> str | None:
+    result = subprocess.run(
+        ["git", "-C", str(root), "config", "--get", "core.hooksPath"],
+        text=True,
+        capture_output=True,
+    )
+    if result.returncode != 0:
+        return None
+    value = result.stdout.strip()
+    return value or None
+
+
+def profile_hooks_mode(root: Path) -> str | None:
+    path = root / ".ai-coding-java/project-profile.md"
+    if not path.is_file():
+        return None
+    for line in read_text(path).splitlines():
+        if line.startswith("Git hooks:"):
+            return value_after_colon(line)
+    return None
+
+
 def check_hooks(root: Path) -> tuple[int, int]:
+    hooks_skipped_intentionally = profile_hooks_mode(root) == "skip" or core_hooks_path(root) is not None
     hooks_dir = git_path(root, "hooks")
     if hooks_dir is None:
         print_warn("target is not a git repository; hooks skipped")
@@ -242,8 +265,11 @@ def check_hooks(root: Path) -> tuple[int, int]:
     for hook in ["pre-commit", "pre-push"]:
         path = hooks_dir / hook
         if not path.is_file():
-            print_warn(f"missing git hook {path}")
-            warned += 1
+            if hooks_skipped_intentionally:
+                print_info(f"missing git hook {path} (hooks intentionally skipped)")
+            else:
+                print_warn(f"missing git hook {path}")
+                warned += 1
             continue
         text = read_text(path)
         if ".ai-coding-java/hooks/" in text:

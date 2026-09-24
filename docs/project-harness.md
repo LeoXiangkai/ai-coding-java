@@ -74,15 +74,17 @@ python3 scripts/init_target_project.py /path/to/project \
 ```
 
 `$setup-ai-coding` 集成调用该脚本时使用 `--claude-entry local`，避免默认修改目标项目的团队
-`CLAUDE.md`。直接运行脚本时默认仍写 `CLAUDE.md`，适用于要入库共享的项目规则接入。
+`CLAUDE.md`；同时使用 `--hooks skip`，把钩子安装改为单独征得用户同意后再执行。直接运行脚本时默认仍写
+`CLAUDE.md` 且默认装钩子（`--hooks install`），适用于要入库共享的项目规则接入。
 
 初始化脚本默认：
 
 1. 复制 `docs/`、`rules/`、`workflow/`、`templates/`、`knowledge/`、`artifacts/`、`hooks/`。
 2. 复制目标安全脚本到 `.ai-coding-java/scripts/`。
-3. 生成 `project-profile.md`。
+3. 生成 `project-profile.md`（含 `--build-cmd` / `--test-cmd` / `--start-cmd` 填充的字段）。
 4. 写入根 `AGENTS.md` 和 `CLAUDE.md` marker。
-5. 在 Git 仓库中安装 `pre-commit` 和 `pre-push` wrapper。
+5. `--hooks install`（默认值）时在 Git 仓库中安装 `pre-commit` 和 `pre-push` wrapper；`core.hooksPath`
+   已设置时安装器自动跳过。
 6. 目标安全脚本默认放在 `.ai-coding-java/scripts/`。
 
 ## 只读检查

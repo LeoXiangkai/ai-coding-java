@@ -14,6 +14,8 @@ python3 .ai-coding-java/scripts/install_git_hooks.py .
 
 如果目标目录不是 Git 仓库，安装器会跳过，不影响 `.ai-coding-java/` 规则注入。安装路径以 `git rev-parse --git-path hooks` 为准，兼容普通 clone 和 Git worktree。
 
+`init_target_project.py` 支持 `--hooks {install,skip}`（默认 `install`）控制是否在初始化时一并装钩子；`$setup-ai-coding` 固定传 `--hooks skip`，改为征得用户同意后再单独运行安装器。安装器本身在 `core.hooksPath` 已被设置时（如 husky）默认打印 `SKIP` 并不写任何文件，需要强行安装时加 `--allow-hooks-path`。
+
 ## pre-commit
 
 `pre-commit` 只扫描 staged files：

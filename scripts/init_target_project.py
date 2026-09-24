@@ -38,6 +38,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--template-policy", default="local-auxiliary", choices=["local-auxiliary", "committed"])
     parser.add_argument("--data-boundary", default="unconfirmed", help="Tenant/org/school/year/etc. data boundary")
     parser.add_argument("--claude-entry", default="team", choices=["team", "local", "skip"], help="Where to write the Claude Code marker")
+    parser.add_argument("--hooks", default="install", choices=["install", "skip"], help="Whether to install git hooks")
+    parser.add_argument("--build-cmd", default="", help="Verified build command to record in the project profile")
+    parser.add_argument("--test-cmd", default="", help="Verified test command to record in the project profile")
+    parser.add_argument("--start-cmd", default="", help="Verified start command to record in the project profile")
     parser.add_argument("--force", action="store_true", help="Overwrite existing .ai-coding-java files")
     return parser.parse_args()
 
@@ -87,7 +91,10 @@ def upsert_marked_block(path: Path, start: str, end: str, body: str) -> None:
     print(f"OK created {path}")
 
 
-def install_git_hooks(target: Path) -> None:
+def install_git_hooks(target: Path, hooks_mode: str) -> None:
+    if hooks_mode == "skip":
+        print("SKIP git hooks by --hooks skip")
+        return
     installer = target / ".ai-coding-java" / "scripts" / "install_git_hooks.py"
     if not installer.is_file():
         print(f"SKIP git hooks missing installer {installer}")
@@ -111,12 +118,13 @@ Technology stack: {args.stack}
 Verification level: {args.verification_level}
 Template policy: {args.template_policy}
 Data boundary: {args.data_boundary}
+Git hooks: {args.hooks}
 
 ## Required Confirmation
 
-- Build command:
-- Test command:
-- Start command:
+- Build command: {args.build_cmd}
+- Test command: {args.test_cmd}
+- Start command: {args.start_cmd}
 - Database:
 - Cache:
 - External systems:
@@ -270,7 +278,7 @@ def main() -> int:
     else:
         claude_entry = None
         print("SKIP Claude Code marker by --claude-entry skip")
-    install_git_hooks(target)
+    install_git_hooks(target, args.hooks)
 
     print("\nNext steps:")
     print("1. Review .ai-coding-java/project-profile.md and fill missing commands.")
@@ -278,7 +286,10 @@ def main() -> int:
         print("2. Review the marker block added to AGENTS.md; Claude Code marker was skipped.")
     else:
         print(f"2. Review the marker blocks added to AGENTS.md and {claude_entry.name}.")
-    print("3. Confirm .git/hooks/pre-commit and .git/hooks/pre-push were installed when the target is a git repository.")
+    if args.hooks == "skip":
+        print("3. Git hooks were skipped by --hooks skip; install later with .ai-coding-java/scripts/install_git_hooks.py . if desired.")
+    else:
+        print("3. Confirm .git/hooks/pre-commit and .git/hooks/pre-push were installed when the target is a git repository.")
     print("4. Run .ai-coding-java/scripts/static_review_check.py when deterministic review is needed outside commit flow.")
     print("5. Run .ai-coding-java/scripts/check_target_project.py . to verify target harness wiring.")
     print("6. Run .ai-coding-java/scripts/generate_project_map.py . when target code navigation is needed.")

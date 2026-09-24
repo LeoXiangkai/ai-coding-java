@@ -16,6 +16,11 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Install ai-coding-java lightweight git hooks into a target repository.")
     parser.add_argument("target", nargs="?", default=".", help="Target project directory")
     parser.add_argument("--force", action="store_true", help="Reinstall even when an ai-coding-java hook exists")
+    parser.add_argument(
+        "--allow-hooks-path",
+        action="store_true",
+        help="Install even when core.hooksPath is set (e.g. husky); bypasses the default skip",
+    )
     return parser.parse_args()
 
 
@@ -28,6 +33,18 @@ def git_root(target: Path) -> Path | None:
     if result.returncode != 0:
         return None
     return Path(result.stdout.strip())
+
+
+def core_hooks_path(root: Path) -> str | None:
+    result = subprocess.run(
+        ["git", "-C", str(root), "config", "--get", "core.hooksPath"],
+        text=True,
+        capture_output=True,
+    )
+    if result.returncode != 0:
+        return None
+    value = result.stdout.strip()
+    return value or None
 
 
 def git_path(root: Path, rel: str) -> Path | None:
@@ -119,7 +136,15 @@ def install_one(root: Path, hooks_dir: Path, hook_name: str, force: bool) -> int
     return 0
 
 
-def install(root: Path, force: bool) -> int:
+def install(root: Path, force: bool, allow_hooks_path: bool) -> int:
+    hooks_path = core_hooks_path(root)
+    if hooks_path and not allow_hooks_path:
+        print(
+            f"SKIP git hooks: core.hooksPath={hooks_path} is set (e.g. husky); "
+            "hooks may be tracked, not installing"
+        )
+        return 0
+
     hooks_dir = git_path(root, "hooks")
     if hooks_dir is None:
         print(f"SKIP git hooks: cannot resolve hook directory for {root}")
@@ -140,7 +165,7 @@ def main() -> int:
     if root is None:
         print(f"SKIP git hooks: {target} is not inside a git repository")
         return 0
-    return install(root, args.force)
+    return install(root, args.force, args.allow_hooks_path)
 
 
 if __name__ == "__main__":
