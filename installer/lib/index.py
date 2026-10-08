@@ -35,6 +35,12 @@ class HookItem:
     matcher: str
     script: str
     blocking: bool
+    optional: bool = False
+
+    @property
+    def name(self) -> str:
+        """Registration name: script stem, e.g. hooks/aicj/git-safe-rewrite.py -> git-safe-rewrite."""
+        return posixpath.basename(self.script).rsplit(".", 1)[0]
 
 
 @dataclass
@@ -98,6 +104,7 @@ def _read_component(path: Path, source_root: Path) -> tuple[list[FileItem], list
                 matcher=str(row.get("matcher", "")),
                 script=str(script),
                 blocking=bool(row.get("blocking", False)),
+                optional=bool(row.get("optional", False)),
             )
         )
     return items, hooks

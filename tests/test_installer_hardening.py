@@ -628,3 +628,80 @@ def test_kept_manifest_keeps_created_dirs_so_a_later_uninstall_can_prune(home: P
 def test_cli_entry_point_is_runnable() -> None:
     result = subprocess.run([sys.executable, str(AICJ), "--help"], capture_output=True, text=True)
     assert result.returncode == 0
+
+
+# --- 17. optional hooks ---------------------------------------------------------
+
+
+def _fixture_with_optional_hook(tmp_path: Path) -> Path:
+    source = fixture_copy(tmp_path)
+    (source / "core/hooks/aicj/optional-hook.py").write_text(
+        "import os, sys\nsys.exit(2 if os.environ.get(\"AICJ_HOOK_MODE\") == \"block\" else 0)\n",
+        encoding="utf-8",
+    )
+    edit_json(source / "core/manifest.json", _add_optional_hook)
+    return source
+
+
+def _add_optional_hook(data: dict) -> None:
+    data["entries"]["hooks"].append(
+        {"source": "hooks/aicj/optional-hook.py", "target": "hooks/aicj/optional-hook.py"}
+    )
+    data["hooks"].append(
+        {"event": "PreToolUse", "matcher": "Bash", "script": "hooks/aicj/optional-hook.py", "optional": True}
+    )
+
+
+def test_optional_hook_not_registered_by_default(home: Path, tmp_path: Path) -> None:
+    source = _fixture_with_optional_hook(tmp_path)
+    result = run_aicj("install", home=home, source=source)
+    ok(result)
+    hooks = json.loads((home / ".claude/settings.json").read_text(encoding="utf-8"))["hooks"]["PreToolUse"]
+    assert len(hooks) == 1  # only the non-optional sample hook
+    assert "可选钩子未启用" in result.stdout
+    # the script file itself still installed
+    assert (home / ".claude/hooks/aicj/sample-hook.py").is_file()
+
+
+def test_optional_hook_registered_when_named(home: Path, tmp_path: Path) -> None:
+    source = _fixture_with_optional_hook(tmp_path)
+    result = run_aicj("install", "--enable-hook", "optional-hook", home=home, source=source)
+    ok(result)
+    hooks = json.loads((home / ".claude/settings.json").read_text(encoding="utf-8"))["hooks"]["PreToolUse"]
+    assert len(hooks) == 2
+    assert "可选钩子未启用" not in result.stdout
+
+    doctor = run_aicj("doctor", home=home, source=source)
+    ok(doctor)
+    assert "MISSING" not in doctor.stdout
+
+
+def test_optional_hook_removed_when_reinstall_omits_the_name(home: Path, tmp_path: Path) -> None:
+    source = _fixture_with_optional_hook(tmp_path)
+    ok(run_aicj("install", "--enable-hook", "optional-hook", home=home, source=source))
+    result = run_aicj("install", home=home, source=source)
+    ok(result)
+    hooks = json.loads((home / ".claude/settings.json").read_text(encoding="utf-8"))["hooks"]["PreToolUse"]
+    assert len(hooks) == 1
+    assert "可选钩子未启用：optional-hook" in result.stdout
+
+    ok(run_aicj("uninstall", home=home, source=source))
+    assert files_under(home) == []
+
+
+def test_unknown_enable_hook_name_is_refused(home: Path, tmp_path: Path) -> None:
+    source = _fixture_with_optional_hook(tmp_path)
+    result = run_aicj("install", "--enable-hook", "no-such-hook", home=home, source=source)
+    refused(result)
+    assert "no-such-hook" in result.stderr
+    assert files_under(home) == []
+
+
+def test_doctor_skips_disabled_optional_hooks(home: Path, tmp_path: Path) -> None:
+    source = _fixture_with_optional_hook(tmp_path)
+    ok(run_aicj("install", home=home, source=source))
+    doctor = run_aicj("doctor", home=home, source=source)
+    ok(doctor)
+    line = next(l for l in doctor.stdout.splitlines() if "optional hook optional-hook" in l)
+    assert line.startswith("SKIPPED")
+    assert "MISSING" not in doctor.stdout

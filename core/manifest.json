@@ -19,7 +19,8 @@
       "event": "Claude Code hook event, e.g. PreToolUse",
       "matcher": "hook matcher expression; empty string matches everything",
       "script": "installed script path relative to ~/.claude, must live under hooks/aicj/",
-      "blocking": "true when the script consults AICJ_HOOK_MODE (warn by default, block under install --strict)"
+      "blocking": "true when the script consults AICJ_HOOK_MODE (warn by default, block under install --strict)",
+      "optional": "true when the hook only registers when named by install --enable-hook <name>; the script file itself still installs"
     },
     "detect": {
       "files": "glob list that enables the component when matched in the target project",
@@ -103,12 +104,34 @@
         "target": "skills/auto-sdd"
       },
       {
+        "source": "skills/code-review",
+        "target": "skills/code-review"
+      },
+      {
         "source": "skills/sdd-pipeline",
         "target": "skills/sdd-pipeline"
       }
     ],
-    "hooks": [],
-    "bin": [],
+    "hooks": [
+      {
+        "source": "hooks/push-review-gate.py",
+        "target": "hooks/aicj/push-review-gate.py"
+      },
+      {
+        "source": "hooks/gate_log.py",
+        "target": "hooks/aicj/gate_log.py"
+      },
+      {
+        "source": "hooks/git-safe-rewrite.py",
+        "target": "hooks/aicj/git-safe-rewrite.py"
+      }
+    ],
+    "bin": [
+      {
+        "source": "bin/git-safe",
+        "target": "bin/git-safe"
+      }
+    ],
     "templates": [
       {
         "source": "templates/CLAUDE.global.md",
@@ -116,5 +139,19 @@
       }
     ]
   },
-  "hooks": []
+  "hooks": [
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "script": "hooks/aicj/push-review-gate.py",
+      "blocking": true
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "script": "hooks/aicj/git-safe-rewrite.py",
+      "blocking": false,
+      "optional": true
+    }
+  ]
 }

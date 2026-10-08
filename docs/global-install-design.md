@@ -47,7 +47,7 @@ tests/         安装器与钩子测试，全部使用临时 HOME
 
 ```
 aicj install   [--global | --project <dir>] [--packs auto|java,python,vue] [--adapters executor,lesson,jev,verify-probe]
-               [--codex] [--codex-hooks] [--strict] [--link] [--on-conflict skip|backup] [--dry-run] [--home <dir>]
+               [--codex] [--codex-hooks] [--strict] [--enable-hook <name>]... [--link] [--on-conflict skip|backup] [--dry-run] [--home <dir>]
 aicj uninstall [--global | --project <dir>] [--dry-run] [--home <dir>]
 aicj status    [--home <dir>]      只读：逐项列出 已装/未装/与仓库不同，并给出 diff 命令
 aicj doctor    [--home <dir>]      只读：PASS / WARN / MISSING / SKIPPED
@@ -122,6 +122,8 @@ CLAUDE.md 标记块：BEGIN、END 各恰好出现一次且顺序正确才是合�
 - `packs/<lang>/pack.json`、`adapters/<name>/adapter.json`、`adapters/optional-plugins/<name>/plugin.json`：同构结构，额外带 `detect`（探测条件）。
 
 拦截类钩子脚本统一读取环境变量 `AICJ_HOOK_MODE`（`warn` 默认 / `block`），`--strict` 时安装器把 `AICJ_HOOK_MODE=block` 写进钩子 command 前缀。
+
+**可选钩子**：manifest 钩子条目可带 `"optional": true`。optional 钩子的脚本文件照常安装，但**只有被 `install --enable-hook <name>`（可重复，name = 钩子脚本去扩展名）点名才注册进 settings.json**。未点名时 install 报告列出"可选钩子未启用：<name>（用 --enable-hook 开启）"；重装时不带该参数视为关闭，移除我方先前注册的该钩子（与 `--strict` 切换同样收敛）；doctor 对未启用的 optional 钩子报 SKIPPED，不报 MISSING。传入未知 name 时 install 报错退出 2。
 
 ## 4. 语言包
 

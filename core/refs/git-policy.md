@@ -146,6 +146,14 @@ or the current user's last task.
 
 `main`, `master`, `develop`, and `dev` are treated as integration branches. The default `pre-push` hook warns when pushing directly from those branches; `Hook mode: strict` blocks the push.
 
+### Branch Ownership
+
+AI works on task branches only, and merges into / pushes only the baseline branch the
+project declares. `main`/`master` is never merged or pushed by AI; the user merges it on
+the hosting web UI (exception: projects whose declared baseline itself is `main` — there
+AI may push the baseline after asking the user to confirm). `rules/git-workflow.md` restates
+this as its 分支归属语义 bullet; this section is the authority.
+
 ## Remote Hosting
 
 The component repository should remain compatible with GitHub and Gitee.

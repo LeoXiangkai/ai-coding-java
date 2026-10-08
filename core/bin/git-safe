@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# git-safe — Claude Code 用 git wrapper
+# 目的:解决 IDE/Obsidian 后台 git daemon 与 Claude 写命令(add/commit/rebase 等)在 .git/index.lock 上撞车的瞬态错误
+# 行为:
+#   - 透传 stdin/stdout,stderr 先缓冲
+#   - 命令成功 → 退出码 0,原样输出 stderr
+#   - 命令失败且 stderr 含 "Unable to create.*index.lock.*File exists" → sleep 退避后 retry,最多 10 次
+#   - 其他错误 → 原样输出 stderr 并退出
+# REAL_GIT:从 PATH 找第一个不是自身(realpath 比较)的 git;找不到报错退出 127
+# 用法:替换 `git` 调用为 `git-safe`,参数完全一致
+# 例:`git-safe add file.txt` / `git-safe commit -m "..."` / `git-safe push`
+
+set -o pipefail
+
+SELF=$(cd "$(dirname "$0")" && pwd -P)/$(basename "$0")
+REAL_GIT=""
+for candidate in $(command -v git 2>/dev/null; IFS=:; for d in $PATH; do [ -x "$d/git" ] && echo "$d/git"; done | awk '!seen[$0]++'); do
+    resolved=$(cd "$(dirname "$candidate")" && pwd -P)/$(basename "$candidate")
+    if [ "$resolved" != "$SELF" ]; then
+        REAL_GIT=$resolved
+        break
+    fi
+done
+if [ -z "$REAL_GIT" ]; then
+    echo "git-safe: no real git found on PATH (skipping itself)" >&2
+    exit 127
+fi
+MAX_RETRY=10
+TMPFILE=$(mktemp -t git-safe.XXXXXX) || { echo "git-safe: mktemp failed" >&2; exit 1; }
+trap 'rm -f "$TMPFILE"' EXIT
+
+for attempt in $(seq 1 "$MAX_RETRY"); do
+    "$REAL_GIT" "$@" 2>"$TMPFILE"
+    code=$?
+
+    if [[ $code -eq 0 ]]; then
+        # 成功也可能有 stderr(警告/进度信息),原样输出
+        cat "$TMPFILE" >&2
+        exit 0
+    fi
+
+    # 判定是不是 index.lock 撞车
+    if grep -q "Unable to create.*index\.lock.*File exists" "$TMPFILE"; then
+        if [[ $attempt -lt $MAX_RETRY ]]; then
+            # 退避:1s 起步,逐次 +1s,封顶 5s
+            backoff=$(( attempt < 5 ? attempt : 5 ))
+            echo "[git-safe] index.lock 撞车(第 ${attempt}/${MAX_RETRY} 次),${backoff}s 后重试..." >&2
+            sleep "$backoff"
+            continue
+        fi
+        # 重试耗尽
+        echo "[git-safe] index.lock 重试 ${MAX_RETRY} 次仍失败,放弃" >&2
+        cat "$TMPFILE" >&2
+        exit "$code"
+    fi
+
+    # 非 lock 错误,原样退出
+    cat "$TMPFILE" >&2
+    exit "$code"
+done

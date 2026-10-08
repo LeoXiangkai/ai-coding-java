@@ -14,6 +14,7 @@ alwaysApply: true
 - **斜杠前缀**,不再用旧的 `feat_`/`fix_` 下划线约定。
 - **本地分支一律不 push**:所有本地创建的分支只在本地,默认**合入基线分支**(如 `develop`)。
 - **只有基线分支 push origin**:统一由 `develop`(或项目约定的基线)对接远程,不直接 push main/master。
+- **分支归属语义**（权威在 `refs/git-policy.md` §Branch Ownership）:AI 只在任务分支工作,并只合入/推送项目声明的基线分支;main/master 不由 AI 合并或推送,由用户在代码托管网页上合并（基线分支本身就是 main 的项目除外,此时仍需推送前征得用户确认）。
 - **测试环境部署来源 = 远端基线分支**:修复未进远端 → 先合入基线并 push 再部署,不推任务/临时分支来部署;流水线配置里的默认分支不可沿用。点「执行」前的确认保留。
 - **基线分支名不写进规则/skill/memory**:由项目声明(项目 `AGENTS.md` / `CLAUDE.md` 的「当前基线分支」行),任务分支再以 `git config branch.<task>.baseline` 记录;项目未声明时问一次并写回项目声明,换基线只改那一行。
 - worktree 生命周期/登记见 `rules/worktree-management.md`。
@@ -46,5 +47,5 @@ alwaysApply: true
 
 ## index.lock 撞车
 
-可选：安装 `git-safe`（放入 PATH）后，git 写命令撞上 `index.lock` 时自动退避重试；未安装时按下面的人工步骤处理。
+可选：`git-safe` 随组件安装于 `<claude>/bin/`（配 `git-safe-rewrite` 钩子自动改写，钩子需 `--enable-hook git-safe-rewrite` 启用）；git 写命令撞上 `index.lock` 时自动退避重试；未安装时按下面的人工步骤处理。
 禁止手工 `rm .git/index.lock` 或杀 IDE 进程；确认持续撞车时先用 `lsof <repo>/.git/index.lock` 查持有进程，删 lock 前先 `cp .git/index .git/index.bak`。

@@ -22,6 +22,7 @@ class Options:
     link: bool = False
     on_conflict: str = "skip"
     project: str = ""
+    enable_hooks: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -115,6 +116,7 @@ class Manifest:
                 link=bool(options.get("link", False)),
                 on_conflict=str(options.get("on_conflict", "skip")),
                 project=str(options.get("project", "")),
+                enable_hooks=[str(x) for x in options.get("enable_hooks", [])],
             ),
             entries=[_entry(item) for item in entries],
             settings_hooks=[dict(hook) for hook in hooks],

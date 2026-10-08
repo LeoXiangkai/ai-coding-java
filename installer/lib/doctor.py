@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from . import engine, manifest, mdblock, settings
+from . import engine, index, manifest, mdblock, settings
 from .util import UserError
 
 PASS = "PASS"
@@ -36,6 +36,7 @@ def run_doctor(home: Path, source: Path | None = None) -> tuple[list[tuple[str, 
     checks.extend(_entries(home, loaded))
     checks.extend(_md_block(home))
     checks.extend(_hooks(home, loaded))
+    checks.extend(_optional_hooks(home, loaded, source))
     checks.extend(_bin_path(home, loaded))
     checks.extend(_codex(home, loaded))
     checks.extend(_third_party(home))
@@ -133,6 +134,26 @@ def _hooks(home: Path, loaded: manifest.Manifest) -> list[tuple[str, str, str]]:
         for key in keys:
             status = PASS if settings.has_hook(payload, key) else MISSING
             out.append((status, target, f"{key.event}|{key.matcher}"))
+    return out
+
+
+def _optional_hooks(home: Path, loaded: manifest.Manifest, source: Path | None) -> list[tuple[str, str, str]]:
+    """Optional hooks the user did not name are SKIPPED, never MISSING."""
+    if source is None:
+        return []
+    try:
+        idx = index.load_index(source, loaded.options.packs, loaded.options.adapters)
+    except UserError:
+        return []
+    registered = {str(row.get("command", "")) for row in loaded.settings_hooks}
+    out: list[tuple[str, str, str]] = []
+    for hook in idx.hooks:
+        if not hook.optional or hook.name in loaded.options.enable_hooks:
+            continue
+        command = engine.hook_command(hook, home, loaded.options.strict)
+        if command in registered:
+            continue
+        out.append((SKIPPED, f"optional hook {hook.name}", "not enabled (--enable-hook to register)"))
     return out
 
 

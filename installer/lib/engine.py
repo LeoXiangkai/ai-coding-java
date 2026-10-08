@@ -550,7 +550,16 @@ def _run_install(
     planned = {op.entry.path: op.entry for op in file_ops + codex_ops}
 
     keys: list[settings.HookKey] = []
+    unknown = [name for name in options.enable_hooks if name not in {h.name for h in idx.hooks}]
+    if unknown:
+        raise UserError(
+            f"unknown --enable-hook name(s): {', '.join(unknown)}; available: "
+            + (", ".join(sorted({h.name for h in idx.hooks})) or "(none)")
+        )
     for hook in idx.hooks:
+        if hook.optional and hook.name not in options.enable_hooks:
+            report.note(f"可选钩子未启用：{hook.name}（用 --enable-hook 开启）")
+            continue
         command = hook_command(hook, home, options.strict)
         script_entry = planned.get(hook_script_target(hook))
         if script_entry is None or script_entry.action not in HOOK_READY_ACTIONS:

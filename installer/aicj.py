@@ -25,6 +25,14 @@ def build_parser() -> argparse.ArgumentParser:
     install.add_argument("--codex", action="store_true", help="also link skills for codex")
     install.add_argument("--codex-hooks", action="store_true", help="also merge hooks into codex hooks.json")
     install.add_argument("--strict", action="store_true", help="run blocking hooks in block mode")
+    install.add_argument(
+        "--enable-hook",
+        action="append",
+        default=[],
+        metavar="NAME",
+        dest="enable_hook",
+        help="also register an optional hook by name (repeatable; default registers none)",
+    )
     install.add_argument("--link", action="store_true", help="symlink instead of copy")
     install.add_argument("--on-conflict", choices=("skip", "backup"), default="skip")
     install.add_argument("--dry-run", action="store_true")
@@ -99,6 +107,7 @@ def cmd_install(args: argparse.Namespace) -> int:
         strict=args.strict,
         link=args.link,
         on_conflict=args.on_conflict,
+        enable_hooks=list(args.enable_hook),
     )
     report, _result = engine.run_install(home, source, options, args.dry_run)
     _print_report("install", report, args.dry_run)
