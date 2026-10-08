@@ -130,8 +130,8 @@ CLAUDE.md 标记块：BEGIN、END 各恰好出现一次且顺序正确才是合�
 | 包 | 规则 | 检查 | 自测入口 |
 |---|---|---|---|
 | java | Java/Spring Boot、MyBatis/SQL、Java 17+/Spring Boot 3 差异规则 + Spring 隐式失效自审 | 包内 `static_review.py`（密钥、`${}`、无 where、异常吞掉、日志、代理注解、javax/jakarta） | Maven/Gradle 探测；编译与相关单测；启动日志检查；真实数据接口 curl |
-| vue | 由通用前端规则改写为 Vue 3 + TS 规则 | eslint、vue-tsc、`--max-warnings 0` | `package.json` scripts 探测：build、vitest、dev；playwright 衔接 |
-| python | 新写：类型注解、异常、依赖、SQL 注入、迁移、配置与密钥 | ruff、mypy/pyright（可选） | pytest；FastAPI / Flask / Django 启动探测 |
+| vue | Vue 3 + TypeScript + Element Plus + Pinia 主线规则，附 Vue 2 兼容差异 | 项目 eslint、vue-tsc（不新写静态检查器） | `package.json` scripts 探测 lint、type-check、test:unit / test、build、dev / serve；Playwright UI 自动化 skill 衔接 |
+| python | 新写：类型注解、异常、资源、SQL 注入、Pydantic、Alembic 迁移、密钥；FastAPI / Flask Web 规则，Django 仅探测 | ruff（必需）、mypy/pyright（项目配置时）、包内 `static_review.py` | uv / poetry / pip 探测命令前缀；pytest；FastAPI / Flask 启动入口探测，无法确定报 MISSING |
 
 ## 5. 实施批次
 
