@@ -2,7 +2,15 @@
   "version": 1,
   "schema": {
     "description": "core component manifest. packs/<lang>/pack.json, adapters/<name>/adapter.json and adapters/optional-plugins/<name>/plugin.json use the same shape and may add a detect key.",
-    "categories": ["rules", "refs", "agents", "skills", "hooks", "bin", "templates"],
+    "categories": [
+      "rules",
+      "refs",
+      "agents",
+      "skills",
+      "hooks",
+      "bin",
+      "templates"
+    ],
     "entry": {
       "source": "path relative to this component directory; a directory is expanded to every file below it",
       "target": "path relative to ~/.claude; rules/refs/agents land as <category>/<name>.md, skills as skills/<name>/, hook scripts as hooks/aicj/, bin as bin/, templates as aicj/"
@@ -20,27 +28,92 @@
   },
   "entries": {
     "rules": [
-      {"source": "rules/context-engineering.md", "target": "rules/context-engineering.md"},
-      {"source": "rules/executor-handoff.md", "target": "rules/executor-handoff.md"},
-      {"source": "rules/git-workflow.md", "target": "rules/git-workflow.md"},
-      {"source": "rules/worktree-management.md", "target": "rules/worktree-management.md"}
+      {
+        "source": "rules/context-engineering.md",
+        "target": "rules/context-engineering.md"
+      },
+      {
+        "source": "rules/executor-handoff.md",
+        "target": "rules/executor-handoff.md"
+      },
+      {
+        "source": "rules/git-workflow.md",
+        "target": "rules/git-workflow.md"
+      },
+      {
+        "source": "rules/worktree-management.md",
+        "target": "rules/worktree-management.md"
+      }
     ],
     "refs": [
-      {"source": "refs/git-policy.md", "target": "refs/git-policy.md"},
-      {"source": "refs/worktree-ops.md", "target": "refs/worktree-ops.md"}
+      {
+        "source": "refs/git-policy.md",
+        "target": "refs/git-policy.md"
+      },
+      {
+        "source": "refs/worktree-ops.md",
+        "target": "refs/worktree-ops.md"
+      },
+      {
+        "source": "refs/design-doc-principles.md",
+        "target": "refs/design-doc-principles.md"
+      },
+      {
+        "source": "refs/engineering-tradeoff.md",
+        "target": "refs/engineering-tradeoff.md"
+      },
+      {
+        "source": "refs/multi-choice-decision.md",
+        "target": "refs/multi-choice-decision.md"
+      },
+      {
+        "source": "refs/test-suite-hygiene.md",
+        "target": "refs/test-suite-hygiene.md"
+      }
     ],
     "agents": [
-      {"source": "agents/dev.md", "target": "agents/dev.md"},
-      {"source": "agents/pm.md", "target": "agents/pm.md"},
-      {"source": "agents/qa.md", "target": "agents/qa.md"},
-      {"source": "agents/sa.md", "target": "agents/sa.md"},
-      {"source": "agents/scanner.md", "target": "agents/scanner.md"}
+      {
+        "source": "agents/dev.md",
+        "target": "agents/dev.md"
+      },
+      {
+        "source": "agents/pm.md",
+        "target": "agents/pm.md"
+      },
+      {
+        "source": "agents/qa.md",
+        "target": "agents/qa.md"
+      },
+      {
+        "source": "agents/sa.md",
+        "target": "agents/sa.md"
+      },
+      {
+        "source": "agents/scanner.md",
+        "target": "agents/scanner.md"
+      }
     ],
-    "skills": [],
+    "skills": [
+      {
+        "source": "skills/add-module",
+        "target": "skills/add-module"
+      },
+      {
+        "source": "skills/auto-sdd",
+        "target": "skills/auto-sdd"
+      },
+      {
+        "source": "skills/sdd-pipeline",
+        "target": "skills/sdd-pipeline"
+      }
+    ],
     "hooks": [],
     "bin": [],
     "templates": [
-      {"source": "templates/CLAUDE.global.md", "target": "aicj/CLAUDE.global.md"}
+      {
+        "source": "templates/CLAUDE.global.md",
+        "target": "aicj/CLAUDE.global.md"
+      }
     ]
   },
   "hooks": []
