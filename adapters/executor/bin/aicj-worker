@@ -1,0 +1,92 @@
+#!/usr/bin/env python3
+"""Run a prompt through an external coding engine inside a linked git worktree. See refs/executor-contract.md."""
+from __future__ import annotations
+
+import argparse
+import json
+import math
+import os
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+
+def is_linked_worktree(path: Path) -> bool:
+    try:
+        git_dir = subprocess.check_output(["git", "rev-parse", "--git-dir"], cwd=path, text=True, stderr=subprocess.DEVNULL).strip()
+        common = subprocess.check_output(["git", "rev-parse", "--git-common-dir"], cwd=path, text=True, stderr=subprocess.DEVNULL).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return False
+    return Path(os.path.realpath(str(path / git_dir))).resolve() != Path(os.path.realpath(str(path / common))).resolve()
+
+
+def parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="aicj-worker")
+    p.add_argument("--cd", required=True)
+    p.add_argument("--tier", choices=("high", "mid", "low"), required=True)
+    p.add_argument("--engine", choices=("claude", "codex"))
+    p.add_argument("--dry-run", action="store_true")
+    p.add_argument("prompt")
+    return p
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = parser().parse_args(argv)
+    if not args.prompt.strip():
+        print("prompt 不能为空", file=sys.stderr)
+        return 2
+    worktree = Path(args.cd).expanduser().resolve()
+    if not worktree.is_dir() or not is_linked_worktree(worktree):
+        print("--cd 必须是 Git linked worktree，不能是主工作区", file=sys.stderr)
+        return 2
+    engine = args.engine or os.environ.get("AICJ_EXECUTOR_ENGINE", "claude").strip().lower() or "claude"
+    if engine not in {"claude", "codex"}:
+        print("不支持的外部执行体引擎", file=sys.stderr)
+        return 2
+    model = os.environ.get(f"AICJ_EXECUTOR_MODEL_{args.tier.upper()}", "").strip()
+    prompt = args.prompt
+    argv_out: list[str]
+    if engine == "claude":
+        argv_out = ["claude", "-p", "--dangerously-skip-permissions", "--disallowedTools", "Agent", "--"]
+        if model:
+            argv_out.extend(["--model", model])
+        argv_out.append(prompt)
+    else:
+        prompt = prompt.rstrip() + "\n不得再派子代理、不得 commit/push"
+        # default read-only sandbox cannot edit files; full access mirrors the claude engine's skipped permissions
+        sandbox = os.environ.get("AICJ_EXECUTOR_CODEX_SANDBOX", "").strip() or "danger-full-access"
+        effort = {"high": "high", "mid": "medium", "low": "low"}[args.tier]
+        argv_out = ["codex", "exec", "--cd", str(worktree), "-s", sandbox, "-c", f'model_reasoning_effort="{effort}"']
+        if model:
+            argv_out.extend(["-m", model])
+        argv_out.append(prompt)
+    raw_timeout = os.environ.get("AICJ_EXECUTOR_TIMEOUT", "").strip()
+    timeout = None
+    if raw_timeout:
+        try:
+            timeout = float(raw_timeout)
+            if not math.isfinite(timeout) or timeout <= 0:
+                raise ValueError
+        except ValueError:
+            timeout = None
+            print("AICJ_EXECUTOR_TIMEOUT 必须是正数秒，已按不限制处理", file=sys.stderr)
+    if args.dry_run:
+        print(json.dumps(argv_out, ensure_ascii=False))
+        return 0
+    if shutil.which(argv_out[0]) is None:
+        print("外部执行体不可用，按降级条款改派子代理", file=sys.stderr)
+        return 127
+    try:
+        # a background caller's stdin is a pipe that never closes; engines would wait on it forever
+        return subprocess.run(argv_out, cwd=worktree, env=os.environ.copy(), stdin=subprocess.DEVNULL, check=False, timeout=timeout).returncode
+    except subprocess.TimeoutExpired:
+        print(f"外部执行体超时（AICJ_EXECUTOR_TIMEOUT={raw_timeout}s）", file=sys.stderr)
+        return 124
+    except OSError:
+        print("外部执行体不可用，按降级条款改派子代理", file=sys.stderr)
+        return 127
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

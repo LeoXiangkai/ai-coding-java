@@ -1,0 +1,1 @@
+Deliberately bad samples for packs/java static_review tests; the repo pre-commit check skips this directory.

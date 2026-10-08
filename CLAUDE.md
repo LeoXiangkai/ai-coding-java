@@ -1,65 +1,49 @@
 # ai-coding-java Claude Code Entry
 
-## Project
-
-`ai-coding-java` is a personal reusable component for enterprise Java AI Coding workflows. It helps new or existing Java projects initialize AI-readable rules for technology stack confirmation, scoped rule loading, verification evidence, code review output, and lightweight Git prechecks.
-
-This component is designed to be recognized by both Claude Code and Codex:
-
-- Claude Code: start from this `CLAUDE.md`.
-- Codex: start from `AGENTS.md`.
-- Shared project memory: `.omx/project-memory.json`.
-- Current task notes: `.omx/notepad.md`.
+Read `AGENTS.md` for project execution constraints; Codex reads that entry.
 
 ## Collaboration Model
 
 Claude Code may handle requirement clarification, planning, decomposition, and review. Codex may handle direct implementation and verification. When Claude Code needs Codex to execute work, call Codex with the project root as `--cd`.
 
-Example handoff shape:
-
 ```bash
-codex exec --cd /path/to/ai-coding-java "<task>"
+codex exec --cd <component-root> "<task>"
 ```
 
 If Codex invocation fails from Claude Code, first check the local environment and proxy path before changing project files.
 
+## Project
+
+`ai-coding-java` is a reusable global AI Coding install component plus a project-profile tool for Java, Python and Vue. Global components install into the selected home; project initialization writes `.ai-coding-java/` and bounded entry markers. This is a Python tooling/documentation repository, not a Java application.
+
 ## Source Of Truth
 
-1. Read `AGENTS.md` for project execution constraints.
-2. Use `README.md` as the human-facing component index.
-3. Use `docs/rule-index.md` for lightweight rule routing.
-4. Use `docs/project-onboarding-template.md` when initializing a target Java project.
-5. Invoke global `$grilling` before implementation for new requirements, complete modules, legacy behavior changes, or unclear behavior changes.
-6. Use `docs/design-first-policy.md` before implementation for new projects, complete modules, legacy changes, or unclear behavior changes.
-7. Use `docs/verification-matrix.md` before claiming behavior is verified.
-8. Use `docs/testing-workflow.md` for requirement testing, code testing, API/SQL verification, and delivery evidence mapping.
-9. Use `docs/review-output-template.md` for review results.
-10. Use `docs/tap-fullstack-collaboration.md` for optional frontend/backend multi-repository TAP channels.
-11. Use `rules/`, `workflow/`, and `templates/` as the concrete template package.
-
-For future project workspace initialization, use `$setup-ai-coding`. Its source is versioned at `skills/setup-ai-coding/SKILL.md`.
+- Human index: `README.md`; installation authority: `docs/global-install-design.md`.
+- Global sources: `core/` (language-neutral), `packs/` (language rules/verification), `adapters/` (optional integrations), `installer/` (CLI and install lifecycle).
+- Project-profile sources: root `rules/`, `workflow/`, `templates/`, `docs/`; root rules retain Java 8 / Spring Boot 2 guidance. Enter via `docs/rule-index.md`, then load only matched files.
+- Project initialization: `skills/setup-ai-coding/SKILL.md` and `scripts/init_target_project.py`.
+- Skill ownership and runtime boundary: `docs/runtime-skill-boundary.md`.
+- Shared stable context: `.omx/project-memory.json`; current notes: `.omx/notepad.md`. Runtime state/logs are not versioned source.
 
 ## Development Rules
 
-1. Keep this component small and composable.
-2. Keep default project guidance limited to Java rules, verification, review, initialization, and lightweight Git protection.
-3. `AGENTS.md` and `CLAUDE.md` should stay compact and aligned.
-4. Do not add generated logs or runtime state to versioned source.
-5. Do not write secrets.
-6. Implement the real requested capability fully; do not replace it with a narrower workaround or temporary validation script.
+1. Keep changes scoped, reversible and dependency-free unless executable tooling requires a dependency. Use the machine global Python; do not create local environments.
+2. Keep Codex and Claude entry docs compact and aligned. Preserve user content; markers and settings hooks are bounded merges.
+3. Test installations only with `--home` pointing to a temporary directory; never write real user configuration during component development.
+4. Read CLI `--help` for flags. Blocking global hooks default to warn; `--strict` or `AICJ_HOOK_MODE=block` enables blocking.
+5. Codex gets skills links only with `--codex`; do not modify its global AGENTS.md. Codex hooks merge only with `--codex-hooks`.
+6. Keep root project-profile rules and `scripts/static_review_check.py` (used by repository pre-commit). They remain separate from global language packs.
+7. Third-party skills are optional: 若已安装 use them; otherwise perform the corresponding requirement, research, prototype, domain or document workflow directly and report the gap.
+8. Do not write secrets, personal paths, private service configuration or runtime logs into reusable source. Follow `docs/git-policy.md` for branch and versioning constraints.
+9. Implement the requested capability fully; assertions must verify observable behavior. Report verification gaps explicitly.
 
 ## Verification
 
-Run:
-
 ```bash
+python3 -m pytest tests -q -p no:cacheprovider
+python3 scripts/sanitize_check.py
+python3 scripts/template_integrity_check.py
 python3 scripts/context_budget_check.py
 ```
 
-For content refactors, also search for stale wording:
-
-```bash
-rg -n "v1\\.0|reference-baseline|当前项目按本地|强制 hooks" README.md AGENTS.md CLAUDE.md TOOL.md USAGE.md docs rules workflow templates scripts
-```
-
-Report any `Not-tested` items explicitly.
+Installer changes also require a temporary-home install → doctor → uninstall check. Project initialization changes require temporary-target integration. Report exit codes, test counters including skips, remaining files and `Not-tested` items. A missing `.omx/notepad.md` budget failure is reported, not hidden.

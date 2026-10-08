@@ -1,93 +1,50 @@
-# Runtime Skill Boundary v1.1
+# Runtime Skill Boundary
 
-本文件说明 ai-coding-java 与 Codex、Claude Code、OMX 等全局运行时的职责边界。
+ai-coding-java 提供全局组件与项目档案两层。安装结构以[全局安装设计](global-install-design.md)为准，人类入口见[README](../README.md)；技能发现、触发和执行由 Claude Code、Codex 或 OMX 运行时负责。
 
-## 结论
+## 技能按来源分类
 
-1. 技能发现、技能触发、`$skill` 调用、模型选择和全局编排由运行时处理。
-2. ai-coding-java 提供项目内 Java 开发规则、上下文加载顺序、验证矩阵、Review 口径和交付模板。
-3. 运行时能力通过 Codex、Claude Code 或 OMX 的全局配置提供。
-4. 初始化到业务项目后，根 `AGENTS.md` 和 `CLAUDE.md` 必须指向 `.ai-coding-java/docs/rule-index.md`，让 Codex 和 Claude Code 都能进入同一套项目规则。
-5. `$setup-ai-coding` 初始化当前项目工作区，并在 Java 项目中调用 `scripts/init_target_project.py` 接入 `.ai-coding-java/`；非 Java 项目和组件源仓库跳过注入。
-6. 分支命名的唯一共享来源是 `.ai-coding-java/docs/git-policy.md`。Claude 的 `~/.claude/rules`、Codex 的全局契约和 Multica 的 Agent 指令都只能引用它，不能各自再定义一套普通任务分支命名。
+| 来源 | 内容 | 使用边界 |
+|---|---|---|
+| `core/skills/` | 需求、PRD、设计/SDD、模块开发、测试基线、用例、代码审查、验证、Git 交付等语言无关 skills | 随 core 安装；按任务加载 |
+| `packs/java/skills/` | java-verify | Java 探测、静态检查、构建/接口验证 |
+| `packs/python/skills/` | python-verify | Python 项目命令、静态检查、测试与 Web 启动验证 |
+| `packs/vue/skills/` | vue-verify、playwright-ui-auto | Vue 项目验证与 UI 自动化 |
+| `adapters/executor/skills/` | executor-handoff-ops | 选择 executor 后提供外部执行体交接流程 |
+| `adapters/lesson/`、`adapters/optional-plugins/` | lesson 机制，jev、verify-probe 工具壳与引用 | 可选适配，不代表第三方 skill 已安装；依赖不足时 SKIPPED |
+| `skills/setup-ai-coding/` | 项目工作区初始化 | 项目档案层 skill 源；不代为执行全局安装 |
+| 第三方（本仓库不提供） | grilling、research、prototype、domain-modeling、writing-for-agents | **若已安装**才调用；doctor 只读探测，不自动下载 |
 
-## 常规新需求怎么走
+第三方缺失时，直接完成相应流程：需求问答确认边界与验收，调查并记录来源，用临时原型检验设计，整理术语/ADR，按紧凑指针编写文档。输出中记录缺失能力，不把未经调用的 skill 写成执行证据。
 
-当用户提出新需求时，推荐链路是：
+## 全局安装位置
+
+- Claude：skills 装到 `~/.claude/skills`，规则、refs、角色、bin 分别在 `~/.claude` 的相应目录，hooks 在 `~/.claude/hooks/aicj`。
+- `~/.claude/CLAUDE.md` 仅合并 ai-coding-java marker block，引用 `~/.claude/aicj/CLAUDE.global.md`；settings.json 仅合并 hooks。
+- Codex：`--codex` 额外在 `~/.agents/skills` 建链接，指向 Claude 安装的 skills。安装器不改 `~/.codex/AGENTS.md`；只有 `--codex-hooks` 才合并 `~/.codex/hooks.json`。
+- 全局拦截类 hooks 默认 warn；`--strict` 或 `AICJ_HOOK_MODE=block` 切换为 block。可选 hooks 需 `--enable-hook` 点名注册。
+
+第三方 doctor 探测位置是 `~/.agents/skills`；WARN 只说明该位置未找到，不证明其他运行时也未安装。
+
+## 项目档案边界
+
+`$setup-ai-coding` 先只读运行 aicj status。全局缺失时建议用户安装，继续处理可执行的项目初始化，不静默改用户 home。
+
+Java/Python/Vue 按与安装器一致的项目文件信号识别。目标 `.ai-coding-java/` 复用根 `rules/`、`workflow/`、`templates/`、`docs/`，并非把全局 core/packs/adapters 复制进项目。根 Java 8 / Spring Boot 2 规则只在匹配 Java 场景时读取；Python/Vue 验证由对应全局语言包负责。
+
+项目入口 marker 指向 `.ai-coding-java/docs/rule-index.md`；Claude 默认使用 `CLAUDE.local.md`。项目业务规则、数据隔离、接口契约和环境命令以最近的项目契约及 project-profile 为准。根 `scripts/static_review_check.py` 和项目 Git hooks 保留，不能将其 P0 检查行为与全局 warn hooks 混为一谈。
+
+## 分支与派发
+
+全局分支规范来源是 `~/.claude/refs/git-policy.md`（组件源 `core/refs/git-policy.md`）；已注入项目使用 `.ai-coding-java/docs/git-policy.md`。初始化脚本复制整个 docs 目录，因此项目档案包含该文件。显式项目基准分支与用户指令优先。
+
+Multica 不自动继承用户 home 的规则或记忆。派发前读取项目契约和可访问的分支规范，校验 branch、base_branch、worktree；使用 `templates/multica-worktree-agent-template.md` 记录这些输入。远端执行体无法访问全局目录时，应由派发方提供对应规范，而不是假定它已加载。
+
+## 工作流路由
 
 ```text
-全局运行时识别任务和可用技能
--> 读取项目根 AGENTS.md / CLAUDE.md
--> 进入 .ai-coding-java/docs/rule-index.md
--> 对新需求、完整模块或不清晰行为变更先执行 $grilling 需求拷问
--> 读取 workflow/agent-workflow.md 和命中的专项规则
--> 修改代码
--> 按 docs/verification-matrix.md 验证
--> 按 templates/delivery-report-template.md 汇报
+读取项目契约 → 项目规则索引 → 命中的全局 skill / 项目规则
+→ 需求边界确认 → 设计门 → 实现 → 实际验证 → 交付证据
 ```
 
-Multica 不会自动继承运行时 Owner 的 `~/.claude/rules`、`~/.codex/AGENTS.md`
-或个人记忆文件。因此，Multica 派发前必须读取项目侧规则或其同步的结构化元数据，
-并校验 `branch`、`base_branch`、`worktree` 与 Grilling 状态；仅在聊天中描述规则不构成门禁。
-对于 worktree 任务，Multica 应以 `.ai-coding-java/docs/git-policy.md` 为唯一分支契约来源，
-并把当前分支、基准分支和 worktree 路径作为启动前的硬校验项。
-
-全局运行时可以按自身规则加载规划、TDD、Review、提测、提交等技能；项目侧继续使用 ai-coding-java 的设计门、规则、TDD 分级和验证矩阵。
-
-Grilling 边界：
-
-1. 新功能、完整模块、跨模块需求、二开行为改造或需求边界不清时，进入设计门和实现前必须先调用全局 `$grilling`，用轮次问题确认目标、非目标、验收标准、影响范围和阻塞歧义。
-2. 文案、注释、无行为配置、小范围明确 bugfix、纯分析或 Review 可跳过 `$grilling`，但仍要按项目规则说明范围和验证。
-3. `$grilling` 的技能发现、问题轮次和用户确认由全局运行时负责；ai-coding-java 只规定它在 Java 新需求流程中的前置位置。
-
-TDD 边界：
-
-1. ai-coding-java 负责在 `docs/tdd-policy.md` 中定义 L0-L3 分级和触发条件。
-2. 全局运行时负责在 L3 或用户显式要求 TDD 时执行具体 RED/GREEN/REFACTOR 技能。
-3. 项目交付报告负责记录 TDD 等级、RED/GREEN 证据或无法执行的原因。
-
-## 技能归属
-
-| 场景 | 负责方 |
-|---|---|
-| 用户显式输入 `$setup-ai-coding`、`$cp`、`$release-test` 等 | 全局运行时 |
-| 根据技能描述判断是否加载某个技能 | 全局运行时 |
-| Codex 读取项目根 `AGENTS.md` | Codex 运行时 |
-| Claude Code 读取项目根 `CLAUDE.md` | Claude Code 运行时 |
-| Java 分层、SQL、事务、安全日志、交付规则 | ai-coding-java |
-| 任务类型到规则文件的路由 | ai-coding-java |
-| 验证矩阵、Review 分级、交付报告模板 | ai-coding-java |
-| 企业知识库条目和项目画像 | ai-coding-java |
-
-## setup 与目标注入
-
-`setup-ai-coding` 把工作区初始化和 Java 规则组件接入放在同一轮执行：
-
-1. `python3 scripts/install_setup_ai_coding_skill.py` 把全局 `~/.agents/skills/setup-ai-coding` 和 `~/.claude/skills/setup-ai-coding` 软链到本仓库的 `skills/setup-ai-coding/`，让新机器能识别 `$setup-ai-coding`。
-2. `$setup-ai-coding` 初始化当前项目的 `AGENTS.md`、`CLAUDE.local.md`、`.omx/`、ignore 与权限等工作区约定。
-3. 如果当前项目是 Java 项目且不是 `ai-coding-java` 组件源，`$setup-ai-coding` 继续调用 `scripts/init_target_project.py /path/to/target-project ... --claude-entry local` 创建 `.ai-coding-java/`，并把 Claude marker 写入 `CLAUDE.local.md`。
-4. 目标 `.ai-coding-java/` 不携带 `setup-ai-coding` 副本；需要安装或刷新全局 skill 时，从 `ai-coding-java` 组件仓库运行安装脚本。
-
-## 组件职责
-
-1. 维护 Java 项目开发规则。
-2. 维护验证矩阵和交付模板。
-3. 维护目标项目初始化入口。
-4. 维护轻量 Git commit/push 预检。
-5. 维护 project harness 只读检查入口，确认目标项目已正确接入。
-
-## 推荐写法
-
-项目根入口只需要表达项目规则和轻量路由，例如：
-
-```markdown
-Use `.ai-coding-java/docs/rule-index.md` as the first ai-coding-java routing file.
-Project business rules in this `AGENTS.md` / `CLAUDE.md` override generic ai-coding-java suggestions.
-Global runtime skills remain owned by Codex, Claude Code, or OMX.
-```
-
-这样可以保证：
-
-1. Codex 和 Claude Code 都能识别项目内规则。
-2. 全局技能升级不需要改业务项目模板。
-3. 企业 Java 规范稳定留在项目侧，运行时能力稳定留在全局侧。
+新需求需要 grilling 时，若已安装则调用，否则直接完成需求问答并保留结论。项目设计门、TDD 分级和验证矩阵仍由项目档案提供；具体运行时编排由运行时负责。明确小修或纯分析按项目规则选择必要验证，不强制加载完整流程。

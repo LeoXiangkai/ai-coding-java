@@ -1,0 +1,18 @@
+{
+  "backend": {
+    "root": "<backend-root>",
+    "compile": {"probe_cmd": ["<compile-command>"]},
+    "unit": {"probe_cmd": ["<unit-test-command>"]},
+    "service": {"probe_cmd": ["<service-start-check>"]},
+    "api": {"url": "http://localhost:<port>", "probe_cmd": ["<api-check-command>"]},
+    "database": {"probe_cmd": ["<database-check-command>"]}
+  },
+  "frontend": {
+    "root": "<frontend-root>",
+    "unit": {"probe_cmd": ["<frontend-test-command>"]}
+  },
+  "e2e": {
+    "root": "<e2e-root>",
+    "probe_cmd": ["<e2e-check-command>"]
+  }
+}

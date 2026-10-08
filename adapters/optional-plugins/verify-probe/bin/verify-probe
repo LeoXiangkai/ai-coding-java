@@ -1,0 +1,229 @@
+#!/usr/bin/env python3
+"""Probe verification layers declared by a neutral profile."""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import shlex
+import subprocess
+import sys
+from pathlib import Path
+from typing import Any
+
+RUNNABLE = "RUNNABLE"
+PARTIAL = "PARTIAL"
+BLOCKED = "BLOCKED"
+UNKNOWN = "UNKNOWN"
+ORDER = {RUNNABLE: 0, UNKNOWN: 1, PARTIAL: 2, BLOCKED: 3}
+
+
+def claude_dir() -> Path:
+    override = os.environ.get("AICJ_CLAUDE_DIR", "").strip()
+    if override:
+        return Path(override).expanduser()
+    return Path(__file__).resolve().parents[1]
+
+
+def profile_dir() -> Path:
+    override = os.environ.get("AICJ_VERIFY_PROFILE_DIR", "").strip()
+    return Path(override).expanduser() if override else claude_dir() / "aicj" / "verify-profiles"
+
+
+def load_profile(path: Path) -> tuple[dict[str, Any] | None, str | None]:
+    try:
+        with path.open(encoding="utf-8") as handle:
+            value = json.load(handle)
+    except (OSError, ValueError) as exc:
+        return None, f"profile 读取失败: {exc}"
+    if not isinstance(value, dict):
+        return None, "profile 顶层必须是 JSON 对象"
+    return value, None
+
+
+def _root(value: Any) -> Path | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    path = Path(value).expanduser()
+    return path.resolve() if path.exists() else path
+
+
+def _under(path: Path, root: Path | None) -> bool:
+    if root is None:
+        return False
+    try:
+        path.resolve().relative_to(root.resolve())
+        return True
+    except (OSError, ValueError):
+        return False
+
+
+def find_profile(cwd: Path) -> tuple[str, dict[str, Any]] | None:
+    directory = profile_dir()
+    if not directory.is_dir():
+        return None
+    for path in sorted(directory.glob("*.json")):
+        profile, error = load_profile(path)
+        if error or profile is None:
+            continue
+        roots = []
+        for section in (profile.get("backend"), profile.get("frontend"), profile.get("e2e")):
+            if isinstance(section, dict):
+                roots.append(_root(section.get("root") or section.get("workspace")))
+        if any(_under(cwd, root) for root in roots):
+            return path.stem, profile
+    return None
+
+
+def _section(profile: dict[str, Any], names: tuple[str, ...]) -> dict[str, Any]:
+    for name in names:
+        value = profile.get(name)
+        if isinstance(value, dict):
+            return value
+    return {}
+
+
+def layer_config(profile: dict[str, Any], name: str, family: str, aliases: tuple[str, ...]) -> dict[str, Any]:
+    layers = profile.get("layers")
+    if isinstance(layers, dict) and isinstance(layers.get(name), dict):
+        return layers[name]
+    parent = _section(profile, (family,))
+    for alias in aliases:
+        value = parent.get(alias)
+        if isinstance(value, dict):
+            return value
+    for alias in aliases:
+        value = profile.get(alias)
+        if isinstance(value, dict):
+            return value
+    return {}
+
+
+def layer_root(profile: dict[str, Any], family: str) -> Path | None:
+    section = _section(profile, (family,))
+    return _root(section.get("root") or section.get("workspace"))
+
+
+def _command(value: Any) -> list[str] | None:
+    if isinstance(value, str):
+        try:
+            parts = shlex.split(value)
+        except ValueError:
+            return None
+        return parts or None
+    if isinstance(value, list) and all(isinstance(item, str) and item.strip() for item in value):
+        return [item.strip() for item in value]
+    return None
+
+
+def probe(config: dict[str, Any], cwd: Path | None) -> tuple[str, str]:
+    command = _command(config.get("probe_cmd"))
+    if command is None:
+        return UNKNOWN, "profile 未配置 probe_cmd"
+    timeout = config.get("timeout", 15)
+    try:
+        timeout = max(1, min(int(timeout), 300))
+    except (TypeError, ValueError):
+        timeout = 15
+    try:
+        result = subprocess.run(command, cwd=str(cwd) if cwd and cwd.is_dir() else None,
+                                capture_output=True, text=True, timeout=timeout, check=False)
+    except subprocess.TimeoutExpired:
+        return BLOCKED, f"probe_cmd 超时（{timeout}s）"
+    except OSError as exc:
+        return UNKNOWN, f"probe_cmd 不可运行: {exc}"
+    detail = (result.stderr.strip() or result.stdout.strip()).splitlines()
+    message = (detail[0][:240] if detail else f"probe_cmd exit {result.returncode}")
+    if result.returncode == 0:
+        return RUNNABLE, message
+    if result.returncode == 1:
+        return BLOCKED, message
+    if result.returncode == 2:
+        return PARTIAL, message
+    return UNKNOWN, message
+
+
+LAYER_SPECS = (
+    ("backend-compile", "backend", ("compile", "backend-compile")),
+    ("backend-unit", "backend", ("unit", "backend-unit", "test")),
+    ("service-start", "backend", ("service", "service-start")),
+    ("app-api", "backend", ("api", "app_api", "app-api")),
+    ("database", "backend", ("database", "db", "db-schema")),
+    ("frontend-unit", "frontend", ("unit", "frontend-unit", "test")),
+    ("e2e", "e2e", ("e2e",)),
+)
+
+
+def wanted(repo: str, family: str) -> bool:
+    return repo == "all" or repo == family or (repo == "frontend" and family == "e2e")
+
+
+def run(args: argparse.Namespace) -> int:
+    cwd = Path.cwd().resolve()
+    name = args.profile.strip() if args.profile else ""
+    profile: dict[str, Any] | None = None
+    if args.from_cwd and not name:
+        found = find_profile(cwd)
+        if found is None:
+            print("未找到匹配当前目录的 profile；请创建 profile 或指定名称", file=sys.stderr)
+            return 2
+        name, profile = found
+    if not name:
+        print("需要 profile 或 --from-cwd", file=sys.stderr)
+        return 2
+    if profile is None:
+        path = profile_dir() / f"{name}.json"
+        profile, error = load_profile(path)
+        if error:
+            print(error, file=sys.stderr)
+            return 2
+        if profile is None:
+            print(f"profile 不存在: {path}", file=sys.stderr)
+            return 2
+
+    repo = args.repo.lower()
+    rows: list[dict[str, str]] = []
+    for layer, family, aliases in LAYER_SPECS:
+        if not wanted(repo, family):
+            continue
+        config = layer_config(profile, layer, family, aliases)
+        status, reason = probe(config, layer_root(profile, family))
+        rows.append({"layer": layer, "status": status, "reason": reason})
+
+    if not rows:
+        overall = UNKNOWN
+    else:
+        overall = max((row["status"] for row in rows), key=ORDER.get)
+    exit_code = 0 if rows and overall == RUNNABLE else 1
+    result = {"profile": name, "repo": repo, "layers": rows, "overall": overall, "exit": exit_code}
+    if args.json:
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+    elif args.brief:
+        print(f"[verify-probe {name}/{repo}]")
+        for row in rows:
+            if row["status"] != RUNNABLE:
+                print(f"{row['layer']}: {row['status']} — {row['reason']}")
+        print(f"overall: {overall}")
+    else:
+        print("层 | 状态 | 原因")
+        for row in rows:
+            print(f"{row['layer']} | {row['status']} | {row['reason']}")
+        print(f"overall | {overall} | exit {exit_code}")
+    return exit_code
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(prog="verify-probe")
+    parser.add_argument("profile", nargs="?")
+    parser.add_argument("--from-cwd", action="store_true")
+    parser.add_argument("--repo", choices=("auto", "backend", "frontend", "all"), default="all")
+    parser.add_argument("--brief", action="store_true")
+    parser.add_argument("--json", action="store_true")
+    args = parser.parse_args()
+    if args.repo == "auto":
+        args.repo = "all"
+    return run(args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

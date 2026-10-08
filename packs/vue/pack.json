@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "detect": {
+    "files": [],
+    "package_deps": ["vue"]
+  },
+  "entries": {
+    "rules": [
+      {"source": "rules/vue3-typescript.md", "target": "rules/vue3-typescript.md"},
+      {"source": "rules/vue2-legacy.md", "target": "rules/vue2-legacy.md"}
+    ],
+    "refs": [],
+    "agents": [],
+    "skills": [
+      {"source": "skills/vue-verify", "target": "skills/vue-verify"},
+      {"source": "skills/playwright-ui-auto", "target": "skills/playwright-ui-auto"}
+    ],
+    "hooks": [],
+    "bin": [],
+    "templates": []
+  },
+  "hooks": []
+}

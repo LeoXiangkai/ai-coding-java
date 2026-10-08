@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "detect": {
+    "files": ["pom.xml", "build.gradle", "build.gradle.kts"],
+    "package_deps": []
+  },
+  "entries": {
+    "rules": [
+      {"source": "rules/pack-sample.md", "target": "rules/pack-sample.md"}
+    ],
+    "refs": [],
+    "agents": [],
+    "skills": [],
+    "hooks": [],
+    "bin": [],
+    "templates": []
+  },
+  "hooks": []
+}

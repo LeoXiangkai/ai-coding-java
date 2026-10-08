@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "detect": {
+    "files": ["pom.xml", "build.gradle", "build.gradle.kts"],
+    "package_deps": []
+  },
+  "entries": {
+    "rules": [
+      {"source": "rules/java-spring-boot.md", "target": "rules/java-spring-boot.md"},
+      {"source": "rules/java-sql-mybatis.md", "target": "rules/java-sql-mybatis.md"},
+      {"source": "rules/java-modern.md", "target": "rules/java-modern.md"}
+    ],
+    "refs": [],
+    "agents": [],
+    "skills": [
+      {"source": "skills/java-verify", "target": "skills/java-verify"}
+    ],
+    "hooks": [],
+    "bin": [],
+    "templates": []
+  },
+  "hooks": []
+}

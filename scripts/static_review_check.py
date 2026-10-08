@@ -24,6 +24,8 @@ SKIP_DIRS = {
     "build",
     "dist",
 }
+# a directory holding this file contains deliberately bad samples (checker fixtures); skip it
+FIXTURE_MARKER = ".static-review-fixture"
 SECRET_RE = re.compile(
     r"(?i)(password|passwd|secret|token|access[_-]?key|private[_-]?key)\s*[:=]\s*['\"]?[^'\"\s]{8,}"
 )
@@ -39,6 +41,10 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def is_fixture(path: Path) -> bool:
+    return any((parent / FIXTURE_MARKER).is_file() for parent in path.parents)
+
+
 def iter_files(paths: list[str], include_docs: bool):
     exts = set(DEFAULT_EXTS)
     if include_docs:
@@ -48,13 +54,13 @@ def iter_files(paths: list[str], include_docs: bool):
         if not path.exists():
             continue
         if path.is_file():
-            if path.suffix in exts:
+            if path.suffix in exts and not is_fixture(path):
                 yield path
             continue
         for item in path.rglob("*"):
             if not item.is_file():
                 continue
-            if any(part in SKIP_DIRS for part in item.parts):
+            if any(part in SKIP_DIRS for part in item.parts) or is_fixture(item):
                 continue
             if item.suffix in exts:
                 yield item

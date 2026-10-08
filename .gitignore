@@ -18,3 +18,6 @@ target/
 build/
 dist/
 .omx/
+
+# Python test caches
+.pytest_cache/

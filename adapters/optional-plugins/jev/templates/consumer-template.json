@@ -1,0 +1,26 @@
+{
+  "data": "{{DATA}}",
+  "pattern": "{{PATTERN}}",
+  "questions": {
+    "decides": {
+      "ask": "Does this file use the data under analysis to make a business decision?",
+      "yes": "The data affects filtering, validation, matching, assignment, uniqueness, or a reference check before a write.",
+      "no": "The data is only declared, selected, rendered, transported, or absent."
+    },
+    "scopes_access": {
+      "ask": "Does this file use the data under analysis to limit what a user may see or do?",
+      "yes": "A role, user, or data scope depends on this data.",
+      "no": "No access or visibility rule depends on this data."
+    },
+    "stores_copy": {
+      "ask": "Does this file write a copy of the data under analysis elsewhere?",
+      "yes": "It persists the value in another record, snapshot, summary, cache, or export.",
+      "no": "It does not persist the value outside its owning record."
+    },
+    "display_only": {
+      "ask": "Is the data under analysis used here purely for display or transport?",
+      "yes": "It is only a field, label, option, or pass-through value.",
+      "no": "It is used in logic, or is absent."
+    }
+  }
+}

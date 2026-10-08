@@ -1,0 +1,4 @@
+<mapper namespace="example.GoodMapper">
+  <select id="find">select id from item where id = #{id}</select>
+  <update id="update">update item set name = #{name} where id = #{id}</update>
+</mapper>

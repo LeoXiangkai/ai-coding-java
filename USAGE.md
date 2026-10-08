@@ -1,9 +1,11 @@
 # ai-coding-java Usage
 
+全局安装入口见 [README](README.md)，安装结构与行为以 [global-install-design](docs/global-install-design.md) 为准。本文保留项目档案层用法；全局 `core/`、`packs/`、`adapters/` 由 `installer/aicj.py` 安装。
+
 ## Initialize A Target Java Project
 
-1. Run or follow `$setup-ai-coding` in the target repository; Java targets get `.ai-coding-java/` through this flow and write the Claude marker to `CLAUDE.local.md`.
-2. If the machine lacks `$setup-ai-coding`, run `scripts/install_setup_ai_coding_skill.py` from the `ai-coding-java` component repository.
+1. Run or follow `$setup-ai-coding` in the target repository; Java/Python/Vue targets get `.ai-coding-java/` through this flow and write the Claude marker to `CLAUDE.local.md`.
+2. If the machine lacks `$setup-ai-coding`, explicitly link its project-init source using `scripts/install_setup_ai_coding_skill.py` from the `ai-coding-java` component repository.
 3. Confirm project type:
    - new project
    - legacy project
@@ -29,7 +31,7 @@ python3 /path/to/ai-coding-java/scripts/init_target_project.py /path/to/target-p
 
 By default, the script writes `.ai-coding-java/` and adds small marker blocks to target root `AGENTS.md` and `CLAUDE.md`, so Codex and Claude Code can discover the rules.
 
-`$setup-ai-coding` calls this injection path for Java projects. Use the scripted command directly when you want explicit control over parameters or refresh behavior.
+`$setup-ai-coding` calls this injection path for Java/Python/Vue projects; Java rules remain conditional on Java tasks. Use the scripted command directly when you want explicit control over parameters or refresh behavior.
 
 When direct injection should avoid changing team `CLAUDE.md`, add:
 
@@ -96,7 +98,7 @@ Use [docs/remote-hosting-guide.md](docs/remote-hosting-guide.md) for setup and s
 
 Generated AI Coding support files should stay under `.ai-coding-java/` by default.
 
-The only expected target-root changes are bounded ai-coding-java marker blocks in `AGENTS.md` and `CLAUDE.md`.
+The project-profile injection changes target-root entry marker blocks only: `$setup-ai-coding` uses `AGENTS.md` and `CLAUDE.local.md`; direct injection defaults to `CLAUDE.md`. Workspace initialization may additionally create the local support files described in the skill.
 
 When a task needs RD process records, put them under:
 
@@ -106,7 +108,7 @@ When a task needs RD process records, put them under:
 
 Use `docs/rd-integrated-workflow.md` and the brief templates only for complex requirements, risky refactors, release-sensitive changes, or work that needs traceability. Do not turn artifacts into a mandatory hook or gate by default.
 
-For new requirements, complete modules, legacy behavior changes, or unclear behavior changes, invoke global `$grilling` before design-gated implementation.
+For new requirements, complete modules, legacy behavior changes, or unclear behavior changes, invoke global `$grilling` 若已安装; otherwise confirm requirements, scope and acceptance directly before design-gated implementation.
 
 ## Minimal Target `AGENTS.md` Pointer
 
@@ -123,7 +125,7 @@ Load only matching rules:
 
 Project business rules, data isolation, environment commands, and API contracts in this `AGENTS.md` override generic ai-coding-java suggestions.
 
-For new requirements, complete modules, legacy behavior changes, or unclear behavior changes, invoke global `$grilling` before design-gated implementation.
+For new requirements, complete modules, legacy behavior changes, or unclear behavior changes, invoke global `$grilling` 若已安装; otherwise confirm requirements, scope and acceptance directly before design-gated implementation.
 ```
 
 ## Minimal Target `CLAUDE.md` Pointer
@@ -135,7 +137,7 @@ Use `.ai-coding-java/docs/rule-index.md` as the first ai-coding-java routing fil
 
 Read the nearest `AGENTS.md` for Codex-compatible project execution rules when present.
 Use `.ai-coding-java/docs/verification-matrix.md` before claiming completion.
-For new requirements, complete modules, legacy behavior changes, or unclear behavior changes, invoke global `$grilling` before design-gated implementation.
+For new requirements, complete modules, legacy behavior changes, or unclear behavior changes, invoke global `$grilling` 若已安装; otherwise confirm requirements, scope and acceptance directly before design-gated implementation.
 ```
 
 ## Agent Loading Order

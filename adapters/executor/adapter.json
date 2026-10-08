@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "detect": {"files": [], "package_deps": []},
+  "entries": {
+    "rules": [],
+    "refs": [{"source": "refs/executor-contract.md", "target": "refs/executor-contract.md"}],
+    "agents": [],
+    "skills": [{"source": "skills/executor-handoff-ops", "target": "skills/executor-handoff-ops"}],
+    "hooks": [{"source": "hooks/block-handoff-poll.py", "target": "hooks/aicj/block-handoff-poll.py"}],
+    "bin": [{"source": "bin/aicj-worker", "target": "bin/aicj-worker"}],
+    "templates": []
+  },
+  "hooks": [
+    {"event": "PreToolUse", "matcher": "Bash", "script": "hooks/aicj/block-handoff-poll.py", "blocking": true},
+    {"event": "PreToolUse", "matcher": "TaskOutput|BashOutput", "script": "hooks/aicj/block-handoff-poll.py", "blocking": true}
+  ]
+}

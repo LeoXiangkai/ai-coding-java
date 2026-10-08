@@ -1,19 +1,19 @@
 ---
-description: "为当前项目初始化可复用的 AI Coding 工作区（Codex / Claude Code / OMX 共用），并在 Java 项目中接入 ai-coding-java 规则组件。只做项目级，不动全局环境层。"
+name: setup-ai-coding
+description: "为当前项目初始化可复用的 AI Coding 工作区（Codex / Claude Code / OMX 共用），并在 Java/Python/Vue 项目中接入 ai-coding-java 规则组件。只做项目级，不动全局环境层。"
 user-invocable: true
 ---
 
 # /setup-ai-coding — 项目级 AI Coding 初始化
 
 目标：把当前项目初始化成 **Codex / Claude Code / OMX 三方都能识别**的可复用工作区，
-且在 Java 项目中接入 `.ai-coding-java/` 规则组件，同时**不把重型命令体系或全局运行时目录复制进仓库**。
+且在 Java/Python/Vue 项目中接入 `.ai-coding-java/` 规则组件，同时**不把重型命令体系或全局运行时目录复制进仓库**。
 
 它是统一入口，不把 CC 与 Codex 初始化拆成两套互相漂移的流程。
 
-> 可版本化源文件位于 `ai-coding-java/skills/setup-ai-coding/SKILL.md`；全局
-> `~/.agents/skills/setup-ai-coding` 和 `~/.claude/skills/setup-ai-coding` 应直接软链到这里。
-> 新机器缺少本 skill 时，在 `ai-coding-java` 工程内运行
-> `python3 scripts/install_setup_ai_coding_skill.py` 安装链接。
+> 可版本化源文件位于 `skills/setup-ai-coding/SKILL.md`（相对于组件仓库）。
+> 全局入口可由 `scripts/install_setup_ai_coding_skill.py` 链接到该源；
+> 本 skill 的项目档案初始化与 `installer/aicj.py` 的全局组件安装是两个独立层。
 
 ---
 
@@ -24,9 +24,18 @@ user-invocable: true
 | 层 | 内容 | 谁配置 | 本 skill 怎么处理 |
 |----|------|--------|------------------|
 | **全局层** | `~/.claude/settings.json`（hooks / `enabledPlugins` / 权限 / env）、`~/.claude/rules`、`~/.codex/config.toml`、`~/.agents/skills`、已装插件与 MCP | 用户一次性配好，跨项目共享 | **只读探测、不改**；缺关键能力时提示用户，不代为安装 |
-| **项目层** | `AGENTS.md`、`CLAUDE.md` / `CLAUDE.local.md`、`.omx/`、ignore 与权限、Java 项目的 `.ai-coding-java/`、项目特化 skills/agents | 每项目独立 | **本 skill 的职责范围** |
+| **项目层** | `AGENTS.md`、`CLAUDE.md` / `CLAUDE.local.md`、`.omx/`、ignore 与权限、Java/Python/Vue 项目的 `.ai-coding-java/`、项目特化 skills/agents | 每项目独立 | **本 skill 的职责范围** |
 
 ---
+
+## 全局层前置检查
+
+开始项目初始化前，先只读运行 `aicj status`；若没有命令入口，在组件源仓库用
+`python3 installer/aicj.py status`。这一步只报告安装状态，不写全局目录。
+
+全局层缺失时，只建议用户从组件源执行 `python3 installer/aicj.py install --codex`，
+并说明应先 dry-run 和临时 `--home` 试用。**绝不自动执行安装**；全局层缺失不阻止
+可独立完成的项目工作区初始化，涉及全局能力的步骤标明 `Not-tested`。
 
 ## 总原则
 
@@ -100,15 +109,16 @@ git log --format='%an' -- CLAUDE.md | sort -u   # 谁写的
 
 1. 确认项目根：优先 git 根目录，否则当前工作目录。
 2. 扫顶层结构：`ls` / `rg --files`，不做无目标全量阅读。
-3. 识别技术栈：`pom.xml` / `build.gradle` / `package.json` / `pyproject.toml` / `go.mod` / README。
+3. 识别技术栈：`pom.xml` / `build.gradle*` / `pyproject.toml` / `requirements*.txt` / `setup.py` / 含 Vue 依赖的 `package.json` / README。
 4. 识别现有规范：`AGENTS.md`、`CLAUDE.md`、`CLAUDE.local.md`、README、构建脚本、lint/test 配置。
 5. 抽样读 2-3 个入口/典型业务文件，提取分层、命名、错误处理、测试习惯。
 6. **提取并实跑验证** build / test / 启动命令——只写验证过的，没验证的显式标 `Not-tested`。
 7. 检查记忆状态：`.omx/`、CC 自动记忆（`~/.claude/projects/<encoded-cwd>/memory/`）是否已有内容。
 8. **全局前置自检（只读）**：全局规则硬依赖以下工具，逐个 `test -x`，缺失只列出、不代装：
-   `~/.claude/bin/git-safe`（git 写操作）、`~/.claude/bin/codex-cc`（Codex 派工）、`cc-source`（来源门禁，`command -v`）。
+   `~/.claude/bin/git-safe`（git 写操作）；选用 executor 时探测 `~/.claude/bin/aicj-worker`。
+   外部执行体按 `adapters/executor/refs/executor-contract.md` 配置，未选用的能力不视为硬依赖。
 9. **本地自测入口探测**（Java / 后端项目）：
-   - DDL / 数据脚本工具：`test -x .claude/scripts/db-cli.sh`，并看它读取哪些环境变量（如 `DBCLI_YML`）。
+   - DDL / 数据脚本工具：`从项目已有脚本或已配置命令中探测数据库工具`，并看它读取哪些环境变量（如 `DBCLI_YML`）。
      **只记录位置与变量名，不生成脚本、不写任何凭据**；缺失标 `Not-tested: db-cli 未接入`。
    - 启动参数：从 `.vscode/launch.json`、`.idea/runConfigurations/`、`application-*.yml`（profile 名与
      `server.port`）提取；只把实跑验证过的启动命令写进产物，其余标 `Not-tested`。
@@ -310,9 +320,9 @@ README / docs / templates。
 
 ---
 
-## 第四阶段：Java 项目接入 ai-coding-java
+## 第四阶段：Java/Python/Vue 项目接入 ai-coding-java
 
-`$setup-ai-coding` 必须把 Java 项目的 `.ai-coding-java/` 接入纳入同一轮初始化；不要让用户再手工猜
+`$setup-ai-coding` 必须把 Java/Python/Vue 项目的 `.ai-coding-java/` 接入纳入同一轮初始化；不要让用户再手工猜
 `init_target_project.py`。
 
 ### 触发条件
@@ -321,31 +331,31 @@ README / docs / templates。
 
 1. **当前仓库就是 `ai-coding-java` 组件源**：跳过注入。判据是同时存在
    `skills/setup-ai-coding/SKILL.md` 和 `scripts/init_target_project.py`。
-2. **Java 项目**：自动接入。判据信号包括 `pom.xml`、`build.gradle`、`build.gradle.kts`、
-   `src/main/java/`、`**/*.java`、`**/*Mapper.xml`。
+2. **Java/Python/Vue 项目**：自动接入，判据与 pack detect 一致：
+   Java 为 `pom.xml` 或 `build.gradle*`；Python 为 `pyproject.toml`、`requirements*.txt` 或 `setup.py`；
+   Vue 为 `package.json` 的 dependencies 或 devDependencies 含 `vue`。
+   项目档案仍复用根素材，Java 规则仅在 Java 场景加载，Python/Vue 使用对应全局语言包验证。
 3. **已存在 `.ai-coding-java/`**：不要重跑覆盖式初始化；优先执行
    `python3 .ai-coding-java/scripts/check_target_project.py .`，必要时再用组件源的
    `scripts/refresh_target_project.py . --source <ai-coding-java-root>` 做 dry-run。
-4. **非 Java 项目或无法确认**：跳过 `.ai-coding-java/`，在输出里写明 `Not-tested/Skipped` 原因。
+4. **未命中 Java/Python/Vue 或无法确认**：跳过 `.ai-coding-java/`，在输出里写明 `Not-tested/Skipped` 原因。
 
 ### 组件源定位
 
-优先从当前 skill 文件反推组件根：`skills/setup-ai-coding/SKILL.md` 的上两级目录就是
-`ai-coding-java` 根。若运行时不能提供 skill 文件路径，再按顺序尝试：
+优先解析当前 skill 的真实源路径：仅当其位于组件仓库的 `skills/setup-ai-coding/` 时，
+上两级目录才是组件根；不要把全局安装目录误当组件源。否则检查环境变量：
 
 ```bash
 test -n "$AI_CODING_JAVA_HOME" && test -f "$AI_CODING_JAVA_HOME/scripts/init_target_project.py"
-test -f /Users/xiangkai/AI_Content/develop/ai-coding-java/scripts/init_target_project.py
 ```
 
-> 最后一条硬编码路径是**本机默认兜底**；其他机器上组件路径不同时，请设置环境变量
-> `AI_CODING_JAVA_HOME` 指向本机的 `ai-coding-java` 根目录。
+> 请设置 `AI_CODING_JAVA_HOME` 指向组件源仓库；只接受实际含初始化脚本的目录。
 
 找不到组件源时，不要创建临时替代目录；输出 `Not-tested: ai-coding-java source not found`。
 
 ### 初始化命令
 
-对尚未接入的 Java 项目执行：
+对尚未接入的 Java/Python/Vue 项目执行：
 
 ```bash
 python3 <ai-coding-java-root>/scripts/init_target_project.py <project-root> \
@@ -364,7 +374,7 @@ python3 <ai-coding-java-root>/scripts/init_target_project.py <project-root> \
 参数选择：
 
 1. `project-type`：已有业务源码或提交历史用 `legacy`；空项目用 `new`；无法判断用 `unconfirmed`。
-2. `stack`：从 `pom.xml`、Gradle 文件、README、配置文件中提取；无法确认写 `unconfirmed`。
+2. `stack`：从已检测的构建文件、依赖文件、README、配置文件中提取；无法确认写 `unconfirmed`。
 3. `data-boundary`：除非项目规则已明确租户/组织/学校/年度等边界，否则写 `unconfirmed`。
 4. `--claude-entry local` 是 `$setup-ai-coding` 的固定选择，避免默认修改团队 `CLAUDE.md`。
 5. 不加 `--force`，除非用户明确要求覆盖 `.ai-coding-java/`。
@@ -448,8 +458,8 @@ done
 5. JSON 合法性：`python3 -c "import json;json.load(open('.omx/project-memory.json'))"`，
    `.claude/settings.local.json` 同理。
 6. 实跑一次 build 命令（如 `mvn -q compile -DskipTests`），确认写进文档的命令真的能跑。
-7. Java 项目必须验证 `.ai-coding-java/`：运行
-   `python3 .ai-coding-java/scripts/check_target_project.py .`；非 Java 或组件源仓库要写明跳过原因。
+7. Java/Python/Vue 项目必须验证 `.ai-coding-java/`：运行
+   `python3 .ai-coding-java/scripts/check_target_project.py .`；未命中支持语言或组件源仓库要写明跳过原因。
 8. 确认**未生成** `.claudeignore`、未意外生成 `.codex/`。
 9. 排除规则没有误伤源码。
 10. **确认 `CLAUDE.md` 未被创建也未被修改**（除非用户显式要求）：
@@ -496,7 +506,7 @@ done
 - 判定的仓库归属（A / B / C）与据此选择的排除机制。
 - Codex 与 Claude Code 的入口行为摘要；Claude Code 入口应为 `CLAUDE.local.md`，
   若本次动了 `CLAUDE.md`，必须写明是用户哪一句显式要求的。
-- Java 项目的 `.ai-coding-java/` 接入结果；非 Java 或组件源仓库必须写明跳过原因。
+- Java/Python/Vue 项目的 `.ai-coding-java/` 接入结果；未命中支持语言或组件源仓库必须写明跳过原因。
 - Git 钩子是否安装及理由（`--hooks skip` 默认跳过 / `core.hooksPath` 阻断跳过 / 用户同意后已安装）。
 - worktree 适配方式：是否需要软链、已软链的文件清单。
 - 当前基线分支（用户确认值）与 `REGISTRY.md` 状态（新建 / 已存在且一致 / 不一致项）。

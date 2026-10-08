@@ -1,0 +1,186 @@
+{
+  "version": 1,
+  "schema": {
+    "description": "core component manifest. packs/<lang>/pack.json, adapters/<name>/adapter.json and adapters/optional-plugins/<name>/plugin.json use the same shape and may add a detect key.",
+    "categories": [
+      "rules",
+      "refs",
+      "agents",
+      "skills",
+      "hooks",
+      "bin",
+      "templates"
+    ],
+    "entry": {
+      "source": "path relative to this component directory; a directory is expanded to every file below it",
+      "target": "path relative to ~/.claude; rules/refs/agents land as <category>/<name>.md, skills as skills/<name>/, hook scripts as hooks/aicj/, bin as bin/, templates as aicj/"
+    },
+    "hooks": {
+      "event": "Claude Code hook event, e.g. PreToolUse",
+      "matcher": "hook matcher expression; empty string matches everything",
+      "script": "installed script path relative to ~/.claude, must live under hooks/aicj/",
+      "blocking": "true when the script consults AICJ_HOOK_MODE (warn by default, block under install --strict)",
+      "optional": "true when the hook only registers when named by install --enable-hook <name>; the script file itself still installs"
+    },
+    "detect": {
+      "files": "glob list that enables the component when matched in the target project",
+      "package_deps": "package.json dependency names that enable the component"
+    },
+    "requires": {
+      "commands": "optional plugin commands checked with PATH lookup by doctor",
+      "files": "optional plugin paths relative to ~/.claude checked by doctor"
+    }
+  },
+  "entries": {
+    "rules": [
+      {
+        "source": "rules/context-engineering.md",
+        "target": "rules/context-engineering.md"
+      },
+      {
+        "source": "rules/executor-handoff.md",
+        "target": "rules/executor-handoff.md"
+      },
+      {
+        "source": "rules/git-workflow.md",
+        "target": "rules/git-workflow.md"
+      },
+      {
+        "source": "rules/worktree-management.md",
+        "target": "rules/worktree-management.md"
+      }
+    ],
+    "refs": [
+      {
+        "source": "refs/git-policy.md",
+        "target": "refs/git-policy.md"
+      },
+      {
+        "source": "refs/worktree-ops.md",
+        "target": "refs/worktree-ops.md"
+      },
+      {
+        "source": "refs/design-doc-principles.md",
+        "target": "refs/design-doc-principles.md"
+      },
+      {
+        "source": "refs/engineering-tradeoff.md",
+        "target": "refs/engineering-tradeoff.md"
+      },
+      {
+        "source": "refs/multi-choice-decision.md",
+        "target": "refs/multi-choice-decision.md"
+      },
+      {
+        "source": "refs/test-suite-hygiene.md",
+        "target": "refs/test-suite-hygiene.md"
+      }
+    ],
+    "agents": [
+      {
+        "source": "agents/dev.md",
+        "target": "agents/dev.md"
+      },
+      {
+        "source": "agents/pm.md",
+        "target": "agents/pm.md"
+      },
+      {
+        "source": "agents/qa.md",
+        "target": "agents/qa.md"
+      },
+      {
+        "source": "agents/sa.md",
+        "target": "agents/sa.md"
+      },
+      {
+        "source": "agents/scanner.md",
+        "target": "agents/scanner.md"
+      }
+    ],
+    "skills": [
+      {
+        "source": "skills/add-module",
+        "target": "skills/add-module"
+      },
+      {
+        "source": "skills/auto-sdd",
+        "target": "skills/auto-sdd"
+      },
+      {
+        "source": "skills/code-review",
+        "target": "skills/code-review"
+      },
+      {
+        "source": "skills/sdd-pipeline",
+        "target": "skills/sdd-pipeline"
+      },
+      {
+        "source": "skills/prd",
+        "target": "skills/prd"
+      },
+      {
+        "source": "skills/req-analysis",
+        "target": "skills/req-analysis"
+      },
+      {
+        "source": "skills/qa-baseline",
+        "target": "skills/qa-baseline"
+      },
+      {
+        "source": "skills/qa-testcase-pro",
+        "target": "skills/qa-testcase-pro"
+      },
+      {
+        "source": "skills/git-commit",
+        "target": "skills/git-commit"
+      },
+      {
+        "source": "skills/local-verify",
+        "target": "skills/local-verify"
+      }
+    ],
+    "hooks": [
+      {
+        "source": "hooks/push-review-gate.py",
+        "target": "hooks/aicj/push-review-gate.py"
+      },
+      {
+        "source": "hooks/gate_log.py",
+        "target": "hooks/aicj/gate_log.py"
+      },
+      {
+        "source": "hooks/git-safe-rewrite.py",
+        "target": "hooks/aicj/git-safe-rewrite.py"
+      }
+    ],
+    "bin": [
+      {
+        "source": "bin/git-safe",
+        "target": "bin/git-safe"
+      }
+    ],
+    "templates": [
+      {
+        "source": "templates/CLAUDE.global.md",
+        "target": "aicj/CLAUDE.global.md"
+      }
+    ]
+  },
+  "hooks": [
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "script": "hooks/aicj/push-review-gate.py",
+      "blocking": true,
+      "requires": ["skills/code-review/scripts/scope.py"]
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "script": "hooks/aicj/git-safe-rewrite.py",
+      "blocking": false,
+      "optional": true
+    }
+  ]
+}
