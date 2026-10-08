@@ -114,6 +114,30 @@
       {
         "source": "skills/sdd-pipeline",
         "target": "skills/sdd-pipeline"
+      },
+      {
+        "source": "skills/prd",
+        "target": "skills/prd"
+      },
+      {
+        "source": "skills/req-analysis",
+        "target": "skills/req-analysis"
+      },
+      {
+        "source": "skills/qa-baseline",
+        "target": "skills/qa-baseline"
+      },
+      {
+        "source": "skills/qa-testcase-pro",
+        "target": "skills/qa-testcase-pro"
+      },
+      {
+        "source": "skills/git-commit",
+        "target": "skills/git-commit"
+      },
+      {
+        "source": "skills/local-verify",
+        "target": "skills/local-verify"
       }
     ],
     "hooks": [

@@ -99,3 +99,9 @@ PM / SA / Dev / QA / Scanner 职责见 `agents/*.md`。核心约束：
 ## 7. 能力引导
 
 仅当用户意图明确匹配某个已安装的 skill / agent 时才调用；只读问答、事实查询、代码搜索、日志分析直接处理，一个场景只推荐一个最贴切的入口。
+
+| 意图 | skill |
+|---|---|
+| PRD、需求澄清、测试基线、测试用例 | `prd` / `req-analysis` / `qa-baseline` / `qa-testcase-pro` |
+| 提交收口、合并后验证 | `git-commit` |
+| 本地编译、启动、接口自测、日志诊断 | `local-verify` |

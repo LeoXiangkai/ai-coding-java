@@ -64,7 +64,7 @@
 4. 新建时:按“基线选择”确定默认基线 → `git worktree add .worktrees/<name> -b <branch> <chosen-base>` → 同步登记 REGISTRY；创建成功后记录任务分支的不可变分叉提交 `branch.<task>.fork-oid=<chosen-base-tip>`，同时保留 `branch.<task>.baseline=<baseline-branch>`
 5. **在该 worktree 内修改仓库文件**（`cd .worktrees/<name>` 后再编辑、跑构建），严禁默认改主工作区
 6. 在该 worktree 内做主会话 diff 自审、编译、单测；独立 reviewer 是否启动由 `code-review` skill（若已安装）按当前仓库+分支实际 diff 判定；未安装时由主会话按 diff 风险自行判定
-7. 通过后:合并回基线分支；开发分支已完成验证时，不因普通合并重复跑同一套验证。仅当基线自任务分叉后合入其他任务分支，或合并冲突/手工改写、来源无法可靠判定时，合并后做一次快速定向回归；判定规则见 `rules/git-workflow.md §合并后验证门禁`，执行入口为 `git-commit` skill（若已安装）§6B
+7. 通过后:合并回基线分支；开发分支已完成验证时，不因普通合并重复跑同一套验证。仅当基线自任务分叉后合入其他任务分支，或合并冲突/手工改写、来源无法可靠判定时，合并后做一次快速定向回归；判定规则见 `rules/git-workflow.md §合并后验证门禁`，执行入口为随 core 安装的 `git-commit` skill §6B
 8. 收口动作按生命周期分流:
    - **临时型**(fix/spike/refactor):合入基线后**立即** `git worktree remove .worktrees/<name>` + 删分支 + 更新 REGISTRY 状态为 `done`(随即移出表)
    - **长期型**(feat/里程碑):合入基线后**保留** worktree,REGISTRY 状态 `active` → `paused`,后续同范围任务回到这里复用
