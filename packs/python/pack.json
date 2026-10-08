@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "detect": {
+    "files": ["pyproject.toml", "requirements.txt", "requirements*.txt", "setup.py", "setup.cfg"],
+    "package_deps": []
+  },
+  "entries": {
+    "rules": [
+      {"source": "rules/python-core.md", "target": "rules/python-core.md"},
+      {"source": "rules/python-web.md", "target": "rules/python-web.md"}
+    ],
+    "refs": [],
+    "agents": [],
+    "skills": [
+      {"source": "skills/python-verify", "target": "skills/python-verify"}
+    ],
+    "hooks": [],
+    "bin": [],
+    "templates": []
+  },
+  "hooks": []
+}
