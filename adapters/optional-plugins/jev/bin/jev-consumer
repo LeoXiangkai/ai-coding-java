@@ -1,0 +1,112 @@
+#!/usr/bin/env bash
+# Scan a large candidate set with the optional semantic consumer tool.
+set -u
+
+usage() {
+  cat <<'USAGE'
+Usage: jev-consumer "<data description>" '<regex>' <repo> [--all]
+
+Candidates are recalled with git grep. At most 15 candidates are listed for direct reading;
+larger sets are sent to consumer_scan.mjs for semantic classification.
+USAGE
+}
+
+case "${1:-}" in
+  -h|--help) usage; exit 0 ;;
+esac
+if [ "$#" -lt 3 ]; then
+  usage >&2
+  exit 2
+fi
+
+DATA=$1
+PATTERN=$2
+REPO=$3
+shift 3
+if [ -z "${DATA//[[:space:]]/}" ] || [ -z "${PATTERN//[[:space:]]/}" ] || [ -z "${REPO//[[:space:]]/}" ]; then
+  echo "jev-consumer: data description, regex, and repo must be non-blank" >&2
+  exit 2
+fi
+
+EXTRA=()
+for option in "$@"; do
+  case "$option" in
+    --all) EXTRA+=("--all") ;;
+    *) echo "jev-consumer: unknown option: $option" >&2; exit 2 ;;
+  esac
+done
+
+if ! git -C "$REPO" rev-parse --show-toplevel >/dev/null 2>&1; then
+  echo "jev-consumer: not a git repository: $REPO" >&2
+  exit 2
+fi
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd) || exit 2
+CLAUDE_DIR=${AICJ_CLAUDE_DIR:-$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)}
+TMP=$(mktemp -d) || { echo "jev-consumer: cannot create temporary directory" >&2; exit 2; }
+trap 'rm -rf "$TMP"' EXIT
+LIST=$TMP/list.txt
+
+git -C "$REPO" grep -il -E -- "$PATTERN" >"$LIST" 2>"$TMP/grep.err"
+rc=$?
+if [ "$rc" -ge 2 ]; then
+  echo "jev-consumer: git grep failed: $(tail -1 "$TMP/grep.err")" >&2
+  exit 2
+fi
+N=$(awk 'NF {n++} END {print n+0}' "$LIST")
+if [ "$N" -eq 0 ]; then
+  echo "jev-consumer: 0 candidate files for /$PATTERN/" >&2
+  exit 1
+fi
+if [ "$N" -le 15 ]; then
+  cat "$LIST"
+  echo "jev-consumer: $N candidates (<=15) -- read them directly, no semantic call made." >&2
+  exit 0
+fi
+
+TEMPLATE="$CLAUDE_DIR/aicj/jev/consumer-template.json"
+SCAN="$CLAUDE_DIR/skills/jev-assist/scripts/consumer_scan.mjs"
+if [ ! -f "$TEMPLATE" ]; then
+  echo "jev-consumer: template missing: $TEMPLATE" >&2
+  exit 2
+fi
+if [ ! -f "$SCAN" ]; then
+  echo "jev-consumer: consumer_scan.mjs missing: $SCAN" >&2
+  exit 2
+fi
+if ! command -v node >/dev/null 2>&1; then
+  echo "jev-consumer: node command is missing; install node before using the semantic scan" >&2
+  exit 2
+fi
+
+if [ -n "${JEV_ENV_FILE:-}" ]; then
+  if [ ! -f "$JEV_ENV_FILE" ]; then
+    echo "jev-consumer: JEV_ENV_FILE not found: $JEV_ENV_FILE" >&2
+    exit 2
+  fi
+  if ! . "$JEV_ENV_FILE" >/dev/null 2>&1; then
+    echo "jev-consumer: failed to load JEV_ENV_FILE: $JEV_ENV_FILE" >&2
+    exit 2
+  fi
+fi
+
+SPEC=$TMP/spec.json
+python3 - "$TEMPLATE" "$SPEC" "$DATA" "$PATTERN" <<'PY'
+import json
+import sys
+
+template, output, data, pattern = sys.argv[1:]
+try:
+    with open(template, encoding="utf-8") as handle:
+        spec = json.load(handle)
+    if not isinstance(spec, dict):
+        raise ValueError("template must be a JSON object")
+    spec["data"] = data.strip()
+    spec["pattern"] = pattern.strip()
+    with open(output, "w", encoding="utf-8") as handle:
+        json.dump(spec, handle, ensure_ascii=False)
+except (OSError, ValueError) as exc:
+    print(f"jev-consumer: cannot build spec: {exc}", file=sys.stderr)
+    raise SystemExit(2)
+PY
+node "$SCAN" "$SPEC" "$REPO" "$LIST" "${EXTRA[@]}"

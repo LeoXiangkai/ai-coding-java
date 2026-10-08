@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "detect": {"files": [], "package_deps": []},
+  "requires": {
+    "commands": ["node"],
+    "files": ["skills/jev-assist/SKILL.md"]
+  },
+  "entries": {
+    "rules": [],
+    "refs": [{"source": "refs/jev-usage.md", "target": "refs/jev-usage.md"}],
+    "agents": [],
+    "skills": [],
+    "hooks": [],
+    "bin": [{"source": "bin/jev-consumer", "target": "bin/jev-consumer"}],
+    "templates": [{"source": "templates/consumer-template.json", "target": "aicj/jev/consumer-template.json"}]
+  },
+  "hooks": []
+}

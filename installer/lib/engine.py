@@ -528,6 +528,10 @@ def _run_install(
     idx = index.load_index(source, options.packs, options.adapters)
     for note in idx.notes:
         report.note(note)
+    for requirements in idx.plugins:
+        missing = index.missing_requirements(home, requirements)
+        if missing:
+            report.note(f"plugin {requirements.name}: {'; '.join(missing)}；装好后即可用")
 
     old = manifest.load(home)
     previous = {entry.path: entry for entry in old.entries} if old else {}

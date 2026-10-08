@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "detect": {"files": [], "package_deps": []},
+  "requires": {"commands": ["git"]},
+  "entries": {
+    "rules": [],
+    "refs": [{"source": "refs/verify-probe.md", "target": "refs/verify-probe.md"}],
+    "agents": [],
+    "skills": [],
+    "hooks": [],
+    "bin": [{"source": "bin/verify-probe", "target": "bin/verify-probe"}],
+    "templates": [{"source": "templates/verify-profile.example.json", "target": "aicj/verify-profiles/example.json.sample"}]
+  },
+  "hooks": []
+}

@@ -34,6 +34,7 @@ def run_doctor(home: Path, source: Path | None = None) -> tuple[list[tuple[str, 
         return checks, 1 if any(status == MISSING for status, _n, _d in checks) else 0
 
     checks.extend(_entries(home, loaded))
+    checks.extend(_plugins(home, loaded, source))
     checks.extend(_md_block(home))
     checks.extend(_hooks(home, loaded))
     checks.extend(_optional_hooks(home, loaded, source))
@@ -88,6 +89,31 @@ def _entries(home: Path, loaded: manifest.Manifest) -> list[tuple[str, str, str]
             else:
                 out.append((PASS, entry.path, f"action={entry.action}"))
     return out or [(SKIPPED, "component entries", "no file entries")]
+
+
+def _plugins(home: Path, loaded: manifest.Manifest, source: Path | None) -> list[tuple[str, str, str]]:
+    """Optional plugin dependencies are health hints; missing dependencies never become MISSING."""
+    root = source
+    if root is None and loaded.source_repo:
+        root = Path(loaded.source_repo)
+    if root is None or not root.is_dir():
+        return []
+    out: list[tuple[str, str, str]] = []
+    for name in loaded.options.adapters:
+        plugin_path = index._manifest_path(root, "plugin", name.strip())
+        if plugin_path is None or not plugin_path.is_file():
+            continue
+        try:
+            requirements = index.plugin_requirements(plugin_path)
+            missing = index.missing_requirements(home, requirements)
+        except UserError as exc:
+            out.append((SKIPPED, f"plugin {name}", f"requires 声明不可用：{exc}；装好后即可用"))
+            continue
+        if missing:
+            out.append((SKIPPED, f"plugin {requirements.name}", "; ".join(missing) + "；装好后即可用"))
+        else:
+            out.append((PASS, f"plugin {requirements.name}", "dependencies available"))
+    return out
 
 
 def _md_block(home: Path) -> list[tuple[str, str, str]]:

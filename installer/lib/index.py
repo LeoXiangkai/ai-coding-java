@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import posixpath
+import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -50,6 +51,14 @@ class ComponentIndex:
     packs: list[str] = field(default_factory=list)
     adapters: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
+    plugins: list["PluginRequirements"] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class PluginRequirements:
+    name: str
+    commands: tuple[str, ...] = ()
+    files: tuple[str, ...] = ()
 
 
 def _manifest_path(base: Path, kind: str, name: str | None = None) -> Path | None:
@@ -108,6 +117,40 @@ def _read_component(path: Path, source_root: Path) -> tuple[list[FileItem], list
             )
         )
     return items, hooks
+
+
+def plugin_requirements(path: Path) -> PluginRequirements:
+    data = read_json(path)
+    raw = data.get("requires", {})
+    if raw is None:
+        raw = {}
+    if not isinstance(raw, dict):
+        raise UserError(f"{path}: requires must be an object")
+
+    def values(key: str) -> tuple[str, ...]:
+        value = raw.get(key, [])
+        if value is None:
+            return ()
+        if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
+            raise UserError(f"{path}: requires.{key} must be a list of strings")
+        return tuple(item.strip() for item in value if item.strip())
+
+    return PluginRequirements(path.parent.name, values("commands"), values("files"))
+
+
+def missing_requirements(home: Path, requirements: PluginRequirements) -> list[str]:
+    missing: list[str] = []
+    for command in requirements.commands:
+        if shutil.which(command) is None:
+            missing.append(f"command {command}")
+    claude_dir = home / CLAUDE_DIR
+    for rel in requirements.files:
+        path = Path(rel)
+        if path.is_absolute() or ".." in path.parts:
+            missing.append(f"file {rel} (invalid relative path)")
+        elif not (claude_dir / path).exists():
+            missing.append(f"file {rel}")
+    return missing
 
 
 def _target(raw: str, manifest_path: Path) -> str:
@@ -246,5 +289,7 @@ def load_index(
         items, hooks = _read_component(path, source_root)
         index.files.extend(items)
         index.hooks.extend(hooks)
+        if label.startswith("plugin "):
+            index.plugins.append(plugin_requirements(path))
     _check_targets(index.files)
     return index

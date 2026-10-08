@@ -25,6 +25,10 @@
     "detect": {
       "files": "glob list that enables the component when matched in the target project",
       "package_deps": "package.json dependency names that enable the component"
+    },
+    "requires": {
+      "commands": "optional plugin commands checked with PATH lookup by doctor",
+      "files": "optional plugin paths relative to ~/.claude checked by doctor"
     }
   },
   "entries": {
