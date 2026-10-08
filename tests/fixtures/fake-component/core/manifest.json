@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "entries": {
+    "rules": [
+      {"source": "rules/core-sample.md", "target": "rules/core-sample.md"}
+    ],
+    "refs": [],
+    "agents": [],
+    "skills": [
+      {"source": "skills/sample-skill", "target": "skills/sample-skill"}
+    ],
+    "hooks": [
+      {"source": "hooks/aicj/sample-hook.py", "target": "hooks/aicj/sample-hook.py"}
+    ],
+    "bin": [],
+    "templates": []
+  },
+  "hooks": [
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "script": "hooks/aicj/sample-hook.py",
+      "blocking": true
+    }
+  ]
+}

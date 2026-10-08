@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "schema": {
+    "description": "core component manifest. packs/<lang>/pack.json, adapters/<name>/adapter.json and adapters/optional-plugins/<name>/plugin.json use the same shape and may add a detect key.",
+    "categories": ["rules", "refs", "agents", "skills", "hooks", "bin", "templates"],
+    "entry": {
+      "source": "path relative to this component directory; a directory is expanded to every file below it",
+      "target": "path relative to ~/.claude; rules/refs/agents land as <category>/<name>.md, skills as skills/<name>/, hook scripts as hooks/aicj/, bin as bin/, templates as aicj/"
+    },
+    "hooks": {
+      "event": "Claude Code hook event, e.g. PreToolUse",
+      "matcher": "hook matcher expression; empty string matches everything",
+      "script": "installed script path relative to ~/.claude, must live under hooks/aicj/",
+      "blocking": "true when the script consults AICJ_HOOK_MODE (warn by default, block under install --strict)"
+    },
+    "detect": {
+      "files": "glob list that enables the component when matched in the target project",
+      "package_deps": "package.json dependency names that enable the component"
+    }
+  },
+  "entries": {
+    "rules": [],
+    "refs": [],
+    "agents": [],
+    "skills": [],
+    "hooks": [],
+    "bin": [],
+    "templates": []
+  },
+  "hooks": []
+}
