@@ -8,7 +8,7 @@ description: Vue 项目的探测、lint、类型检查、单测、构建、开�
 按证据顺序执行，所有入口先从 `package.json` 探测，不硬编码项目命令：
 
 1. **探测**：运行 `scripts/detect_vue.py <project_dir>`，记录 Vue 主版本、构建工具、TypeScript、UI 库、状态库、测试运行器、包管理器、Playwright 和 scripts。脚本不存在或 package.json 非法时如实记录默认值。
-2. **lint**：执行探测得到的 lint 命令；若脚本支持 `--max-warnings 0`，追加该参数。没有 lint 脚本报告 `MISSING`，不自行猜命令。本包不另写 JavaScript 静态检查器，以项目 eslint / vue-tsc 为准。
+2. **lint**：执行探测得到的 lint 命令；若脚本支持 `--max-warnings 0`，追加该参数。没有 lint 脚本报告 `MISSING`，不自行猜命令。项目 eslint / vue-tsc 仍是权威依据；同时始终运行本包的 fallback 静态检查，捕获项目 lint 可能未配置的风险模式。
 3. **类型检查**：优先执行 type-check 脚本（常见实现为 `vue-tsc --noEmit`）；没有入口报告 `MISSING`。
 4. **单测**：按探测得到的 test 命令执行 Vitest 或 Jest。没有 test:unit / test 脚本报告 `MISSING`。
 5. **构建**：执行 build 命令并保留完整输出；没有 build 脚本报告 `MISSING`。
