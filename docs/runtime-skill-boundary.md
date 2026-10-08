@@ -9,6 +9,7 @@
 3. 运行时能力通过 Codex、Claude Code 或 OMX 的全局配置提供。
 4. 初始化到业务项目后，根 `AGENTS.md` 和 `CLAUDE.md` 必须指向 `.ai-coding-java/docs/rule-index.md`，让 Codex 和 Claude Code 都能进入同一套项目规则。
 5. `$setup-ai-coding` 初始化当前项目工作区，并在 Java 项目中调用 `scripts/init_target_project.py` 接入 `.ai-coding-java/`；非 Java 项目和组件源仓库跳过注入。
+6. 分支命名的唯一共享来源是 `.ai-coding-java/docs/git-policy.md`。Claude 的 `~/.claude/rules`、Codex 的全局契约和 Multica 的 Agent 指令都只能引用它，不能各自再定义一套普通任务分支命名。
 
 ## 常规新需求怎么走
 
@@ -24,6 +25,12 @@
 -> 按 docs/verification-matrix.md 验证
 -> 按 templates/delivery-report-template.md 汇报
 ```
+
+Multica 不会自动继承运行时 Owner 的 `~/.claude/rules`、`~/.codex/AGENTS.md`
+或个人记忆文件。因此，Multica 派发前必须读取项目侧规则或其同步的结构化元数据，
+并校验 `branch`、`base_branch`、`worktree` 与 Grilling 状态；仅在聊天中描述规则不构成门禁。
+对于 worktree 任务，Multica 应以 `.ai-coding-java/docs/git-policy.md` 为唯一分支契约来源，
+并把当前分支、基准分支和 worktree 路径作为启动前的硬校验项。
 
 全局运行时可以按自身规则加载规划、TDD、Review、提测、提交等技能；项目侧继续使用 ai-coding-java 的设计门、规则、TDD 分级和验证矩阵。
 

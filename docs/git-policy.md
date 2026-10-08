@@ -99,6 +99,51 @@ test/<name>
 release/<version>
 ```
 
+### Task branch naming contract
+
+For ordinary worktree-backed tasks, `<name>` is the task name only. Do not append
+the assignee name, date, agent name, or a generated task number unless the project
+explicitly defines that as part of the task name. For example:
+
+```text
+feature/task25-data-extraction
+```
+
+is valid, while `task-25-data-extraction-design` and
+`feature/kaixiang-20260813-task25-data-extraction` are not valid ordinary task
+branch names under this contract.
+
+The task orchestrator must validate the branch prefix and base branch before
+dispatching implementation work. A project may override the base branch, but the
+override must be explicit in the project contract or user request; never infer it
+from a personal global configuration.
+
+Multica agents and other external orchestrators should treat this policy as the
+authoritative branch/worktree contract. They must not invent additional naming
+rules or infer branch ownership from chat context, runtime memory, or global
+runtime config.
+
+### Worktree lifecycle contract
+
+For a worktree-backed task, record the project, repository, task, branch, base
+branch, absolute or repository-relative path, owner, status, and creation time in
+the target project's registry. The path and branch must be unique among active
+worktrees for that repository.
+
+Before creation, verify the repository is clean enough for the requested operation,
+the branch name passes `git check-ref-format --branch`, and the declared base branch
+exists locally or is explicitly fetched by the project workflow. Do not implement
+on an integration or release branch unless the project contract explicitly allows it.
+
+Use `git worktree remove` for normal cleanup and `git worktree prune` only to remove
+stale administrative records after checking for recoverable changes. Use
+`git worktree lock --reason "..."` for a worktree on a removable or intermittently
+mounted path. Never delete `.git/worktrees` administrative entries by hand.
+
+The project contract remains responsible for the merge and publication chain. A
+workspace or agent must not infer it from another project, global runtime settings,
+or the current user's last task.
+
 `main`, `master`, `develop`, and `dev` are treated as integration branches. The default `pre-push` hook warns when pushing directly from those branches; `Hook mode: strict` blocks the push.
 
 ## Remote Hosting

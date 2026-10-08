@@ -67,6 +67,7 @@ P2：记录建议，不阻断。
 | 交付证据检查 | `templates/delivery-report-template.md`、`rules/delivery-rule.md`、`docs/verification-matrix.md` |
 | 目标项目画像 / 代码地图 | `docs/project-harness.md`、`docs/project-integration-guide.md` |
 | 全栈多仓协作 / TAP 通道 / 前后端 agent 对齐 | `docs/tap-fullstack-collaboration.md`、`templates/tap-state-template.md`、`templates/tap-sync-tap-pending-template.md` |
+| Multica worktree / 分支约束 | `docs/runtime-skill-boundary.md`、`docs/git-policy.md`、`templates/multica-worktree-agent-template.md` |
 | 组件结构 / 文件命名检查 | `docs/structure-and-naming.md`、`docs/project-harness.md` |
 | 文档表达 / 外部经验转化检查 | `docs/documentation-tone-and-reuse.md`、`docs/sdd-reference-analysis.md` |
 | 研发一体化规范演进 / 流程取舍 | `docs/sdd-reference-analysis.md`、`docs/rd-integrated-workflow.md`、`docs/design-first-policy.md`、`docs/tdd-policy.md`、`docs/runtime-skill-boundary.md` |
