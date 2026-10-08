@@ -858,6 +858,8 @@ def _run_uninstall(home: Path, dry_run: bool) -> Report:
     for target, keys in sorted(hook_keys.items()):
         _unmerge_hook_file(target, home, keys, report, hook_entries.get(target), dry_run)
 
+    _cleanup_runtime_data(home, report, dry_run, {entry.path for entry in loaded.entries})
+
     if retained:
         retained.reverse()
         report.warn(f"{len(retained)} entr{'y' if len(retained) == 1 else 'ies'} kept in {manifest.REL_PATH} (backups still tracked)")
@@ -884,6 +886,30 @@ def _prune_created_dirs(home: Path, created: list[str], kept: set[Path]) -> None
             path.rmdir()
         except OSError:
             continue
+
+
+def _cleanup_runtime_data(home: Path, report: Report, dry_run: bool, tracked: set[str]) -> None:
+    """Drop transient state; list (never delete) other aicj/ data that no manifest entry owns."""
+    aicj = home / ".claude" / "aicj"
+    state = aicj / "state"
+    if state.exists() or state.is_symlink():
+        report.add("removed", ".claude/aicj/state", "runtime state")
+        if not dry_run:
+            if state.is_dir() and not state.is_symlink():
+                shutil.rmtree(state)
+            else:
+                state.unlink()
+    if not aicj.is_dir():
+        return
+    for child in sorted(aicj.iterdir()):
+        rel = child.relative_to(home).as_posix()
+        if child.name == "state" or rel == manifest.REL_PATH:
+            continue
+        if any(path == rel or path.startswith(rel + "/") for path in tracked):
+            continue
+        if child.is_dir() and not child.is_symlink() and not any(child.rglob("*")):
+            continue
+        report.note(f"保留的运行数据：{rel}（可手动删除）")
 
 
 def run_status(home: Path, source: Path | None) -> Report:

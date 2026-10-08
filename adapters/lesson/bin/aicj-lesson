@@ -1,0 +1,183 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import sys
+import tempfile
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+
+def claude_dir() -> Path:
+    value = os.environ.get("AICJ_CLAUDE_DIR")
+    if value:
+        return Path(value).expanduser().resolve()
+    script = Path(__file__).resolve()
+    # installed layout: <claude>/bin/aicj-lesson next to <claude>/hooks/aicj/
+    if script.parent.name == "bin" and (script.parent.parent / "hooks" / "aicj").is_dir():
+        return script.parent.parent
+    return Path.home() / ".claude"
+
+
+def lessons_dir() -> Path:
+    return claude_dir() / "aicj" / "lessons"
+
+
+def read_rows(path: Path) -> list[dict]:
+    if not path.is_file():
+        return []
+    rows = []
+    try:
+        for line in path.read_text(encoding="utf-8", errors="ignore").splitlines():
+            try:
+                item = json.loads(line)
+                if isinstance(item, dict):
+                    rows.append(item)
+            except json.JSONDecodeError:
+                continue
+    except OSError:
+        pass
+    return rows
+
+
+def write_atomic(path: Path, rows: list[dict]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, name = tempfile.mkstemp(prefix=path.name + ".", dir=path.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            for row in rows:
+                handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+        os.replace(name, path)
+    finally:
+        try:
+            os.unlink(name)
+        except FileNotFoundError:
+            pass
+
+
+def all_sources() -> list[Path]:
+    root = claude_dir()
+    paths = [lessons_dir() / "cards.jsonl", lessons_dir() / "corrections.jsonl"]
+    projects = root / "projects"
+    if projects.is_dir():
+        paths.extend(projects.glob("*/memory/MEMORY.md"))
+    return paths
+
+
+def cmd_search(words: list[str]) -> int:
+    needles = [word.casefold() for word in words if word.strip()]
+    if not needles:
+        print("search 需要至少一个非空关键词", file=sys.stderr)
+        return 2
+    for path in all_sources():
+        try:
+            lines = path.read_text(encoding="utf-8", errors="ignore").splitlines() if path.is_file() else []
+        except OSError:
+            continue
+        for number, line in enumerate(lines, 1):
+            if any(needle in line.casefold() for needle in needles):
+                print(f"{path}:{number}:{line}")
+    return 0
+
+
+def cmd_add(args: argparse.Namespace) -> int:
+    cards_path = lessons_dir() / "cards.jsonl"
+    args.id = args.id.strip()
+    args.lesson = args.lesson.strip()
+    if not args.id or not args.lesson:
+        print("id 与 lesson 不能为空", file=sys.stderr)
+        return 2
+    rows = read_rows(cards_path)
+    if any(row.get("id") == args.id for row in rows):
+        print(f"duplicate id: {args.id}", file=sys.stderr)
+        return 2
+    try:
+        if args.cmd_regex and args.path_glob:
+            raise ValueError("choose cmd-regex or path-glob")
+        if not args.cmd_regex and not args.path_glob:
+            raise ValueError("one trigger is required")
+        if args.cmd_regex:
+            re.compile(args.cmd_regex)
+        tools = [part.strip() for part in args.tools.split(",") if part.strip()]
+        if not tools:
+            raise ValueError("tools is empty")
+    except (re.error, ValueError) as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    trigger = {"tools": tools}
+    if args.cmd_regex:
+        trigger["cmd_regex"] = args.cmd_regex
+    else:
+        trigger["path_glob"] = args.path_glob
+    rows.append({"id": args.id, "scope": args.scope, "trigger": trigger, "lesson": args.lesson, "level": args.level, "status": "active", "created": datetime.now(timezone.utc).strftime("%Y-%m-%d")})
+    write_atomic(cards_path, rows)
+    print(args.id)
+    return 0
+
+
+def cmd_list(args: argparse.Namespace) -> int:
+    for row in read_rows(lessons_dir() / "cards.jsonl"):
+        if not args.all and row.get("status") != "active":
+            continue
+        print(json.dumps(row, ensure_ascii=False))
+    return 0
+
+
+def cmd_set(args: argparse.Namespace) -> int:
+    path = lessons_dir() / "cards.jsonl"
+    rows = read_rows(path)
+    found = False
+    for row in rows:
+        if row.get("id") != args.id:
+            continue
+        found = True
+        row["status"] = args.status
+        if args.level:
+            row["level"] = args.level
+    if not found:
+        print(f"unknown id: {args.id}", file=sys.stderr)
+        return 2
+    write_atomic(path, rows)
+    return 0
+
+
+def cmd_corrections(args: argparse.Namespace) -> int:
+    try:
+        days = int(args.since[:-1]) if args.since.endswith("d") else int(args.since)
+    except ValueError:
+        print("--since 格式应为 7d 或 7", file=sys.stderr)
+        return 2
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    for row in read_rows(lessons_dir() / "corrections.jsonl"):
+        try:
+            stamp = datetime.fromisoformat(str(row.get("ts", "")).replace("Z", "+00:00"))
+            if stamp.tzinfo is None:
+                stamp = stamp.replace(tzinfo=timezone.utc)
+        except ValueError:
+            continue
+        if stamp >= cutoff:
+            print(json.dumps(row, ensure_ascii=False))
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    p = argparse.ArgumentParser(prog="aicj-lesson")
+    sub = p.add_subparsers(dest="command", required=True)
+    search = sub.add_parser("search"); search.add_argument("kw", nargs="+"); search.set_defaults(func=lambda a: cmd_search(a.kw))
+    add = sub.add_parser("add"); add.add_argument("--id", required=True); add.add_argument("--lesson", required=True); add.add_argument("--tools", required=True); add.add_argument("--cmd-regex"); add.add_argument("--path-glob"); add.add_argument("--scope", default="global"); add.add_argument("--level", choices=("hint", "warn", "block"), default="hint"); add.set_defaults(func=cmd_add)
+    listing = sub.add_parser("list"); listing.add_argument("--all", action="store_true"); listing.set_defaults(func=cmd_list)
+    setting = sub.add_parser("set"); setting.add_argument("id"); setting.add_argument("--status", choices=("active", "retired"), required=True); setting.add_argument("--level", choices=("hint", "warn", "block")); setting.set_defaults(func=cmd_set)
+    corrections = sub.add_parser("corrections"); corrections.add_argument("--since", default="7d"); corrections.set_defaults(func=cmd_corrections)
+    parsed = p.parse_args(argv)
+    return int(parsed.func(parsed))
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except Exception as exc:
+        print(str(exc), file=sys.stderr)
+        raise SystemExit(2)

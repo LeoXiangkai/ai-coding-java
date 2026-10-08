@@ -35,6 +35,7 @@ alwaysApply: true
 - 并行多个执行体前确认写集互斥、共享环境（端口/数据库）不冲突；任一不满足即串行；并发数受 worktree 上限约束。
 
 **prompt 必带**：任务目标 / worktree 绝对路径 / 已冻结契约与基点 / 允许与禁止修改的路径 / 独立验证命令（编译、相关测试）/ 返回内容（实际改动文件、逐项执行结果、命令与退出码、证据位置、已知风险）/ "不得调用代码审查 skill、不得再派子代理"。
+- 若已安装 executor 适配：调用形态与退出码见 `<claude>/refs/executor-contract.md`，操作细则见 skill `executor-handoff-ops`
 
 ## 规则 2：prompt 末尾固定追加边界清单
 

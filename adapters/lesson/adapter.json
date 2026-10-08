@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "detect": {"files": [], "package_deps": []},
+  "entries": {
+    "rules": [],
+    "refs": [{"source": "refs/lesson-loop.md", "target": "refs/lesson-loop.md"}],
+    "agents": [],
+    "skills": [],
+    "hooks": [
+      {"source": "hooks/lesson-recall.py", "target": "hooks/aicj/lesson-recall.py"},
+      {"source": "hooks/lesson-capture.py", "target": "hooks/aicj/lesson-capture.py"}
+    ],
+    "bin": [{"source": "bin/aicj-lesson", "target": "bin/aicj-lesson"}],
+    "templates": []
+  },
+  "hooks": [
+    {"event": "PreToolUse", "matcher": "Bash|Edit|Write|MultiEdit", "script": "hooks/aicj/lesson-recall.py", "blocking": true},
+    {"event": "UserPromptSubmit", "script": "hooks/aicj/lesson-capture.py", "blocking": false}
+  ]
+}
