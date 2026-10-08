@@ -10,6 +10,7 @@ from installer.lib import index
 REPO = Path(__file__).resolve().parents[1]
 PACK = REPO / "packs/vue"
 DETECT = PACK / "skills/vue-verify/scripts/detect_vue.py"
+STATIC = PACK / "skills/vue-verify/scripts/static_review.py"
 FIXTURES = REPO / "tests/packs/vue/fixtures"
 AICJ = REPO / "installer/aicj.py"
 
@@ -121,6 +122,7 @@ def test_install_doctor_uninstall_vue_pack(tmp_path: Path):
         assert (home / ".claude/rules" / name).is_file()
     for skill in ("vue-verify", "playwright-ui-auto"):
         assert (home / ".claude/skills" / skill / "SKILL.md").is_file()
+    assert (home / ".claude/skills/vue-verify/scripts/static_review.py").is_file()
     doctor = subprocess.run(
         [sys.executable, str(AICJ), "doctor", "--home", str(home)],
         capture_output=True,
@@ -147,3 +149,52 @@ def test_rules_have_paths_and_pack_is_sanitized():
             assert "claude-" not in text.lower()
     for path in (PACK / "rules").glob("*.md"):
         assert "paths:" in path.read_text(encoding="utf-8")
+
+
+def test_vue_static_review_good_fixture_has_no_findings():
+    result = subprocess.run(
+        [sys.executable, str(STATIC), str(FIXTURES / "static/good")],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "Scanned files: 1" in result.stdout
+    assert "No P0/P1 deterministic findings." in result.stdout
+
+
+def test_vue_static_review_bad_fixture_hits_every_rule():
+    result = subprocess.run(
+        [sys.executable, str(STATIC), str(FIXTURES / "static/bad/x.vue")],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 2, result.stdout + result.stderr
+    for message in (
+        "possible plaintext secret",
+        "v-html may create an XSS risk",
+        "dynamic code execution",
+        "v-for should define a key",
+        "debug output or debugger statement",
+        "explicit TypeScript any",
+        "v-if and v-for should not share a tag",
+    ):
+        assert message in result.stdout
+
+
+def test_vue_static_review_skips_marked_fixture_directory_but_scans_explicit_file():
+    directory = subprocess.run(
+        [sys.executable, str(STATIC), str(FIXTURES / "static/bad")],
+        capture_output=True,
+        text=True,
+    )
+    assert directory.returncode == 0
+    assert directory.stdout.splitlines()[0] == "Scanned files: 0"
+
+
+def test_detect_vue_includes_static_command_path():
+    result = run_detect("vue3-vite-ts-pnpm")
+    command = result["static"]
+    assert command.startswith("python3 ")
+    script_path = Path(command.removeprefix("python3 ").split(" <paths>", 1)[0])
+    assert script_path == STATIC.resolve()
+    assert script_path.is_file()

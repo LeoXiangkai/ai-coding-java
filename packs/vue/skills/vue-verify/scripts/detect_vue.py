@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import json
 import re
+import shlex
 import sys
 from pathlib import Path
+
+STATIC_REVIEW = Path(__file__).resolve().with_name("static_review.py")
 
 
 def parse_major(value: object) -> int | None:
@@ -28,6 +31,14 @@ def read_package(project: Path) -> dict:
     except (OSError, UnicodeError, json.JSONDecodeError):
         return {}
     return data if isinstance(data, dict) else {}
+
+
+def valid_package(project: Path) -> bool:
+    try:
+        data = json.loads((project / "package.json").read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return False
+    return isinstance(data, dict)
 
 
 def dependency_map(package: dict) -> dict:
@@ -90,7 +101,7 @@ def detect(project: Path) -> dict:
         test_runner = "jest"
     else:
         test_runner = None
-    return {
+    result = {
         "vue_major": vue_major,
         "build_tool": build_tool,
         "typescript": "typescript" in names,
@@ -101,6 +112,9 @@ def detect(project: Path) -> dict:
         "scripts": scripts,
         "playwright": "@playwright/test" in names or "playwright" in names,
     }
+    if valid_package(project):
+        result["static"] = f"python3 {shlex.quote(str(STATIC_REVIEW))} <paths>"
+    return result
 
 
 def main(argv: list[str] | None = None) -> int:
