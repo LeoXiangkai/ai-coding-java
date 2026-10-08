@@ -109,4 +109,4 @@ except (OSError, ValueError) as exc:
     print(f"jev-consumer: cannot build spec: {exc}", file=sys.stderr)
     raise SystemExit(2)
 PY
-node "$SCAN" "$SPEC" "$REPO" "$LIST" "${EXTRA[@]}"
+node "$SCAN" "$SPEC" "$REPO" "$LIST" ${EXTRA[@]+"${EXTRA[@]}"}

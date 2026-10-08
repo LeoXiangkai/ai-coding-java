@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import shutil
 import subprocess
@@ -47,7 +48,7 @@ def main(argv: list[str] | None = None) -> int:
     prompt = args.prompt
     argv_out: list[str]
     if engine == "claude":
-        argv_out = ["claude", "-p", "--dangerously-skip-permissions", "--disallowedTools", "Agent"]
+        argv_out = ["claude", "-p", "--dangerously-skip-permissions", "--disallowedTools", "Agent", "--"]
         if model:
             argv_out.extend(["--model", model])
         argv_out.append(prompt)
@@ -60,6 +61,16 @@ def main(argv: list[str] | None = None) -> int:
         if model:
             argv_out.extend(["-m", model])
         argv_out.append(prompt)
+    raw_timeout = os.environ.get("AICJ_EXECUTOR_TIMEOUT", "").strip()
+    timeout = None
+    if raw_timeout:
+        try:
+            timeout = float(raw_timeout)
+            if not math.isfinite(timeout) or timeout <= 0:
+                raise ValueError
+        except ValueError:
+            timeout = None
+            print("AICJ_EXECUTOR_TIMEOUT 必须是正数秒，已按不限制处理", file=sys.stderr)
     if args.dry_run:
         print(json.dumps(argv_out, ensure_ascii=False))
         return 0
@@ -68,7 +79,10 @@ def main(argv: list[str] | None = None) -> int:
         return 127
     try:
         # a background caller's stdin is a pipe that never closes; engines would wait on it forever
-        return subprocess.run(argv_out, cwd=worktree, env=os.environ.copy(), stdin=subprocess.DEVNULL, check=False).returncode
+        return subprocess.run(argv_out, cwd=worktree, env=os.environ.copy(), stdin=subprocess.DEVNULL, check=False, timeout=timeout).returncode
+    except subprocess.TimeoutExpired:
+        print(f"外部执行体超时（AICJ_EXECUTOR_TIMEOUT={raw_timeout}s）", file=sys.stderr)
+        return 124
     except OSError:
         print("外部执行体不可用，按降级条款改派子代理", file=sys.stderr)
         return 127

@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import subprocess
 import tempfile
 from pathlib import Path
@@ -20,8 +21,10 @@ def isolated_aicj_env(tmp_path, monkeypatch):
     monkeypatch.setenv("AICJ_REVIEW_LOG_DIR", str(log_dir))
     monkeypatch.setenv("AICJ_HOOK_MODE", "block")
     monkeypatch.setenv("HOME", str(tmp_path / "claude-home"))
-    # the hook imports scope.py from <claude>/skills/code-review/scripts; point it at the repo copy
-    monkeypatch.setenv("PYTHONPATH", str(SCOPE_SCRIPT.parent))
+    installed_scope = claude_dir / "skills/code-review/scripts/scope.py"
+    installed_scope.parent.mkdir(parents=True)
+    shutil.copyfile(SCOPE_SCRIPT, installed_scope)
+    monkeypatch.setenv("PYTHONPATH", "")
     return claude_dir, log_dir
 
 
@@ -93,6 +96,86 @@ def std_input(command: str, cwd: Path) -> dict:
 
 
 class TestPushGate:
+    @pytest.mark.parametrize("command", [
+        "git status\ngit push origin main",
+        "env git push origin main",
+        "command git push origin main",
+        "bash -c 'git push origin main'",
+        "(git push origin main)",
+        "git status & git push origin main",
+        "git status; git push origin main",
+        "env VAR=val command git push origin main",
+        "exec git push origin main",
+        "nohup git push origin main",
+        "sudo git push origin main",
+        "time git push origin main",
+        "{ git push origin main; }",
+        "sh -c 'git push origin main'",
+        "zsh -c 'git push origin main'",
+        "eval 'git push origin main'",
+    ])
+    def test_wrapped_and_multiline_push_is_blocked(self, tmp_path, command):
+        _, clone = make_repo(tmp_path)
+        commit(clone, "auth/Parse.java", "class Parse {}\n", "risky")
+        result = run_hook(std_input(command, clone))
+        assert result.returncode == 2, result.stderr
+        assert "auth/Parse.java" in result.stderr
+        control = run_hook(std_input(command.replace("git push origin main", "git status"), clone))
+        assert (control.returncode, control.stderr) == (0, "")
+
+    def test_quoted_git_push_text_is_not_a_push(self, tmp_path):
+        _, clone = make_repo(tmp_path)
+        result = run_hook(std_input('echo "git push"', clone))
+        assert (result.returncode, result.stderr) == (0, "")
+        control = run_hook(std_input("unparsed git push origin main", clone))
+        assert control.returncode == 2
+        assert "无法解析 git push 命令" in control.stderr
+
+    def test_unparsed_push_uses_fallback(self, tmp_path):
+        _, clone = make_repo(tmp_path)
+        result = run_hook(std_input("unparsed git push origin main", clone))
+        assert result.returncode == 2
+        assert "无法解析 git push 命令" in result.stderr
+        control = run_hook(std_input('unparsed "git push origin main"', clone))
+        assert (control.returncode, control.stderr) == (0, "")
+
+    def test_new_branch_risky_push_is_blocked(self, tmp_path):
+        _, clone = make_repo(tmp_path)
+        subprocess.run(["git", "-C", str(clone), "switch", "-c", "feat"], check=True, capture_output=True)
+        commit(clone, "auth/New.java", "class New {}\n", "risky")
+        result = run_hook(std_input("git push -u origin feat", clone))
+        assert result.returncode == 2, result.stderr
+        assert "auth/New.java" in result.stderr
+        subprocess.run(["git", "-C", str(clone), "reset", "--hard", "origin/main"], check=True, capture_output=True)
+        commit(clone, "README.md", "base\nsmall edit\n", "small")
+        control = run_hook(std_input("git push -u origin feat", clone))
+        assert (control.returncode, control.stderr) == (0, "")
+
+    @pytest.mark.parametrize("mode,expected", [("block", 2), ("warn", 0)])
+    def test_missing_scope_in_block_mode_is_internal_error(self, tmp_path, isolated_aicj_env, mode, expected):
+        _, clone = make_repo(tmp_path)
+        commit(clone, "auth/Missing.java", "class Missing {}\n", "risky")
+        control = run_hook(std_input("git push origin main", clone), env={"AICJ_HOOK_MODE": mode})
+        assert control.returncode == expected
+        assert "auth/Missing.java" in control.stderr
+        assert "内部异常" not in control.stderr
+        claude, _ = isolated_aicj_env
+        (claude / "skills/code-review/scripts/scope.py").unlink()
+        result = run_hook(std_input("git push origin main", clone), env={"AICJ_HOOK_MODE": mode})
+        assert result.returncode == expected, result.stderr
+        assert "内部异常" in result.stderr
+        assert "scope.py" in result.stderr
+        if mode == "warn":
+            assert "AICJ_HOOK_MODE=warn" in result.stderr
+
+    @pytest.mark.parametrize("mode,expected", [("block", 2), ("warn", 0)])
+    def test_uncomputable_new_branch_range_obeys_mode(self, tmp_path, mode, expected):
+        _, clone = make_repo(tmp_path)
+        result = run_hook(std_input("git push origin absent", clone), env={"AICJ_HOOK_MODE": mode})
+        assert result.returncode == expected, result.stderr
+        assert "无法计算" in result.stderr
+        control = run_hook(std_input("git push origin main", clone), env={"AICJ_HOOK_MODE": mode})
+        assert (control.returncode, control.stderr) == (0, "")
     def test_non_push_command_is_allowed(self, tmp_path):
         _, clone = make_repo(tmp_path)
         result = run_hook(std_input("git status", clone))

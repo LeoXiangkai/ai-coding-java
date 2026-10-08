@@ -67,6 +67,13 @@ def hook_script_target(hook: index.HookItem) -> str:
     return f"{index.CLAUDE_DIR}/{posixpath.normpath(hook.script.replace(chr(92), '/'))}"
 
 
+def hook_required_target(raw: str) -> str:
+    value = posixpath.normpath(str(raw).replace("\\", "/")).lstrip("/")
+    if value.startswith((".claude/", ".codex/", ".agents/")):
+        return value
+    return f".claude/{value}"
+
+
 def entry_state(target: Path, entry: manifest.Entry) -> str:
     """ok / missing / modified / unverified: does the path still look like what we installed."""
     if not target.exists() and not target.is_symlink():
@@ -562,6 +569,10 @@ def _run_install(
         script_entry = planned.get(hook_script_target(hook))
         if script_entry is None or script_entry.action not in HOOK_READY_ACTIONS:
             report.warn(f"hook {hook.event} {hook.script}: script not installed, hook not registered")
+            continue
+        missing = [target for target in hook.requires if (entry := planned.get(hook_required_target(target))) is None or entry.action not in HOOK_READY_ACTIONS]
+        if missing:
+            report.note(f"hook {hook.name} 未注册：依赖未就绪（{', '.join(missing)}）")
             continue
         matcher = "" if hook.event in settings.NO_MATCHER_EVENTS else hook.matcher
         keys.append(settings.HookKey(hook.event, matcher, command))

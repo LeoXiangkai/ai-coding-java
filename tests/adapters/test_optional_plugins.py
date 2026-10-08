@@ -96,6 +96,30 @@ def test_jev_consumer_reports_missing_scanner_for_large_pool(tmp_path):
     assert result.returncode == 2 and "consumer_scan.mjs missing" in result.stderr
 
 
+def test_jev_consumer_bash3_empty_extra_array(tmp_path):
+    assert '${EXTRA[@]+"${EXTRA[@]}"}' in (JEV / "bin/jev-consumer").read_text(encoding="utf-8")
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    for number in range(16):
+        path = repo / f"file-{number}.txt"
+        path.write_text("needle\n", encoding="utf-8")
+        subprocess.run(["git", "-C", str(repo), "add", path.name], check=True)
+    claude = tmp_path / ".claude"
+    (claude / "aicj/jev").mkdir(parents=True)
+    (claude / "aicj/jev/consumer-template.json").write_text("{}\n", encoding="utf-8")
+    scan = claude / "skills/jev-assist/scripts/consumer_scan.mjs"
+    scan.parent.mkdir(parents=True)
+    scan.write_text("process.exit(0)\n", encoding="utf-8")
+    scan.chmod(0o755)
+    bash3 = tmp_path / "bash3"
+    bash3.write_text("#!/bin/bash\nexec /bin/bash \"$@\"\n", encoding="utf-8")
+    bash3.chmod(0o755)
+    env = {"PATH": f"{tmp_path}:{os.environ['PATH']}", "AICJ_CLAUDE_DIR": str(claude)}
+    result = subprocess.run(["/bin/bash", str(JEV / "bin/jev-consumer"), "data", "needle", str(repo)], env=env, capture_output=True, text=True)
+    assert "unbound variable" not in result.stderr
+
+
 def test_verify_probe_requires_profile_and_ignores_sample(tmp_path):
     claude = tmp_path / ".claude"
     profile_dir = claude / "aicj/verify-profiles"

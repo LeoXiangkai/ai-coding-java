@@ -37,6 +37,7 @@ class HookItem:
     script: str
     blocking: bool
     optional: bool = False
+    requires: tuple[str, ...] = ()
 
     @property
     def name(self) -> str:
@@ -107,6 +108,9 @@ def _read_component(path: Path, source_root: Path) -> tuple[list[FileItem], list
         script = row.get("script")
         if not event or not script:
             raise UserError(f"{path}: hooks needs event and script")
+        requires = row.get("requires", [])
+        if not isinstance(requires, list) or any(not isinstance(value, str) or not value.strip() for value in requires):
+            raise UserError(f"{path}: hooks requires must be a list of non-blank strings")
         hooks.append(
             HookItem(
                 event=str(event),
@@ -114,6 +118,7 @@ def _read_component(path: Path, source_root: Path) -> tuple[list[FileItem], list
                 script=str(script),
                 blocking=bool(row.get("blocking", False)),
                 optional=bool(row.get("optional", False)),
+                requires=tuple(value.strip() for value in requires),
             )
         )
     return items, hooks

@@ -172,7 +172,8 @@
       "event": "PreToolUse",
       "matcher": "Bash",
       "script": "hooks/aicj/push-review-gate.py",
-      "blocking": true
+      "blocking": true,
+      "requires": ["skills/code-review/scripts/scope.py"]
     },
     {
       "event": "PreToolUse",

@@ -2,8 +2,8 @@
 """PreToolUse(Bash) hook: gate `git push` for commits not covered by a recorded code-review outcome.
 
 AICJ_HOOK_MODE (default warn): warn prints the deny text as a hint and allows the push
-(exit 0); block keeps the original deny behaviour (exit 2). Internal errors and non-push
-commands are fail-open. The hook reads tool_input.command and cwd from stdin JSON.
+(exit 0); block rejects it (exit 2). Internal errors also reject in block mode and warn
+then allow in warn mode. The hook reads tool_input.command and cwd from stdin JSON.
 """
 from __future__ import annotations
 
@@ -55,6 +55,14 @@ def deny_or_warn(message: str) -> int:
         "[push-review-gate] AICJ_HOOK_MODE=warn，本次放行；block 模式（AICJ_HOOK_MODE=block 或 install --strict）将拒绝：\n"
         + message + "\n"
     )
+    return 0
+
+
+def internal_or_warn(message: str) -> int:
+    if hook_mode() == "block":
+        sys.stderr.write(message + "\n")
+        return 2
+    sys.stderr.write("[push-review-gate] AICJ_HOOK_MODE=warn，本次放行；\n" + message + "\n")
     return 0
 
 GIT_GLOBAL_OPTS_WITH_ARG = frozenset((
@@ -156,15 +164,34 @@ def nul_paths(raw: bytes) -> list[str]:
 
 
 def split_command(command: str) -> list[list[str]]:
-    """Split a shell command into segments separated by &&, ;, ||, | and newlines.
-
-    Uses shlex for tokenisation. Sufficient for the simple command shapes this hook sees.
-    """
+    """Split on unquoted newlines, &, ;, || and | while preserving quoted text."""
+    out = []
+    quote = None
+    escaped = False
+    for char in command:
+        if escaped:
+            out.append(char)
+            escaped = False
+        elif char == "\\":
+            out.append(char)
+            escaped = True
+        elif quote:
+            out.append(char)
+            if char == quote:
+                quote = None
+        elif char in "'\"":
+            quote = char
+            out.append(char)
+        elif char == "\n":
+            out.append(";")
+        else:
+            out.append(char)
+    command = "".join(out)
     segments: list[list[str]] = [[]]
     lexer = shlex.shlex(command, punctuation_chars=True, posix=True)
     lexer.whitespace_split = True
     for token in lexer:
-        if token in ("&&", ";", "||", "|"):
+        if token in ("&&", "&", ";", "||", "|"):
             if segments[-1]:
                 segments.append([])
         else:
@@ -385,6 +412,26 @@ def _extract_push_segments(
         words = seg[w:]
         if not words:
             continue
+        while words and words[0] in ("(", "{"):
+            words = words[1:]
+        while words and words[0] in ("command", "exec", "nohup", "sudo", "time"):
+            words = words[1:]
+            while words and _is_assignment(words[0]):
+                words = words[1:]
+        if words and words[0] == "env":
+            words = words[1:]
+            while words and (_is_assignment(words[0]) or words[0].startswith("-")):
+                words = words[1:]
+        while words and words[0] in ("command", "exec", "nohup", "sudo", "time"):
+            words = words[1:]
+        if not words:
+            continue
+        if os.path.basename(words[0]) in ("bash", "sh", "zsh") and len(words) >= 3 and words[1] == "-c":
+            pushes.extend(_extract_push_segments(split_command(words[2]), cwd, seg_env))
+            continue
+        if words[0] == "eval" and len(words) >= 2:
+            pushes.extend(_extract_push_segments(split_command(words[1]), cwd, seg_env))
+            continue
         program = os.path.basename(words[0])
         if program not in ("git", "git-safe"):
             continue
@@ -423,6 +470,29 @@ def _extract_push_segments(
             pushes.append((repo_root, remote, refspecs))
 
     return pushes
+
+
+def _remove_quoted(text: str) -> str:
+    out: list[str] = []
+    quote: str | None = None
+    escaped = False
+    for char in text:
+        if escaped:
+            escaped = False
+            out.append(" ")
+        elif char == "\\":
+            escaped = True
+            out.append(" ")
+        elif quote:
+            if char == quote:
+                quote = None
+            out.append(" ")
+        elif char in "'\"":
+            quote = char
+            out.append(" ")
+        else:
+            out.append(char)
+    return "".join(out)
 
 
 def blobs_at_ref(repo: Path, ref: str, files: list[str]) -> dict[str, str | None]:
@@ -495,12 +565,19 @@ def deny_message(repo_root: Path, ref: str, gate: str, risk_signals: list[str], 
     return "\n".join(lines)
 
 
-def check_push(repo: Path, ref: str, remote_ref: str | None, raw_input: str) -> tuple[bool, str]:
+def check_push(repo: Path, ref: str, remote_ref: str | None, raw_input: str, remote: str = "origin") -> tuple[bool, str]:
     if remote_ref is None:
-        return True, ""
-    base = git_text(repo, "merge-base", ref, remote_ref, check=False)
-    if not base:
-        return True, ""
+        pending = git_text(repo, "rev-list", ref, "--not", f"--remotes={remote}", check=False)
+        if not pending:
+            return False, f"[push-review-gate] 无法计算 {ref} 的待推送提交范围"
+        oldest = pending.splitlines()[-1]
+        base = git_text(repo, "rev-parse", f"{oldest}^", check=False)
+        if not base:
+            base = git_text(repo, "hash-object", "-t", "tree", "/dev/null")
+    else:
+        base = git_text(repo, "merge-base", ref, remote_ref, check=False)
+        if not base:
+            return False, f"[push-review-gate] 无法计算 {ref} 的待推送提交范围"
     head = git_text(repo, "rev-parse", f"{ref}^{{commit}}")
     if base == head:
         return True, ""
@@ -589,6 +666,9 @@ def main() -> int:
             log_event("deny", "unresolved-repo-path", raw)
             return code
         if not pushes:
+            fallback_text = _remove_quoted(command)
+            if re.search(r"\bgit\b[^;&|\n]*\bpush\b", fallback_text) and not re.search(r"(?:--dry-run|\s-n(?:\s|$))", fallback_text):
+                return deny_or_warn("[push-review-gate] 无法解析 git push 命令")
             return 0
         for repo, remote, refspecs in pushes:
             if not repo.is_dir():
@@ -634,14 +714,14 @@ def main() -> int:
                         stderr=subprocess.DEVNULL,
                     ).returncode == 0:
                         remote_ref = candidate
-                ok, message = check_push(repo_root, local_ref, remote_ref, raw)
+                ok, message = check_push(repo_root, local_ref, remote_ref, raw, remote)
                 if not ok:
                     return deny_or_warn(message)
         return 0
     except Exception as e:
-        sys.stderr.write(f"[push-review-gate] 内部异常，放行 push：{e}\n")
+        message = f"[push-review-gate] 内部异常，无法完成 push 检查：{e} (required: {scope_script()})"
         log_event("error", str(e), raw if "raw" in dir() else "")
-        return 0
+        return internal_or_warn(message)
 
 
 if __name__ == "__main__":

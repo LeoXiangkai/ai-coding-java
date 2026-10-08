@@ -305,12 +305,16 @@ def find_rewrites(cmd):
     hits = []
     for seg in sc.segs:
         words = [(a, b, cmd[a:b]) for a, b in seg]
+        if not words:
+            continue
         m = len(words)
         k = 0
         while k < m and (words[k][2] in KEYWORDS or ENV_RE.match(words[k][2])):
             k += 1
-        if k >= m or words[k][2] != "git":
-            continue
+        if k >= m:
+            return []
+        if words[k][2] != "git":
+            return []
         gi = k
         j = gi + 1
         sub = None
@@ -342,7 +346,7 @@ def find_rewrites(cmd):
                 elif raw.startswith("+"):
                     forced = True  # +refspec 即强推
             if forced:
-                continue
+                return []
         hits.append(words[gi][0])
     return hits
 

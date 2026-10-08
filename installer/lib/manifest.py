@@ -4,6 +4,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path, PurePosixPath, PureWindowsPath
 
 from .util import UserError, iso_now, read_json, write_json
+from .settings import HOOK_PATH_MARK
 
 VERSION = 1
 REL_PATH = ".claude/aicj/manifest.json"
@@ -119,7 +120,7 @@ class Manifest:
                 enable_hooks=[str(x) for x in options.get("enable_hooks", [])],
             ),
             entries=[_entry(item) for item in entries],
-            settings_hooks=[dict(hook) for hook in hooks],
+            settings_hooks=[_hook(item) for item in hooks],
             created_dirs=[safe_rel(str(x), "created dir", allow_root=True) for x in data.get("created_dirs") or []],
             state=state,
         )
@@ -138,3 +139,15 @@ def load(home: Path) -> Manifest | None:
 
 def remove(home: Path) -> None:
     (home / REL_PATH).unlink(missing_ok=True)
+
+
+def _hook(item: object) -> dict:
+    if not isinstance(item, dict):
+        raise UserError("manifest settings_hooks must contain objects")
+    target = item.get("target")
+    command = item.get("command")
+    if target not in (".claude/settings.json", ".codex/hooks.json"):
+        raise UserError(f"manifest settings hook target is not managed: {target!r}")
+    if not isinstance(command, str) or HOOK_PATH_MARK not in command:
+        raise UserError(f"manifest settings hook command must contain {HOOK_PATH_MARK}: {command!r}")
+    return dict(item)

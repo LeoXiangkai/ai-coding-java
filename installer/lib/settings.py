@@ -99,7 +99,11 @@ def unmerge_hooks(payload: dict, keys: list[HookKey]) -> list[HookKey]:
             kept = [
                 hook
                 for hook in hooks
-                if not (isinstance(hook, dict) and hook.get("command") == key.command)
+                if not (
+                    isinstance(hook, dict)
+                    and hook.get("command") == key.command
+                    and HOOK_PATH_MARK in str(hook.get("command", ""))
+                )
             ]
             if len(kept) != len(hooks):
                 removed.append(key)

@@ -37,6 +37,7 @@ def run_doctor(home: Path, source: Path | None = None) -> tuple[list[tuple[str, 
     checks.extend(_plugins(home, loaded, source))
     checks.extend(_md_block(home))
     checks.extend(_hooks(home, loaded))
+    checks.extend(_hook_requirements(home, loaded, source))
     checks.extend(_optional_hooks(home, loaded, source))
     checks.extend(_bin_path(home, loaded))
     checks.extend(_codex(home, loaded))
@@ -180,6 +181,32 @@ def _optional_hooks(home: Path, loaded: manifest.Manifest, source: Path | None) 
         if command in registered:
             continue
         out.append((SKIPPED, f"optional hook {hook.name}", "not enabled (--enable-hook to register)"))
+    return out
+
+
+def _hook_requirements(home: Path, loaded: manifest.Manifest, source: Path | None) -> list[tuple[str, str, str]]:
+    if source is None and loaded.source_repo:
+        source = Path(loaded.source_repo)
+    if source is None:
+        return []
+    try:
+        idx = index.load_index(source, loaded.options.packs, loaded.options.adapters)
+    except UserError:
+        return []
+    registered = {str(row.get("command", "")) for row in loaded.settings_hooks}
+    out = []
+    for hook in idx.hooks:
+        if not hook.requires:
+            continue
+        command = engine.hook_command(hook, home, loaded.options.strict)
+        if command in registered:
+            continue
+        missing = [target for target in hook.requires if not any(
+            entry.path == engine.hook_required_target(target) and entry.action in engine.HOOK_READY_ACTIONS
+            for entry in loaded.entries
+        )]
+        if missing:
+            out.append((WARN, f"hook {hook.name} requirements", ", ".join(missing)))
     return out
 
 

@@ -78,6 +78,7 @@ def test_claude_engine_argv(repo, tmp_path):
     argv = dry(repo, tmp_path, "--tier", "mid")
     assert argv[:2] == ["claude", "-p"]
     assert argv[argv.index("--disallowedTools") + 1] == "Agent"
+    assert argv[argv.index("--") + 1] == "do it"
     assert "--model" not in argv
     assert argv[-1] == "do it"
 
@@ -139,3 +140,31 @@ def test_engine_nonzero_exit_is_propagated(repo, tmp_path):
     script.chmod(0o755)
     result = worker("--cd", str(wt), "--tier", "high", "x", claude=tmp_path, path=str(fake))
     assert result.returncode == 7
+
+
+@pytest.mark.parametrize("value", ["wat", "0", "-1", "nan", "inf"])
+def test_invalid_timeout_reports_error_without_limiting_execution(repo, tmp_path, value):
+    fake = git_only_path(tmp_path)
+    script = fake / "claude"
+    script.write_text(f"#!{sys.executable}\nimport time; time.sleep(0.1); print('completed')\n", encoding="utf-8")
+    script.chmod(0o755)
+    result = worker("--cd", str(repo[1]), "--tier", "high", "x", claude=tmp_path, path=str(fake), env_extra={"AICJ_EXECUTOR_TIMEOUT": value})
+    assert result.returncode == 0, result.stderr
+    assert result.stdout == "completed\n"
+    assert "AICJ_EXECUTOR_TIMEOUT" in result.stderr
+    control = worker("--cd", str(repo[1]), "--tier", "high", "x", claude=tmp_path, path=str(fake), env_extra={"AICJ_EXECUTOR_TIMEOUT": "0.01"})
+    assert control.returncode == 124
+    assert control.stdout == ""
+
+
+def test_timeout_returns_124(repo, tmp_path):
+    fake = git_only_path(tmp_path)
+    script = fake / "claude"
+    script.write_text(f"#!{sys.executable}\nimport time; time.sleep(0.1); print('completed')\n", encoding="utf-8")
+    script.chmod(0o755)
+    result = worker("--cd", str(repo[1]), "--tier", "high", "x", claude=tmp_path, path=str(fake), env_extra={"AICJ_EXECUTOR_TIMEOUT": "0.01"})
+    assert result.returncode == 124
+    assert "超时" in result.stderr
+    assert result.stdout == ""
+    control = worker("--cd", str(repo[1]), "--tier", "high", "x", claude=tmp_path, path=str(fake), env_extra={"AICJ_EXECUTOR_TIMEOUT": ""})
+    assert (control.returncode, control.stdout, control.stderr) == (0, "completed\n", "")

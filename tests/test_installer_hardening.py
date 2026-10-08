@@ -363,6 +363,73 @@ def test_hook_with_skipped_script_is_not_registered(home: Path) -> None:
     assert manifest_of(home)["settings_hooks"] == []
 
 
+@pytest.mark.parametrize("invalid_field", ["target", "command"])
+@pytest.mark.parametrize("operation", ["install", "uninstall"])
+def test_malformed_manifest_hook_is_rejected_by_install_and_uninstall(
+    home: Path, tmp_path: Path, invalid_field: str, operation: str,
+) -> None:
+    victim = tmp_path / "victim.json"
+    settings_path = home / ".claude/settings.json"
+    settings_path.parent.mkdir(parents=True)
+    user_payload = {"hooks": {"PreToolUse": [{"matcher": "Bash", "hooks": [{"type": "command", "command": "echo user"}]}]}}
+    settings_path.write_text(json.dumps(user_payload), encoding="utf-8")
+    ok(run_aicj("install", home=home))
+    assert any("/hooks/aicj/" in row["command"] for row in manifest_of(home)["settings_hooks"])
+    victim.write_text(settings_path.read_text(encoding="utf-8"), encoding="utf-8")
+    manifest_path = home / ".claude/aicj/manifest.json"
+    data = manifest_of(home)
+    data["settings_hooks"][0][invalid_field] = str(victim) if invalid_field == "target" else "echo user"
+    manifest_path.write_text(json.dumps(data), encoding="utf-8")
+    before_home = snapshot(home)
+    before_victim = victim.read_bytes()
+    refused(run_aicj(operation, home=home))
+    assert snapshot(home) == before_home
+    assert victim.read_bytes() == before_victim
+
+
+def test_hook_requires_existing_user_skill_is_not_registered(home: Path) -> None:
+    skill = home / ".claude/skills/code-review/scripts/scope.py"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("user scope\n", encoding="utf-8")
+    (skill.parent.parent / "SKILL.md").write_text("user skill\n", encoding="utf-8")
+    settings_path = home / ".claude/settings.json"
+    settings_path.write_text('{"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"echo user"}]}]}}', encoding="utf-8")
+    before = settings_path.read_bytes()
+    result = run_aicj("install", home=home, source=None)
+    assert result.returncode == 0, result.stdout + result.stderr
+    payload = json.loads(settings_path.read_text(encoding="utf-8"))
+    assert not any("push-review-gate.py" in hook.get("command", "") for group in payload.get("hooks", {}).get("PreToolUse", []) for hook in group.get("hooks", []))
+    assert settings_path.read_bytes() == before
+    assert skill.read_text(encoding="utf-8") == "user scope\n"
+    assert "依赖未就绪" in result.stdout
+    doctor = run_aicj("doctor", home=home, source=None)
+    assert doctor.returncode == 0, doctor.stdout + doctor.stderr
+    assert "WARN     hook push-review-gate requirements" in doctor.stdout
+    clean = home.parent / "clean-home"
+    clean.mkdir()
+    ok(run_aicj("install", home=clean, source=None))
+    clean_payload = json.loads((clean / ".claude/settings.json").read_text(encoding="utf-8"))
+    assert any("push-review-gate.py" in hook["command"] for group in clean_payload["hooks"]["PreToolUse"] for hook in group["hooks"])
+    clean_doctor = run_aicj("doctor", home=clean, source=None)
+    assert clean_doctor.returncode == 0, clean_doctor.stdout + clean_doctor.stderr
+    assert "hook push-review-gate requirements" not in clean_doctor.stdout
+
+
+def test_unmerge_hooks_preserves_commands_without_ownership_marker() -> None:
+    from lib import settings
+
+    owned = "python3 /isolated/hooks/aicj/check.py"
+    payload = {"hooks": {"PreToolUse": [{"matcher": "Bash", "hooks": [
+        {"type": "command", "command": "echo user"}, {"type": "command", "command": owned},
+    ]}]}}
+    removed = settings.unmerge_hooks(payload, [
+        settings.HookKey("PreToolUse", "Bash", "echo user"),
+        settings.HookKey("PreToolUse", "Bash", owned),
+    ])
+    assert removed == [settings.HookKey("PreToolUse", "Bash", owned)]
+    assert payload == {"hooks": {"PreToolUse": [{"matcher": "Bash", "hooks": [{"type": "command", "command": "echo user"}]}]}}
+
+
 def test_user_preexisting_identical_hook_is_adopted_and_survives_uninstall(home: Path) -> None:
     command = f"python3 {shlex.quote(str(home / '.claude/hooks/aicj/sample-hook.py'))}"
     settings_path = home / ".claude/settings.json"
