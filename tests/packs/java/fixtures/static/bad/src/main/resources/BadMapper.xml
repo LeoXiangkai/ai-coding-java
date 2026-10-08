@@ -1,0 +1,4 @@
+<mapper namespace="example.BadMapper">
+  <select id="find">select * from item where id = ${id}</select>
+  <update id="all">update item set secret = 'abcdefgh1234'</update>
+</mapper>

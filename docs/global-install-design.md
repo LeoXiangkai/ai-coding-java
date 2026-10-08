@@ -129,7 +129,7 @@ CLAUDE.md 标记块：BEGIN、END 各恰好出现一次且顺序正确才是合�
 
 | 包 | 规则 | 检查 | 自测入口 |
 |---|---|---|---|
-| java | 迁入现 `rules/` 6 份 + Spring 隐式失效自审 | `static_review_check.py`、pre-commit P0 扫描 | Maven/Gradle 探测；`mvn -pl <m> -am test`；启动与日志检查 |
+| java | Java/Spring Boot、MyBatis/SQL、Java 17+/Spring Boot 3 差异规则 + Spring 隐式失效自审 | 包内 `static_review.py`（密钥、`${}`、无 where、异常吞掉、日志、代理注解、javax/jakarta） | Maven/Gradle 探测；编译与相关单测；启动日志检查；真实数据接口 curl |
 | vue | 由通用前端规则改写为 Vue 3 + TS 规则 | eslint、vue-tsc、`--max-warnings 0` | `package.json` scripts 探测：build、vitest、dev；playwright 衔接 |
 | python | 新写：类型注解、异常、依赖、SQL 注入、迁移、配置与密钥 | ruff、mypy/pyright（可选） | pytest；FastAPI / Flask / Django 启动探测 |
 
