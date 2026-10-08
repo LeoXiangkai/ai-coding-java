@@ -67,12 +67,6 @@ def hook_script_target(hook: index.HookItem) -> str:
     return f"{index.CLAUDE_DIR}/{posixpath.normpath(hook.script.replace(chr(92), '/'))}"
 
 
-def digest(path: Path) -> str:
-    if path.is_dir():
-        return sha256_text(os.path.realpath(path))
-    return sha256_file(path)
-
-
 def entry_state(target: Path, entry: manifest.Entry) -> str:
     """ok / missing / modified / unverified: does the path still look like what we installed."""
     if not target.exists() and not target.is_symlink():

@@ -179,10 +179,18 @@ def _expand(root: Path, source: Path, target: str, category: str, source_root: P
     if not _inside(full, source_root):
         raise UserError(f"component source resolves outside the component root: {full}")
     if full.is_file():
+        if full.suffix in {".pyc", ".pyo"} or "__pycache__" in full.parts:
+            return []
         return [FileItem(category=category, source=full, target=target)]
     out: list[FileItem] = []
     for child in sorted(full.rglob("*")):
-        if child.is_symlink() or not child.is_file() or not _inside(child, source_root):
+        if (
+            child.is_symlink()
+            or not child.is_file()
+            or not _inside(child, source_root)
+            or "__pycache__" in child.parts
+            or child.suffix in {".pyc", ".pyo"}
+        ):
             continue
         rel = child.relative_to(full).as_posix()
         out.append(FileItem(category=category, source=child, target=f"{target.rstrip('/')}/{rel}"))

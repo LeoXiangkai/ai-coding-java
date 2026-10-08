@@ -203,6 +203,24 @@ def test_link_and_copy_modes_can_be_toggled(home: Path) -> None:
     assert files_under(home) == []
 
 
+def test_install_ignores_python_cache_artifacts(home: Path, tmp_path: Path) -> None:
+    source = fixture_copy(tmp_path)
+    cache = source / "core/skills/sample-skill/__pycache__"
+    cache.mkdir()
+    (cache / "x.pyc").write_bytes(b"compiled")
+    (source / "core/skills/sample-skill/x.pyo").write_bytes(b"optimized")
+
+    dry_run = run_aicj("install", "--dry-run", home=home, source=source)
+    ok(dry_run)
+    assert "__pycache__" not in dry_run.stdout
+    assert ".pyo" not in dry_run.stdout
+
+    ok(run_aicj("install", home=home, source=source))
+    installed = files_under(home)
+    assert ".claude/skills/sample-skill/__pycache__/x.pyc" not in installed
+    assert ".claude/skills/sample-skill/x.pyo" not in installed
+
+
 # --- 4. marker block -----------------------------------------------------------
 
 MALFORMED = {

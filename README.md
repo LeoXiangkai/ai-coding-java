@@ -1,119 +1,131 @@
 # ai-coding-java
 
-个人可复用的企业级 Java AI Coding 工程组件。
+可复用的 AI Coding 全局安装组件与项目档案工具。仓库名保留，能力覆盖 Java、Python、Vue：统一规则路由、需求与设计流程、验证证据、交付模板和轻量 Git 保护。
 
-目标：把项目初始化、规则路由、编码前设计、测试验证、Review 和轻量 Git 保护收敛到一套可被 Codex 与 Claude Code 识别的项目规则，减少返工和误改。
+## 两层职责
 
-## 快速入口
+- **全局层**：`installer/aicj.py` 将语言无关的 `core/`、语言包 `packs/` 和按需选择的 `adapters/` 安装到 `~/.claude`。默认复制，`--link` 使用软链接。`--codex` 额外把 skills 链接到 `~/.agents/skills`。
+- **项目档案层**：`skills/setup-ai-coding/SKILL.md` 初始化目标项目工作区，用 `scripts/init_target_project.py` 写入 `.ai-coding-java/` 和入口 marker。素材来自根 `rules/`、`workflow/`、`templates/`、`docs/`；根 `rules/` 是 Java 8 / Spring Boot 2 项目档案规则，保留供既有项目使用。
 
-1. 组件维护入口：`AGENTS.md`、`CLAUDE.md`
-2. 目标项目规则入口：`docs/rule-index.md`
-3. 执行主流程：`workflow/agent-workflow.md`
-4. 新需求前置拷问：全局 `$grilling`
-5. 编码前设计门：`docs/design-first-policy.md`
-6. 测试与 TDD：`docs/testing-workflow.md`、`docs/tdd-policy.md`
-7. 最低验证：`docs/verification-matrix.md`
-8. 复杂需求链路：`docs/rd-integrated-workflow.md`
-9. 接入与能力边界：`docs/project-integration-guide.md`、`docs/project-harness.md`
-10. 全栈多仓 TAP 协作：`docs/tap-fullstack-collaboration.md`
-11. 可安装 skill 源：`skills/setup-ai-coding/SKILL.md`
+安装行为以[全局安装设计](docs/global-install-design.md)为准；项目规则从[规则索引](docs/rule-index.md)进入。技能来源见[运行时边界](docs/runtime-skill-boundary.md)，项目注入细节见[使用指南](USAGE.md)。
 
-## 使用方式
+## 目录地图
 
-初始化到目标 Java 项目：
+| 目录 | 职责 |
+|---|---|
+| `core/` | 语言无关规则、refs、角色、skills、hooks、bin 与全局入口模板 |
+| `packs/java/`、`packs/python/`、`packs/vue/` | 语言规则与验证 skills |
+| `adapters/` | executor、lesson 与 optional-plugins 适配契约 |
+| `installer/` | CLI、安装清单、冲突处理、配置合并、status 与 doctor |
+| `rules/`、`workflow/`、`templates/`、`docs/` | 项目档案素材；不替代全局语言包 |
+| `skills/setup-ai-coding/` | 项目初始化 skill 源 |
+| `scripts/`、`hooks/` | 项目初始化、结构/脱敏检查和项目 Git hooks；`scripts/static_review_check.py` 仍供仓库 pre-commit 使用 |
+| `tests/` | 安装器、语言包、hooks、adapters 与入口文档测试 |
 
-```bash
-python3 /path/to/ai-coding-java/scripts/init_target_project.py /path/to/target-project \
-  --project-type legacy \
-  --stack "Java 8 + Spring Boot 2.x + Maven + MyBatis + MySQL + Redis" \
-  --verification-level standard \
-  --template-policy local-auxiliary \
-  --data-boundary "school + school_year"
-```
+## 快速开始
 
-初始化后检查：
+在组件仓库执行，先看命令帮助并预览，不写真实用户目录：
 
 ```bash
-python3 /path/to/target-project/.ai-coding-java/scripts/check_target_project.py /path/to/target-project
+python3 installer/aicj.py --help
+python3 installer/aicj.py install --help
+python3 installer/aicj.py install --codex --dry-run
 ```
 
-全栈多仓任务需要 TAP 协作通道时：
+再用临时目录完成安装、检查和卸载试用：
 
 ```bash
-python3 /path/to/ai-coding-java/scripts/init_tap_fullstack.py /path/to/system-root \
-  --channel-name fullstack \
-  --repo server=/path/to/system-root/code/server:cc_server_agent \
-  --repo web=/path/to/system-root/code/web:cc_web_agent
+AICJ_TRIAL_HOME=$(mktemp -d)
+python3 installer/aicj.py install --codex --home "$AICJ_TRIAL_HOME"
+python3 installer/aicj.py status --home "$AICJ_TRIAL_HOME"
+python3 installer/aicj.py doctor --home "$AICJ_TRIAL_HOME"
+python3 installer/aicj.py uninstall --home "$AICJ_TRIAL_HOME"
+find "$AICJ_TRIAL_HOME" -type f
+# 检查残留后清理这次试用目录
+rm -rf -- "$AICJ_TRIAL_HOME"
 ```
 
-安装或刷新 `$setup-ai-coding` 全局 skill 软链接：
+确认试用结果后，用户可执行真实安装；以下命令会写当前用户 home：
 
 ```bash
-python3 /path/to/ai-coding-java/scripts/install_setup_ai_coding_skill.py
+python3 installer/aicj.py install --codex
+python3 installer/aicj.py status
+python3 installer/aicj.py doctor
+python3 installer/aicj.py uninstall --dry-run
+python3 installer/aicj.py uninstall
 ```
 
-说明：`$setup-ai-coding` 会先初始化当前项目的 Codex / Claude Code / OMX 工作区；如果当前项目是
-Java 项目且尚未接入，它会继续调用本组件的 `scripts/init_target_project.py` 生成 `.ai-coding-java/`。
-这个集成路径会把 Claude Code marker 写入 `CLAUDE.local.md`，避免默认改团队 `CLAUDE.md`；同时固定带
-`--hooks skip`，钩子安装改为征得用户同意后再单独执行。也可以直接运行上面的脚本做显式注入，可选
-`--hooks {install,skip}` 与 `--build-cmd` / `--test-cmd` / `--start-cmd` 参数。
+目标项目初始化使用 `$setup-ai-coding`。它只读检查全局层；缺失时给出安装建议，不自动安装全局组件。Claude 项目 marker 默认写 `CLAUDE.local.md`。
 
-目标项目日常开发：
+## 常用参数
 
-```text
-小任务：AGENTS/CLAUDE -> rule-index -> 命中规则 -> 实现 -> verification-matrix -> delivery report
-新需求：Intake -> $grilling -> Design Gate -> Test Plan -> Implement -> Verify/Review -> Report
-复杂需求：Requirement Grilling -> Requirement -> Domain/Type -> Design -> Architecture Review -> Plan/Test -> Implement -> Verify/Review -> Release
-```
+| 参数 | 用途 |
+|---|---|
+| `--dry-run` | 预览 install/uninstall，不落盘 |
+| `--home <dir>` | 隔离用户目录；开发验证必须使用临时目录 |
+| `--source <dir>` | 指定组件源仓库 |
+| `--global` / `--project <dir>` | 默认全局安装；后者指定项目归档目录 |
+| `--packs auto` / `--packs java,python,vue` | 自动探测或指定语言包 |
+| `--adapters executor,lesson,jev,verify-probe` | 按需选择适配器；默认不装 |
+| `--link` | 使用软链；源仓库需保持可访问 |
+| `--on-conflict skip` / `--on-conflict backup` | 默认跳过冲突；或备份后替换 |
+| `--strict` | 拦截类 hooks 切为 block；默认 warn，也可设置 `AICJ_HOOK_MODE=block` |
+| `--enable-hook <name>` | 点名注册可选 hook，可重复；未点名脚本仍安装但不注册 |
+| `--codex` | 额外安装 Codex skill 链接 |
+| `--codex-hooks` | 显式合并 Codex hooks.json |
 
-## OPC 模式
+参数适用命令以对应 `--help` 为准。
 
-OPC 指个人主导的快速交付模式。默认策略是轻量、可验证、不中断节奏：
+## 不破坏用户内容的约定
 
-1. 小任务不生成完整研发产物，但必须说明影响和验证。
-2. 新需求、完整模块、二开改造和影响不清的行为变更必须先用全局 `$grilling` 完成需求拷问，再过设计门。
-3. 高风险业务点按 TDD L2/L3 执行；普通任务用测试计划或验证清单即可。
-4. Git hooks 默认 warn，P0 确定性问题在 commit 前拦截。
-5. 无法验证的内容写入 `Not-tested`，不包装成已验证。
+- 已有文件 sha256 相同则 `adopted`，不写；内容不同默认 `skipped`。同源软链记为 `adopted-symlink`。
+- `--on-conflict backup` 先备份再替换；skill 按整目录判定冲突，避免混装。
+- `settings.json` 仅合并 `hooks` 键，保留已有 hooks 和其他设置；卸载精确移除我方注册项。
+- `~/.claude/CLAUDE.md` 只增加或更新 ai-coding-java marker block，引用全局入口。
+- manifest 记录归属与 sha256。卸载只删除我方拥有且未修改的文件，恢复替换前备份，保留 adopted 条目、用户修改和用户数据。用户修改导致残留时会告警。
+- 源目录中的 `__pycache__`、`.pyc`、`.pyo` 不进入安装清单。
 
-## 核心能力
+## 语言包探测与自测
 
-已落地：
+`--packs auto` 在当前工作目录探测；全局安装未命中任何包时安装全部可用语言包。规则按语言路径生效。以安装器实际探测为准：
 
-1. 新项目初始化、存量项目注入、技术栈确认和 Codex/Claude 入口 marker。
-2. 轻量规则索引、Java/Spring/MyBatis/SQL/事务/安全/交付规则。
-3. 编码前设计门：新项目宏观/微观设计，二开模块/影响设计。
-4. 产研测测试验证 workflow、TDD 分级、验证矩阵和交付证据模板。
-5. 自动安装轻量 Git hooks、目标项目 doctor、模板刷新 dry-run、项目画像、复杂需求产物一致性检查。
-6. 提供 `setup-ai-coding` skill 源和软链接安装脚本，避免新机器缺少全局初始化入口或多处维护漂移。
-7. 提供可选 TAP 全栈协作初始化脚本，支持多仓共享 comms、Claude `.mcp.json`、`sync-tap-pending` 壳和 Codex wrapper 注入。
+| 包 | 探测条件 | 自测入口 |
+|---|---|---|
+| Java | `pom.xml` 或 `build.gradle*` | `packs/java/skills/java-verify/scripts/detect_java.py`；`packs/java/skills/java-verify/scripts/static_review.py`；`tests/test_java_pack.py` |
+| Python | `pyproject.toml`、`requirements*.txt` 或 `setup.py` | `packs/python/skills/python-verify/scripts/detect_python.py`；`packs/python/skills/python-verify/scripts/static_review.py`；`tests/test_python_pack.py` |
+| Vue | `package.json` 的 dependencies 或 devDependencies 含 `vue` | `packs/vue/skills/vue-verify/scripts/detect_vue.py`；`tests/test_vue_pack.py` |
 
-边界清晰：
+语言验证 skill 从目标项目提取实际构建、测试、启动命令；未验证的命令明确标记 `Not-tested`。
 
-1. 全局 skill 编排、模型选择、提测部署、外部平台发布由 Codex、Claude Code、OMX 或目标项目负责。
-2. 业务规则、接口契约、数据隔离和环境命令以目标项目最近的 `AGENTS.md` / `CLAUDE.md` / `project-profile.md` 为准。
-3. 复杂需求产物按需生成，不作为小任务默认门禁。
+## 可选适配器
 
-后续增强：
+| 适配器 | 能力与前置条件 |
+|---|---|
+| executor | 外部执行体交接契约、示例 worker、交接后轮询保护；不提供个人环境配置 |
+| lesson | 教训召回/捕获机制与空数据骨架；不携带已有教训数据 |
+| jev | consumer 契约、工具壳和模板；需要 node 与若已安装的 jev-assist |
+| verify-probe | 只读验证探针与示例 profile；需要 git，实际项目 profile 由项目提供 |
 
-1. 结构化项目画像。
-2. 更细粒度的目标模板合并与更新。
-3. 更强的复杂需求产物一致性检查。
+依赖不足的可选插件报 `SKIPPED`，装好依赖后即可用，不冒充已验证能力。
 
-## 组件维护校验
+## Codex 与第三方技能
+
+Claude skills 位于 `~/.claude/skills`；`--codex` 只额外创建 `~/.agents/skills` 链接。不改 `~/.codex/AGENTS.md`；规则由项目 `AGENTS.md` marker 路由。`~/.codex/hooks.json` 仅 `--codex-hooks` 时合并。
+
+grilling、research、prototype、domain-modeling、writing-for-agents 是第三方 skills，本仓库不提供。**若已安装**，按对应场景调用；缺失时分别使用需求问答、来源调查、临时原型、术语/ADR 整理和紧凑文档编写作为人工流程兜底，不写未安装的 skill 调用。doctor 探测 `~/.agents/skills`，缺失提示手动安装。
+
+doctor 状态：`PASS` 表示检查项可用；`WARN` 表示修改、冲突、PATH 或第三方能力等提示；`SKIPPED` 表示未选择、未启用或依赖不足的可选能力；`MISSING` 表示必要文件、清单、入口 marker 或已登记 hook 缺失。存在 `MISSING` 时退出 1；只有 WARN/SKIPPED 不使 doctor 失败。
+
+## 维护验证
 
 ```bash
-python3 scripts/context_budget_check.py
+python3 -m pytest tests -q -p no:cacheprovider
+python3 scripts/sanitize_check.py
 python3 scripts/template_integrity_check.py
-python3 scripts/structure_check.py
-python3 scripts/docs_tone_check.py
-python3 scripts/evidence_check.py examples/delivery-report.example.md
-python3 scripts/static_review_check.py examples/static-review-good
+python3 scripts/context_budget_check.py
+rg -n "v1\.0|reference-baseline|当前项目按本地|强制 hooks" README.md AGENTS.md CLAUDE.md TOOL.md USAGE.md docs rules workflow templates scripts
+wc -c README.md AGENTS.md CLAUDE.md
+find . -name __pycache__ -not -path "./.git/*"
 ```
 
-更多说明：
-
-1. 接入指南：`docs/project-integration-guide.md`
-2. Harness 边界：`docs/project-harness.md`
-3. Git hooks：`docs/git-hooks-guide.md`
-4. 远程托管：`docs/remote-hosting-guide.md`
+安装闭环使用上述临时 home 试用。检查失败时报告具体项；缺失 `.omx/notepad.md` 也应如实报告，不为消除检查结果而生成无关文件。
