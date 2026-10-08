@@ -19,13 +19,29 @@
     }
   },
   "entries": {
-    "rules": [],
-    "refs": [],
-    "agents": [],
+    "rules": [
+      {"source": "rules/context-engineering.md", "target": "rules/context-engineering.md"},
+      {"source": "rules/executor-handoff.md", "target": "rules/executor-handoff.md"},
+      {"source": "rules/git-workflow.md", "target": "rules/git-workflow.md"},
+      {"source": "rules/worktree-management.md", "target": "rules/worktree-management.md"}
+    ],
+    "refs": [
+      {"source": "refs/git-policy.md", "target": "refs/git-policy.md"},
+      {"source": "refs/worktree-ops.md", "target": "refs/worktree-ops.md"}
+    ],
+    "agents": [
+      {"source": "agents/dev.md", "target": "agents/dev.md"},
+      {"source": "agents/pm.md", "target": "agents/pm.md"},
+      {"source": "agents/qa.md", "target": "agents/qa.md"},
+      {"source": "agents/sa.md", "target": "agents/sa.md"},
+      {"source": "agents/scanner.md", "target": "agents/scanner.md"}
+    ],
     "skills": [],
     "hooks": [],
     "bin": [],
-    "templates": []
+    "templates": [
+      {"source": "templates/CLAUDE.global.md", "target": "aicj/CLAUDE.global.md"}
+    ]
   },
   "hooks": []
 }
