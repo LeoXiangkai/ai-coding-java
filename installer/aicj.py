@@ -147,6 +147,9 @@ def main(argv: list[str] | None = None) -> int:
     except UserError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
+    except (OSError, UnicodeError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":

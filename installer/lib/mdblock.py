@@ -1,21 +1,35 @@
 from __future__ import annotations
 
-import re
-from dataclasses import dataclass
+from .util import UserError
 
 BEGIN = "<!-- aicj:begin -->"
 END = "<!-- aicj:end -->"
-BLOCK_RE = re.compile(re.escape(BEGIN) + r".*?" + re.escape(END) + r"\n?", re.DOTALL)
 
 
-@dataclass(frozen=True)
-class BlockAction:
-    kind: str
-    text: str
+def find_block(text: str) -> tuple[int, int] | None:
+    """Span of the marker block (including one trailing newline), None when absent.
+
+    Only exactly one BEGIN followed by exactly one END is a block; anything else is
+    ambiguous and refused so user text between stray markers is never touched.
+    """
+    begins = text.count(BEGIN)
+    ends = text.count(END)
+    if begins == 0 and ends == 0:
+        return None
+    if begins != 1 or ends != 1:
+        raise UserError(f"malformed aicj marker block ({begins} begin / {ends} end markers); fix the file by hand")
+    start = text.index(BEGIN)
+    stop = text.index(END)
+    if stop < start:
+        raise UserError("malformed aicj marker block (end marker before begin marker); fix the file by hand")
+    stop += len(END)
+    if text.startswith("\n", stop):
+        stop += 1
+    return start, stop
 
 
 def has_block(text: str) -> bool:
-    return BEGIN in text and END in text
+    return find_block(text) is not None
 
 
 def build_block(reference: str) -> str:
@@ -31,7 +45,9 @@ def append_block(text: str, reference: str) -> str:
     return body + build_block(reference)
 
 
-def remove_block(text: str) -> tuple[str, bool]:
-    if not has_block(text):
+def remove_exact(text: str, expected: str) -> tuple[str, bool]:
+    """Remove the block only when its text equals `expected`."""
+    span = find_block(text)
+    if span is None or text[span[0] : span[1]] != expected:
         return text, False
-    return BLOCK_RE.sub("", text), True
+    return text[: span[0]] + text[span[1] :], True

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import posixpath
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -9,6 +11,15 @@ from .util import UserError, read_json
 CATEGORIES = ("rules", "refs", "agents", "skills", "hooks", "bin", "templates")
 CLAUDE_DIR = ".claude"
 HOOK_DIR = "hooks/aicj"
+# files the installer itself owns; a component entry must never target them
+RESERVED_TARGETS = frozenset(
+    {
+        f"{CLAUDE_DIR}/settings.json",
+        f"{CLAUDE_DIR}/claude.md",
+        f"{CLAUDE_DIR}/aicj/manifest.json",
+        f"{CLAUDE_DIR}/hooks.json",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -47,7 +58,7 @@ def _manifest_path(base: Path, kind: str, name: str | None = None) -> Path | Non
     return None
 
 
-def _read_component(path: Path) -> tuple[list[FileItem], list[HookItem]]:
+def _read_component(path: Path, source_root: Path) -> tuple[list[FileItem], list[HookItem]]:
     data = read_json(path)
     if not isinstance(data, dict):
         raise UserError(f"{path}: top level must be an object")
@@ -71,7 +82,7 @@ def _read_component(path: Path) -> tuple[list[FileItem], list[HookItem]]:
             target = row.get("target")
             if not source or not target:
                 raise UserError(f"{path}: entries.{category} needs source and target")
-            items.extend(_expand(root, Path(source), _target(str(target), path), category))
+            items.extend(_expand(root, Path(source), _target(str(target), path), category, source_root))
 
     hooks: list[HookItem] = []
     for row in hooks_raw:
@@ -96,22 +107,53 @@ def _target(raw: str, manifest_path: Path) -> str:
     rel = Path(raw.strip().lstrip("/"))
     if not raw.strip() or ".." in rel.parts:
         raise UserError(f"{manifest_path}: target must stay inside ~/.claude: {raw!r}")
-    return f"{CLAUDE_DIR}/{rel.as_posix()}"
+    normalized = posixpath.normpath(rel.as_posix())
+    if normalized in ("", "."):
+        raise UserError(f"{manifest_path}: target must name a file or directory: {raw!r}")
+    full = f"{CLAUDE_DIR}/{normalized}"
+    if full.lower() in RESERVED_TARGETS:
+        raise UserError(f"{manifest_path}: target {raw!r} is managed by the installer itself")
+    return full
 
 
-def _expand(root: Path, source: Path, target: str, category: str) -> list[FileItem]:
+def _inside(path: Path, root: Path) -> bool:
+    real = Path(os.path.realpath(path))
+    base = Path(os.path.realpath(root))
+    return real == base or base in real.parents
+
+
+def _expand(root: Path, source: Path, target: str, category: str, source_root: Path) -> list[FileItem]:
     full = root / source
     if not full.exists():
         raise UserError(f"component source missing: {full}")
+    if not _inside(full, source_root):
+        raise UserError(f"component source resolves outside the component root: {full}")
     if full.is_file():
         return [FileItem(category=category, source=full, target=target)]
     out: list[FileItem] = []
     for child in sorted(full.rglob("*")):
-        if not child.is_file():
+        if child.is_symlink() or not child.is_file() or not _inside(child, source_root):
             continue
         rel = child.relative_to(full).as_posix()
         out.append(FileItem(category=category, source=child, target=f"{target.rstrip('/')}/{rel}"))
     return out
+
+
+def _check_targets(items: list[FileItem]) -> None:
+    seen: dict[str, str] = {}
+    for item in items:
+        key = item.target.lower()
+        if key in RESERVED_TARGETS:
+            raise UserError(f"target {item.target} is managed by the installer itself")
+        if key in seen:
+            raise UserError(f"duplicate install target {item.target} ({seen[key]} and {item.source})")
+        seen[key] = str(item.source)
+    for key in seen:
+        parent = posixpath.dirname(key)
+        while parent and parent != CLAUDE_DIR:
+            if parent in seen:
+                raise UserError(f"install target {key} sits below file target {parent}")
+            parent = posixpath.dirname(parent)
 
 
 def _detect_packs(cwd: Path) -> list[str]:
@@ -194,7 +236,8 @@ def load_index(
             if label != "core":
                 index.notes.append(f"{label}: no manifest -> no entries")
             continue
-        items, hooks = _read_component(path)
+        items, hooks = _read_component(path, source_root)
         index.files.extend(items)
         index.hooks.extend(hooks)
+    _check_targets(index.files)
     return index

@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import stat
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -29,12 +30,19 @@ def sha256_text(text: str) -> str:
 
 
 def atomic_write(path: Path, data: bytes) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=f".{path.name}.", suffix=".tmp")
+    # a symlinked target (dotfiles setup) must stay a symlink: write to what it points at
+    real = Path(os.path.realpath(path))
+    real.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        mode = stat.S_IMODE(real.stat().st_mode)
+    except OSError:
+        mode = 0o644
+    fd, tmp = tempfile.mkstemp(dir=str(real.parent), prefix=f".{real.name}.", suffix=".tmp")
     try:
         with os.fdopen(fd, "wb") as handle:
             handle.write(data)
-        os.replace(tmp, path)
+        os.chmod(tmp, mode)
+        os.replace(tmp, real)
     except BaseException:
         Path(tmp).unlink(missing_ok=True)
         raise
@@ -82,11 +90,11 @@ def git_commit(repo: Path) -> str:
     return result.stdout.strip() if result.returncode == 0 else ""
 
 
-def prune_empty_dirs(path: Path, stop: Path) -> None:
-    current = path
-    while current != stop and stop in current.parents:
-        try:
-            current.rmdir()
-        except OSError:
-            return
-        current = current.parent
+def unique_backup_rel(home: Path, rel: str, ts: str) -> str:
+    """`<rel>.aicj-bak-<ts>`, with a counter suffix when that name is taken."""
+    candidate = f"{rel}.aicj-bak-{ts}"
+    counter = 1
+    while (home / candidate).exists() or (home / candidate).is_symlink():
+        counter += 1
+        candidate = f"{rel}.aicj-bak-{ts}-{counter}"
+    return candidate

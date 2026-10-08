@@ -86,3 +86,60 @@ def test_repo_tree_itself_is_clean() -> None:
 
     result = run_sanitize(REPO)
     assert result.returncode == 0, result.stdout
+
+
+def test_new_patterns_each_hit_their_own_rule(tmp_path: Path) -> None:
+    cases = {
+        "secret-key-sk": ["key sk-ant-api03-AbCdEfGhIjKlMnOpQrStUvWx\n", "key sk-proj-AbCdEfGhIjKlMnOpQrSt_UvWx\n"],
+        "secret-token-assign": [
+            'export GITEE_TOKEN: "abcdefghijk"\n',
+            "CLIENT_SECRET=abcdefgh1234\n",
+            "DB_PASSWORD=hunter2hunter2\n",
+            '{"OPENAI_API_KEY": "abcdefghijkl"}\n',
+            "OPENAI_API_KEY: abcdefghijkl\n",
+        ],
+        "personal-abs-path": ["cd /Users/alice\n", "see /home/bob.\n", "/Users/alice)\n"],
+        "personal-win-path": ["C:\\Users\\alice\\docs\n", "D:/Users/alice/docs\n"],
+        "personal-home-dir": ["cd ~/AI_Content/develop/x\n", "ls ~/workspace-private/notes\n"],
+    }
+    for rule, lines in cases.items():
+        for number, line in enumerate(lines):
+            root = tmp_path / f"{rule}-{number}"
+            make_tree(root, {"core/x.md": line})
+            result = run_sanitize(root)
+            assert result.returncode == 1, (rule, line, result.stdout)
+            assert rule in result.stdout, (rule, line, result.stdout)
+
+
+def test_documented_config_dirs_and_placeholders_do_not_false_positive(tmp_path: Path) -> None:
+    text = (
+        "rules live in ~/.claude/rules and ~/.codex/hooks.json\n"
+        "use /Users/<name>/project as the shape\n"
+        "TOKEN=$TOKEN_FROM_ENV\n"
+        "API_KEY: <your key here>\n"
+        "PASSWORD=short\n"
+        "see ~/project/src for the layout\n"
+        "ask-sk-short is not a key: sk-abc\n"
+    )
+    make_tree(tmp_path, {"core/ok.md": text})
+    result = run_sanitize(tmp_path)
+    assert result.returncode == 0, result.stdout
+
+
+def test_non_utf8_file_is_warned_not_failed_and_not_silent(tmp_path: Path) -> None:
+    make_tree(tmp_path, {"core/ok.md": "clean\n"})
+    (tmp_path / "core/blob.bin").write_bytes(b"\xff\xfe\x00 /Users/alice/x")
+    result = run_sanitize(tmp_path)
+    assert result.returncode == 0, result.stdout
+    assert "WARN core/blob.bin: not valid UTF-8" in result.stdout
+    assert "Summary: 0 sanitize issue(s)" in result.stdout
+
+
+def test_pycache_is_not_reported(tmp_path: Path) -> None:
+    make_tree(tmp_path, {"installer/ok.py": "x = 1\n"})
+    cache = tmp_path / "installer/__pycache__"
+    cache.mkdir()
+    (cache / "ok.cpython-314.pyc").write_bytes(b"\xff\x00")
+    result = run_sanitize(tmp_path)
+    assert result.returncode == 0
+    assert "WARN" not in result.stdout

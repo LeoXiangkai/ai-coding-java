@@ -79,16 +79,21 @@ aicj doctor    [--home <dir>]      只读：PASS / WARN / MISSING / SKIPPED
 
 重装时以上次 manifest 为准：上次是 `created` / `replaced` 的条目沿用原归属；目标仍等于上次记录的 sha256 时视为未被用户改动，直接更新为新源内容；新版本不再提供的条目保留在 manifest 中，卸载时照常清理。
 
-`--link` 时以软链代替复制（本机一处维护用），manifest kind 记 `symlink`。
+`--link` 时以软链代替复制（本机一处维护用），manifest kind 记 `symlink` 并在 `link` 字段记录目标 realpath；卸载与 doctor 比对链接目标而非内容。`--link` 与复制模式切换时，我方条目按 `updated` 重写。
+
+目录型 skill 按整个目录判定：任一文件冲突则整个 skill 跳过（不建 codex 链接）；`--on-conflict backup` 时整目录改名为 `<skill>.aicj-bak-<ts>`，manifest 记 `skill-dir` 条目，卸载时目录清空后还原。备份文件名已存在时加序号，不覆盖；已有最早的用户原件备份时不丢失。
+
+组件清单约束：目标不得是 `settings.json`、`CLAUDE.md`、`aicj/manifest.json`；目标不得重复；`source` 的 realpath 必须在组件根内，目录来源中的软链被跳过。
 
 ### 3.4 settings.json 钩子合并
 
-1. 写前备份为 `settings.json.aicj-bak-<ts>`；文件不存在则从 `{}` 开始。
+1. 写前备份为 `settings.json.aicj-bak-<ts>`（每次安装最多保留最近 1 份，旧的我方备份随之删除）；文件不存在则从 `{}` 开始。目标是软链时写到软链指向的真实文件并保持其 mode，软链本身保留。
 2. 以 `(事件, matcher, command)` 为唯一键：已存在跳过，不存在则追加到对应事件列表末尾；不改已有条目顺序与内容。
-3. 我方命令路径统一含 `/hooks/aicj/`，不在 JSON 中加自定义字段。
+3. 我方命令路径统一含 `/hooks/aicj/`（脚本路径经 shell 转义且规范化后必须位于 `hooks/aicj/` 下），不在 JSON 中加自定义字段；仅当脚本条目为 created/replaced/adopted 时才注册。`SessionStart` / `Stop` / `UserPromptSubmit` / `SessionEnd` / `PreCompact` / `Notification` 不写 `matcher` 键。
 4. 只触碰 `hooks` 键；`env`、`permissions`、`statusLine`、`enabledPlugins` 等一律不读不写（`permissions` 不随安装带出）。
 5. 写回用临时文件 + 原子 rename，写后重新解析校验。
-6. 卸载按 manifest 中记录的键精确删除；删除后为空的 matcher 组与事件键一并清除。
+6. 卸载按 manifest 中记录的键精确删除；删除后为空的 matcher 组与事件键一并清除。用户预先已有的同 command 条目记为 adopted，不进 manifest、卸载不删。
+7. 卸载后 settings 与用户原件一致时，清理我方创建的备份。
 
 ### 3.5 manifest
 
@@ -103,7 +108,11 @@ aicj doctor    [--home <dir>]      只读：PASS / WARN / MISSING / SKIPPED
 }
 ```
 
-卸载只删 `created` / `replaced` 且当前 sha256 仍等于记录值的文件；用户改过的文件保留并告警；`replaced` 卸载时恢复备份；`adopted*` 不删。
+卸载只删 `created` / `replaced` 且当前 sha256（软链为 `link` 目标）仍等于记录值的文件；sha256 为空或用户改过的文件保留并告警；`replaced` 卸载时恢复备份，被用户改过时保留文件、告警写出备份路径、manifest 只保留该条目；`adopted*` 不删（含已存在的 CLAUDE.md 标记块）。
+
+写入顺序与一致性：先读取并校验全部输入（settings、CLAUDE.md 解码与标记块、目标冲突预判），再落盘。manifest 为日志式：开始写 `"state": "in-progress"`，每落地一个条目即追加，结束标记 `"complete"`；重跑时 in-progress 日志中的条目沿用原归属。IO / 解码错误转为退出码 2 的错误信息，不输出 traceback。manifest 另记 `created_dirs`（我方创建的目录，卸载只清理这些）、md-block 条目的 `block` 原文（卸载只删精确匹配的块）；载入时拒绝绝对路径、含 `..` 或不在 `.claude` / `.codex` / `.agents` 下的路径，并拒绝未知 `version`。
+
+CLAUDE.md 标记块：BEGIN、END 各恰好出现一次且顺序正确才是合法块；否则 install / uninstall 报错并不改文件。
 
 ### 3.6 组件清单来源
 

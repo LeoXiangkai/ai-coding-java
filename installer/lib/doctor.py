@@ -55,6 +55,8 @@ def _load_manifest(home: Path, checks: list) -> manifest.Manifest | None:
         checks.append((MISSING, "manifest", str(exc)))
         return None
     checks.append((PASS, "manifest", f"{len(loaded.entries)} entries"))
+    if loaded.state == manifest.IN_PROGRESS:
+        checks.append((WARN, "manifest state", "install was interrupted; rerun install to finish or uninstall"))
     return loaded
 
 
@@ -63,32 +65,44 @@ def _entries(home: Path, loaded: manifest.Manifest) -> list[tuple[str, str, str]
         return [(SKIPPED, "component entries", "no components installed")]
     out: list[tuple[str, str, str]] = []
     for entry in loaded.entries:
-        if entry.kind == "md-block":
+        if entry.kind in ("md-block", engine.SKILL_DIR):
             continue
         target = home / entry.path
         if not target.exists() and not target.is_symlink():
             out.append((MISSING, entry.path, f"action={entry.action}"))
             continue
-        if entry.sha256 and _current_digest(target) != entry.sha256:
-            out.append((WARN, entry.path, "modified after install"))
-            continue
-        out.append((PASS, entry.path, f"action={entry.action}"))
+        if entry.kind == "settings-hook":
+            out.append((PASS, entry.path, f"action={entry.action}"))
+        elif entry.action not in engine.OWNED_ACTIONS:
+            if entry.action == "skipped":
+                out.append((WARN, entry.path, "skipped at install (existing content kept)"))
+            else:
+                out.append((PASS, entry.path, f"action={entry.action}"))
+        else:
+            state = engine.entry_state(target, entry)
+            if state == "modified":
+                out.append((WARN, entry.path, "modified after install"))
+            elif state == "unverified":
+                out.append((WARN, entry.path, "no checksum recorded"))
+            else:
+                out.append((PASS, entry.path, f"action={entry.action}"))
     return out or [(SKIPPED, "component entries", "no file entries")]
-
-
-def _current_digest(path: Path) -> str:
-    try:
-        return engine.digest(path)
-    except OSError:
-        return ""
 
 
 def _md_block(home: Path) -> list[tuple[str, str, str]]:
     path = home / engine.CLAUDE_MD
     if not path.is_file():
         return [(MISSING, engine.CLAUDE_MD, "entry file absent")]
-    text = path.read_text(encoding="utf-8")
-    if not mdblock.has_block(text):
+    try:
+        text = path.read_text(encoding="utf-8")
+        present = mdblock.has_block(text)
+    except UnicodeDecodeError:
+        return [(WARN, engine.CLAUDE_MD, "not valid UTF-8, marker block not checked")]
+    except OSError as exc:
+        return [(WARN, engine.CLAUDE_MD, f"unreadable: {exc}")]
+    except UserError as exc:
+        return [(WARN, engine.CLAUDE_MD, str(exc))]
+    if not present:
         return [(MISSING, engine.CLAUDE_MD, "marker block absent")]
     out = [(PASS, engine.CLAUDE_MD, "marker block present")]
     entry = home / ".claude" / engine.GLOBAL_REF
