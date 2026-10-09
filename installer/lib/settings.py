@@ -43,6 +43,20 @@ def _owned(command: object, args: tuple[str, ...] | list[str] = ()) -> bool:
     return HOOK_PATH_MARK in _norm(command) or any(HOOK_PATH_MARK in _norm(arg) for arg in args)
 
 
+def _script_suffix(command: object, args: tuple[str, ...] | list[str] = ()) -> str:
+    """Return the installed hook path suffix, including compatibility shell forms."""
+    values = [_norm(command), *(_norm(arg) for arg in args)]
+    for value in values:
+        marker = value.find(HOOK_PATH_MARK)
+        if marker >= 0:
+            return value[marker + len(HOOK_PATH_MARK):].strip('"\' ')
+    return ""
+
+
+def _same_script(left: object, left_args: tuple[str, ...] | list[str], right: HookKey) -> bool:
+    return bool(_script_suffix(left, left_args)) and _script_suffix(left, left_args) == _script_suffix(right.command, right.args)
+
+
 def _hook_args(hook: object) -> tuple[str, ...]:
     raw = hook.get("args", ()) if isinstance(hook, dict) else getattr(hook, "args", ())
     if isinstance(raw, (list, tuple)):
@@ -84,9 +98,7 @@ def has_hook(payload: dict, key: HookKey) -> bool:
             ):
                 return True
             if isinstance(hook, dict) and not _hook_args(hook) and len(key.args) == 1:
-                script = _norm(key.args[0])
-                command = _norm(hook.get("command", ""))
-                if script in command and HOOK_PATH_MARK in command:
+                if _same_script(hook.get("command", ""), (), key):
                     return True
     return False
 
@@ -132,7 +144,7 @@ def unmerge_hooks(payload: dict, keys: list[HookKey]) -> list[HookKey]:
                 for hook in hooks
                 if not (
                     isinstance(hook, dict)
-                    and _matches(hook, key)
+                    and (_matches(hook, key) or _same_script(hook.get("command", ""), _hook_args(hook), key))
                     and _owned(hook.get("command", ""), _hook_args(hook))
                 )
             ]

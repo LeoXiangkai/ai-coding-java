@@ -150,13 +150,18 @@ def test_no_forbidden_terms_in_adapters():
     assert hits == []
 
 
-def test_size_budgets_and_executable_bits():
+def test_size_budgets():
     assert (EXECUTOR / "refs/executor-contract.md").stat().st_size <= 4096
     assert (LESSON / "refs/lesson-loop.md").stat().st_size <= 3072
     assert (EXECUTOR / "skills/executor-handoff-ops/SKILL.md").stat().st_size <= 12 * 1024
     for rel in ("executor/bin/aicj-worker", "lesson/bin/aicj-lesson"):
         path = REPO / "adapters" / rel
-        assert path.stat().st_mode & 0o111
         assert path.read_text(encoding="utf-8").startswith("#!/usr/bin/env python3\n")
     skill = (EXECUTOR / "skills/executor-handoff-ops/SKILL.md").read_text(encoding="utf-8")
     assert skill.startswith("---\nname: executor-handoff-ops\ndescription: ")
+
+
+@pytest.mark.skipif(os.name == "nt", reason="Windows does not expose POSIX executable permission bits")
+def test_adapter_executable_bits():
+    for rel in ("executor/bin/aicj-worker", "lesson/bin/aicj-lesson"):
+        assert (REPO / "adapters" / rel).stat().st_mode & 0o111

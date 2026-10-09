@@ -18,7 +18,7 @@ def run_aicj(*args: str, home: Path, source: Path | None = FIXTURE) -> subproces
     cmd = [sys.executable, str(AICJ), *args, "--home", str(home)]
     if source is not None:
         cmd += ["--source", str(source)]
-    return subprocess.run(cmd, capture_output=True, text=True, cwd=str(REPO))
+    return subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", cwd=str(REPO))
 
 
 def run_sanitize(root: Path, extra: Path | None = None) -> subprocess.CompletedProcess:
@@ -31,6 +31,7 @@ def run_sanitize(root: Path, extra: Path | None = None) -> subprocess.CompletedP
         [sys.executable, str(SANITIZE), "--root", str(root)],
         capture_output=True,
         text=True,
+        encoding="utf-8",
         cwd=str(REPO),
         env=env,
     )

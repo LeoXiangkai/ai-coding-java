@@ -7,7 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from adapter_helpers import REPO, run_script
+from adapter_helpers import REPO, fake_command, run_script
 from conftest import files_under, run_aicj
 
 JEV = REPO / "adapters/optional-plugins/jev"
@@ -19,16 +19,14 @@ def run_jev(*args: str, claude: Path, env_extra: dict[str, str] | None = None) -
     env["AICJ_CLAUDE_DIR"] = str(claude)
     env["PYTHONDONTWRITEBYTECODE"] = "1"
     env.update(env_extra or {})
-    return subprocess.run([str(JEV / "bin/jev-consumer"), *args], capture_output=True, text=True, env=env)
+    return subprocess.run([sys.executable, str(JEV / "bin/jev-consumer"), *args], capture_output=True, text=True, encoding="utf-8", env=env)
 
 
 def with_path(tmp_path: Path, *commands: str) -> str:
     directory = tmp_path / "bin"
     directory.mkdir(exist_ok=True)
     for name in commands:
-        script = directory / name
-        script.write_text(f"#!{sys.executable}\nimport sys\nsys.exit(0)\n", encoding="utf-8")
-        script.chmod(0o755)
+        fake_command(directory, name, "import sys\nsys.exit(0)\n")
     return str(directory)
 
 
@@ -71,10 +69,8 @@ def test_jev_consumer_lists_small_pool_without_node(tmp_path):
     (repo / "one.txt").write_text("needle\n", encoding="utf-8")
     subprocess.run(["git", "add", "one.txt"], cwd=repo, check=True)
     marker = tmp_path / "node-called"
-    fake_node = tmp_path / "node"
-    fake_node.write_text(f"#!{sys.executable}\nfrom pathlib import Path\nPath({str(marker)!r}).touch()\n", encoding="utf-8")
-    fake_node.chmod(0o755)
-    env = {"PATH": f"{tmp_path}:{os.environ['PATH']}"}
+    fake_node = fake_command(tmp_path, "node", f"from pathlib import Path\nPath({str(marker)!r}).touch()\n")
+    env = {"PATH": f"{tmp_path}{os.pathsep}{os.environ['PATH']}"}
     result = run_jev("data", "needle", str(repo), claude=tmp_path / ".claude", env_extra=env)
     assert result.returncode == 0 and "one.txt" in result.stdout
     assert "no semantic call made" in result.stderr and not marker.exists()
@@ -111,7 +107,7 @@ def test_jev_consumer_bash3_empty_extra_array(tmp_path):
     scan.parent.mkdir(parents=True)
     scan.write_text("process.exit(0)\n", encoding="utf-8")
     scan.chmod(0o755)
-    env = {"PATH": f"{tmp_path}:{os.environ['PATH']}", "AICJ_CLAUDE_DIR": str(claude)}
+    env = {"PATH": f"{tmp_path}{os.pathsep}{os.environ['PATH']}", "AICJ_CLAUDE_DIR": str(claude)}
     result = subprocess.run([sys.executable, str(JEV / "bin/jev-consumer"), "data", "needle", str(repo)], env=env, capture_output=True, text=True)
     assert "unbound variable" not in result.stderr
 

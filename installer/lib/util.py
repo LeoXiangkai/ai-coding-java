@@ -95,6 +95,7 @@ def git_commit(repo: Path) -> str:
         result = subprocess.run(
             ["git", "-C", str(repo), "rev-parse", "HEAD"],
             text=True,
+            encoding="utf-8",
             capture_output=True,
             timeout=10,
         )

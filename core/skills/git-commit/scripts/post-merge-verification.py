@@ -14,7 +14,7 @@ for _stream in (sys.stdout, sys.stderr):
 
 
 def git(repo: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(["git", "-C", str(repo), *args], text=True, capture_output=True, check=check)
+    return subprocess.run(["git", "-C", str(repo), *args], text=True, encoding="utf-8", capture_output=True, check=check)
 
 
 def is_commit(repo: Path, value: str) -> bool:

@@ -44,7 +44,7 @@ def main(argv: list[str] | None = None) -> int:
     with tempfile.TemporaryDirectory(prefix="jev-consumer-") as temp:
         root = Path(temp)
         listing = root / "list.txt"
-        result = subprocess.run(["git", "-C", repo, "grep", "-il", "-E", "--", pattern], capture_output=True, text=True)
+        result = subprocess.run(["git", "-C", repo, "grep", "-il", "-E", "--", pattern], capture_output=True, text=True, encoding="utf-8")
         listing.write_text(result.stdout, encoding="utf-8")
         if result.returncode >= 2:
             return fail(f"git grep failed: {result.stderr.strip().splitlines()[-1] if result.stderr.strip() else 'unknown error'}")

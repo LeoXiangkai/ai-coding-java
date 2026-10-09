@@ -7,7 +7,7 @@ import sys
 
 import pytest
 
-from adapter_helpers import WORKER, run_script
+from adapter_helpers import WORKER, fake_command, run_script
 
 
 def git(*args, cwd):
@@ -34,9 +34,14 @@ def git_only_path(tmp_path):
     import shutil
     d = tmp_path / "git-only-bin"
     d.mkdir(exist_ok=True)
-    link = d / "git"
-    if not link.exists():
-        link.symlink_to(shutil.which("git"))
+    if os.name == "nt":
+        real_git = shutil.which("git")
+        assert real_git
+        (d / "git.cmd").write_text(f'@"{real_git}" %*\r\n', encoding="utf-8")
+    else:
+        link = d / "git"
+        if not link.exists():
+            link.symlink_to(shutil.which("git"))
     return d
 
 
@@ -135,9 +140,7 @@ def test_engine_cli_missing_returns_127(repo, tmp_path):
 def test_engine_nonzero_exit_is_propagated(repo, tmp_path):
     _, wt = repo
     fake = git_only_path(tmp_path)
-    script = fake / "claude"
-    script.write_text(f"#!{sys.executable}\nimport sys\nsys.exit(7)\n", encoding="utf-8")
-    script.chmod(0o755)
+    fake_command(fake, "claude", "import sys\nsys.exit(7)\n")
     result = worker("--cd", str(wt), "--tier", "high", "x", claude=tmp_path, path=str(fake))
     assert result.returncode == 7
 
@@ -145,9 +148,7 @@ def test_engine_nonzero_exit_is_propagated(repo, tmp_path):
 @pytest.mark.parametrize("value", ["wat", "0", "-1", "nan", "inf"])
 def test_invalid_timeout_reports_error_without_limiting_execution(repo, tmp_path, value):
     fake = git_only_path(tmp_path)
-    script = fake / "claude"
-    script.write_text(f"#!{sys.executable}\nimport time; time.sleep(0.1); print('completed')\n", encoding="utf-8")
-    script.chmod(0o755)
+    fake_command(fake, "claude", "import time; time.sleep(0.1); print('completed')\n")
     result = worker("--cd", str(repo[1]), "--tier", "high", "x", claude=tmp_path, path=str(fake), env_extra={"AICJ_EXECUTOR_TIMEOUT": value})
     assert result.returncode == 0, result.stderr
     assert result.stdout == "completed\n"
@@ -159,9 +160,7 @@ def test_invalid_timeout_reports_error_without_limiting_execution(repo, tmp_path
 
 def test_timeout_returns_124(repo, tmp_path):
     fake = git_only_path(tmp_path)
-    script = fake / "claude"
-    script.write_text(f"#!{sys.executable}\nimport time; time.sleep(0.1); print('completed')\n", encoding="utf-8")
-    script.chmod(0o755)
+    fake_command(fake, "claude", "import time; time.sleep(0.1); print('completed')\n")
     result = worker("--cd", str(repo[1]), "--tier", "high", "x", claude=tmp_path, path=str(fake), env_extra={"AICJ_EXECUTOR_TIMEOUT": "0.01"})
     assert result.returncode == 124
     assert "超时" in result.stderr

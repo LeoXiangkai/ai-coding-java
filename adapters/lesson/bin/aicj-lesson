@@ -10,6 +10,12 @@ import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8")
+    except AttributeError:
+        pass
+
 
 def claude_dir() -> Path:
     value = os.environ.get("AICJ_CLAUDE_DIR")

@@ -11,6 +11,12 @@ import sys
 from pathlib import Path
 from typing import Any
 
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8")
+    except AttributeError:
+        pass
+
 RUNNABLE = "RUNNABLE"
 PARTIAL = "PARTIAL"
 BLOCKED = "BLOCKED"
@@ -127,7 +133,8 @@ def probe(config: dict[str, Any], cwd: Path | None) -> tuple[str, str]:
         timeout = 15
     try:
         result = subprocess.run(command, cwd=str(cwd) if cwd and cwd.is_dir() else None,
-                                capture_output=True, text=True, timeout=timeout, check=False)
+                                capture_output=True, text=True, encoding="utf-8", errors="replace",
+                                timeout=timeout, check=False)
     except subprocess.TimeoutExpired:
         return BLOCKED, f"probe_cmd 超时（{timeout}s）"
     except OSError as exc:

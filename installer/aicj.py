@@ -12,6 +12,12 @@ from lib.util import UserError, abspath
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8")
+    except AttributeError:
+        pass
+
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="aicj", description="ai-coding-java global installer")

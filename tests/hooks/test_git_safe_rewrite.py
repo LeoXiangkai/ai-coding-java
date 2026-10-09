@@ -197,7 +197,7 @@ class GitSafeSelfSkip(unittest.TestCase):
                 if src:
                     os.symlink(src, fake_bin / tool)
             real_git = shutil.which("git")
-            env = {"PATH": f"{fake_bin}:{os.path.dirname(real_git)}:" + os.environ.get("PATH", "")}
+            env = {"PATH": os.pathsep.join([str(fake_bin), os.path.dirname(real_git), os.environ.get("PATH", "")])}
             proc = subprocess.run([sys.executable, str(core_bin / "git-safe"), "--version"], capture_output=True, text=True, env=env)
             self.assertEqual(proc.returncode, 0, proc.stderr)
             self.assertIn("git version", proc.stdout)
