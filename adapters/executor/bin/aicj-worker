@@ -97,7 +97,17 @@ def main(argv: list[str] | None = None) -> int:
             if resolved and Path(resolved).suffix.casefold() in {".cmd", ".bat"}:
                 invocation = [os.environ.get("ComSpec", "cmd.exe"), "/d", "/c", resolved, *argv_out[1:]]
         # a background caller's stdin is a pipe that never closes; engines would wait on it forever
-        return subprocess.run(invocation, cwd=worktree, env=os.environ.copy(), stdin=subprocess.DEVNULL, check=False, timeout=timeout).returncode
+        proc = subprocess.Popen(invocation, cwd=worktree, env=os.environ.copy(), stdin=subprocess.DEVNULL)
+        try:
+            return proc.wait(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            # killing cmd.exe alone leaves the engine running; terminate the whole tree on Windows
+            if os.name == "nt":
+                subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc.pid)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+            else:
+                proc.kill()
+            proc.wait()
+            raise
     except subprocess.TimeoutExpired:
         print(f"外部执行体超时（AICJ_EXECUTOR_TIMEOUT={raw_timeout}s）", file=sys.stderr)
         return 124

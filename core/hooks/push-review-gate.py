@@ -265,7 +265,12 @@ def _is_export_assignment(seg: list[str]) -> tuple[str, str] | None:
 
 def _resolve_path(text: str, base_cwd: Path | None) -> Path | None:
     """Expand user, resolve relative to base_cwd, and require the path to exist."""
-    expanded = os.path.expanduser(text)
+    # Git Bash on Windows sets HOME, but os.path.expanduser there reads USERPROFILE
+    home = os.environ.get("HOME")
+    if home and (text == "~" or text.startswith(("~/", "~\\"))):
+        expanded = home + text[1:]
+    else:
+        expanded = os.path.expanduser(text)
     path = Path(expanded)
     if not path.is_absolute():
         if base_cwd is not None:

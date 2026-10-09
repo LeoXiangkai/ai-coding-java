@@ -70,8 +70,9 @@ def test_symlinked_settings_and_claude_md_stay_links_with_mode(home: Path, tmp_p
     assert (home / ".claude/CLAUDE.md").is_symlink()
     assert "/hooks/aicj/" in (dotfiles / "settings.json").read_text(encoding="utf-8").replace("\\\\", "/").replace("\\", "/")
     assert BEGIN in (dotfiles / "CLAUDE.md").read_text(encoding="utf-8")
-    assert stat.S_IMODE((dotfiles / "settings.json").stat().st_mode) == 0o600
-    assert stat.S_IMODE((dotfiles / "CLAUDE.md").stat().st_mode) == 0o640
+    if os.name != "nt":  # Windows has no POSIX permission bits
+        assert stat.S_IMODE((dotfiles / "settings.json").stat().st_mode) == 0o600
+        assert stat.S_IMODE((dotfiles / "CLAUDE.md").stat().st_mode) == 0o640
 
     ok(run_aicj("uninstall", home=home))
     assert (home / ".claude/settings.json").is_symlink()

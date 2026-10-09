@@ -254,7 +254,7 @@ class TestPushGate:
     def test_git_safe_with_global_c_flag_recognized(self, tmp_path, isolated_aicj_env):
         _, clone = make_repo(tmp_path)
         commit(clone, "auth/X.java", "class X {}\n", "x")
-        result = run_hook(std_input(f"cd {clone} && git-safe -C {clone} push origin main", clone))
+        result = run_hook(std_input(f"cd {clone.as_posix()} && git-safe -C {clone.as_posix()} push origin main", clone))
         assert result.returncode == 2
         assert "auth/X.java" in result.stderr
 
@@ -498,7 +498,7 @@ class TestPushGate:
         commit(repo_b, "auth/RepoB.java", "class RepoB {}\n", "repo b risky")
         result = run_hook({
             "tool_name": "Bash",
-            "tool_input": {"command": f"cd {repo_a} && git push && cd {repo_b}", "cwd": str(tmp_path)},
+            "tool_input": {"command": f"cd {repo_a.as_posix()} && git push && cd {repo_b.as_posix()}", "cwd": str(tmp_path)},
         })
         assert result.returncode == 2
         assert "auth/RepoA.java" in result.stderr
