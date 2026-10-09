@@ -181,6 +181,7 @@ class MissingGitSafe(unittest.TestCase):
 
 
 class GitSafeSelfSkip(unittest.TestCase):
+    @unittest.skipIf(os.name == "nt", "POSIX signal semantics; the fake git is a /bin/sh script")
     def test_git_safe_maps_signal_exit_to_shell_status(self):
         import tempfile
         core_bin = REPO_CORE / "bin"

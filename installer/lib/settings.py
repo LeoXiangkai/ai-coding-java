@@ -49,7 +49,9 @@ def _script_path(command: object, args: tuple[str, ...] | list[str] = ()) -> str
     if args:
         values = [_norm(arg) for arg in args]
     else:
-        values = [match.group(0).strip('"\'') for match in re.finditer(r'"[^"]*"|\'[^\']*\'|\S+', _norm(command))]
+        # normalize per token: a leading interpreter word would hide the drive letter from _norm
+        values = [_norm(match.group(0).strip('"\''))
+                  for match in re.finditer(r'"[^"]*"|\'[^\']*\'|\S+', str(command).replace("\\", "/"))]
     for value in values:
         if HOOK_PATH_MARK in value:
             return value

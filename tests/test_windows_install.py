@@ -130,6 +130,14 @@ def test_foreign_hook_script_path_is_not_owned():
     assert sum(len(group['hooks']) for group in foreign_shell['hooks']['PreToolUse']) == 2
 
 
+def test_legacy_shell_hook_with_drive_path_matches_case_insensitively():
+    key = settings.HookKey('PreToolUse', 'Bash', 'C:/Python/python.exe', ('C:\\Users\\Me\\.claude\\hooks\\aicj\\sample-hook.py',))
+    payload = {'hooks': {'PreToolUse': [{'matcher': 'Bash', 'hooks': [
+        {'type': 'command', 'command': "python3 'c:/users/me/.claude/hooks/aicj/sample-hook.py'"}
+    ]}]}}
+    assert settings.has_hook(payload, key)
+
+
 def test_doctor_matches_hook_by_script_path_when_interpreter_differs(home, tmp_path):
     source = tmp_path / 'component'
     import shutil
