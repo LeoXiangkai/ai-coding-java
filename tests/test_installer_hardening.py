@@ -123,7 +123,7 @@ def test_non_utf8_claude_md_aborts_without_writing(home: Path) -> None:
     assert files_under(home) == [".claude/CLAUDE.md"]
 
 
-@pytest.mark.skipif(os.geteuid() == 0, reason="permission failure cannot be simulated as root")
+@pytest.mark.skipif(os.name == "nt" or os.geteuid() == 0, reason="POSIX directory permissions are required to simulate the failure")
 def test_midway_failure_leaves_log_and_rerun_then_uninstall_is_clean(home: Path) -> None:
     skills = home / ".claude/skills"
     skills.mkdir(parents=True)
@@ -145,7 +145,7 @@ def test_midway_failure_leaves_log_and_rerun_then_uninstall_is_clean(home: Path)
     assert files_under(home) == []
 
 
-@pytest.mark.skipif(os.geteuid() == 0, reason="permission failure cannot be simulated as root")
+@pytest.mark.skipif(os.name == "nt" or os.geteuid() == 0, reason="POSIX directory permissions are required to simulate the failure")
 def test_uninstall_after_interrupted_install_leaves_nothing(home: Path) -> None:
     skills = home / ".claude/skills"
     skills.mkdir(parents=True)
