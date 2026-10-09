@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import stat
 import subprocess
 import tempfile
 import urllib.request
@@ -412,8 +413,20 @@ def _run(home: Path, source: Optional[Path], with_claude: bool) -> List[Tuple[st
         else:
             checks.append(_line("SKIP", "claude-code", "未请求（加 --with-claude）"))
     finally:
-        shutil.rmtree(root, ignore_errors=True)
+        remove_tree(root)
     return checks
+
+
+def _rmtree_onerror(func, path, _exc_info) -> None:
+    try:
+        os.chmod(path, stat.S_IWRITE)
+        func(path)
+    except OSError:
+        pass
+
+
+def remove_tree(path: Path) -> None:
+    shutil.rmtree(path, onerror=_rmtree_onerror)
 
 
 def _event_count(path: Path) -> int:

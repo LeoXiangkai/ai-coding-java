@@ -7,6 +7,7 @@ param(
     [ValidateSet("claude", "codex", "codex-device", "antigravity", "kimi", "xai")]
     [string[]]$Login = @(),
     [switch]$NoAutostart,
+    [switch]$NoUserEnv,
     [switch]$Uninstall,
     [switch]$Purge
 )
@@ -15,6 +16,7 @@ $ErrorActionPreference = "Stop"
 $TaskName = "CLIProxyAPI"
 
 function Stop-CpaProcess {
+    if ([string]::IsNullOrWhiteSpace([string]$script:Executable)) { return }
     $processes = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {
         $_.ExecutablePath -and [IO.Path]::GetFullPath($_.ExecutablePath) -eq [IO.Path]::GetFullPath($script:Executable)
     }
@@ -23,10 +25,36 @@ function Stop-CpaProcess {
 
 function Get-ApiKey([string]$Path) {
     if (-not (Test-Path $Path)) { return "" }
+    $inApiKeys = $false
+    $apiKeysIndent = -1
     foreach ($line in Get-Content -LiteralPath $Path -Encoding UTF8) {
-        if ($line -match '^\s*-\s*([^\s#]+)\s*$') { return $Matches[1] }
+        if (-not $inApiKeys) {
+            if ($line -match '^(\s*)api-keys:\s*(?:#.*)?$') {
+                $apiKeysIndent = $Matches[1].Length
+                $inApiKeys = $true
+            }
+            continue
+        }
+        if ($line -match '^\s*$') { continue }
+        $indent = ([regex]::Match($line, '^\s*')).Value.Length
+        if ($indent -le $apiKeysIndent) { break }
+        if ($line -match '^\s*-\s*(.*?)\s*(?:#.*)?$') {
+            $value = $Matches[1].Trim()
+            if ($value.Length -ge 2 -and (($value.StartsWith('"') -and $value.EndsWith('"')) -or ($value.StartsWith("'") -and $value.EndsWith("'")))) {
+                $value = $value.Substring(1, $value.Length - 2)
+            }
+            if (-not [string]::IsNullOrWhiteSpace($value)) { return $value }
+        }
     }
     return ""
+}
+
+function Get-CpaPort([string]$Path, [int]$Fallback) {
+    if (-not (Test-Path $Path)) { return $Fallback }
+    foreach ($line in Get-Content -LiteralPath $Path -Encoding UTF8) {
+        if ($line -match '^\s*port:\s*(\d+)\s*(?:#.*)?$') { return [int]$Matches[1] }
+    }
+    return $Fallback
 }
 
 function New-ApiKey {
@@ -72,7 +100,9 @@ function Wait-Cpa([string]$ApiKey) {
     $deadline = (Get-Date).AddSeconds(30)
     do {
         try {
-            $response = Invoke-WebRequest -Uri "http://127.0.0.1:$Port/v1/models" -Headers @{ Authorization = "Bearer $ApiKey" } -UseBasicParsing -TimeoutSec 3
+            $requestParams = @{ Uri = "http://127.0.0.1:$Port/v1/models"; Headers = @{ Authorization = "Bearer $ApiKey" }; UseBasicParsing = $true; TimeoutSec = 3 }
+            if ($PSVersionTable.PSVersion.Major -ge 7) { $requestParams.NoProxy = $true } else { [Net.WebRequest]::DefaultWebProxy = $null }
+            $response = Invoke-WebRequest @requestParams
             if ([int]$response.StatusCode -eq 200) { return }
         } catch {}
         Start-Sleep -Milliseconds 500
@@ -85,10 +115,24 @@ try {
     $config = Join-Path $InstallDir "config.yaml"
     $authDir = Join-Path $InstallDir "auth"
     $exe = Join-Path $InstallDir "cliproxyapi.exe"
+    $script:Executable = $exe
     $versionFile = Join-Path $InstallDir "version.txt"
 
     if ($Uninstall) {
-        $script:Executable = $exe
+        $userConfigKey = Get-ApiKey $config
+        $userConfigPort = Get-CpaPort $config $Port
+        $userBase = [Environment]::GetEnvironmentVariable("AICJ_EXECUTOR_BASE_URL", "User")
+        $userToken = [Environment]::GetEnvironmentVariable("AICJ_EXECUTOR_TOKEN", "User")
+        $expectedBase = ("http://127.0.0.1:{0}" -f $userConfigPort).Trim().ToLowerInvariant()
+        $normalizedUserBase = ([string]$userBase).Trim().ToLowerInvariant().TrimEnd("/")
+        $normalizedUserToken = ([string]$userToken).Trim()
+        if (-not [string]::IsNullOrWhiteSpace($userConfigKey) -and $normalizedUserToken -eq $userConfigKey.Trim() -and $normalizedUserBase -eq $expectedBase.TrimEnd("/")) {
+            [Environment]::SetEnvironmentVariable("AICJ_EXECUTOR_TOKEN", $null, "User")
+            [Environment]::SetEnvironmentVariable("AICJ_EXECUTOR_BASE_URL", $null, "User")
+            Write-Host "已删除与本 CPA 配置匹配的用户级 AICJ_EXECUTOR_TOKEN/AICJ_EXECUTOR_BASE_URL。"
+        } else {
+            Write-Host "用户级 AICJ_EXECUTOR_TOKEN/AICJ_EXECUTOR_BASE_URL 与本 CPA 配置不同时保留。"
+        }
         Stop-CpaProcess
         Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
         if (Test-Path $exe) { Remove-Item -LiteralPath $exe -Force }
@@ -104,9 +148,11 @@ try {
     }
 
     if (-not (Test-Path $InstallDir)) { New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null }
+    $configExists = Test-Path $config
     $apiKey = Get-ApiKey $config
-    if ([string]::IsNullOrWhiteSpace($apiKey)) { $apiKey = New-ApiKey }
-    if (-not (Test-Path $config)) {
+    if ($configExists -and [string]::IsNullOrWhiteSpace($apiKey)) { throw "已有配置但未找到 api-keys：请在 config.yaml 的 access.api-keys 下添加一项或删除配置重建" }
+    if (-not $configExists) { $apiKey = New-ApiKey }
+    if (-not $configExists) {
         @(
             "config-version: 8"
             "server:"
@@ -116,8 +162,8 @@ try {
             "  api-keys:"
             "    - $apiKey"
             "oauth:"
-            '  auth-dir: "' + $authDir + '"'
-        ) | Set-Content -LiteralPath $config -Encoding UTF8
+            "  auth-dir: '" + ($authDir -replace "'", "''") + "'"
+        ) -join "`n" | ForEach-Object { [IO.File]::WriteAllText($config, $_ + "`n", (New-Object Text.UTF8Encoding($false))) }
     } else {
         Write-Host "保留已有配置：$config"
     }
@@ -185,19 +231,26 @@ try {
     $baseUrl = "http://127.0.0.1:$Port"
     $existingBase = [Environment]::GetEnvironmentVariable("AICJ_EXECUTOR_BASE_URL", "User")
     $existingToken = [Environment]::GetEnvironmentVariable("AICJ_EXECUTOR_TOKEN", "User")
-    if ([string]::IsNullOrWhiteSpace($existingBase)) {
-        [Environment]::SetEnvironmentVariable("AICJ_EXECUTOR_BASE_URL", $baseUrl, "User")
+    if ($NoUserEnv) {
+        [Environment]::SetEnvironmentVariable("AICJ_EXECUTOR_BASE_URL", $baseUrl, "Process")
+        [Environment]::SetEnvironmentVariable("AICJ_EXECUTOR_TOKEN", $apiKey, "Process")
         $env:AICJ_EXECUTOR_BASE_URL = $baseUrl
-    } else {
-        Write-Host "AICJ_EXECUTOR_BASE_URL 已存在，保留现值：$existingBase"
-        $env:AICJ_EXECUTOR_BASE_URL = $existingBase
-    }
-    if ([string]::IsNullOrWhiteSpace($existingToken)) {
-        [Environment]::SetEnvironmentVariable("AICJ_EXECUTOR_TOKEN", $apiKey, "User")
         $env:AICJ_EXECUTOR_TOKEN = $apiKey
     } else {
-        Write-Host "AICJ_EXECUTOR_TOKEN 已存在，保留现值。请用 install.ps1 -CpaToken 显式指定。"
-        $env:AICJ_EXECUTOR_TOKEN = $existingToken
+        if ([string]::IsNullOrWhiteSpace($existingBase)) {
+            [Environment]::SetEnvironmentVariable("AICJ_EXECUTOR_BASE_URL", $baseUrl, "User")
+            $env:AICJ_EXECUTOR_BASE_URL = $baseUrl
+        } else {
+            Write-Host "AICJ_EXECUTOR_BASE_URL 已存在，保留现值：$existingBase"
+            $env:AICJ_EXECUTOR_BASE_URL = $existingBase
+        }
+        if ([string]::IsNullOrWhiteSpace($existingToken)) {
+            [Environment]::SetEnvironmentVariable("AICJ_EXECUTOR_TOKEN", $apiKey, "User")
+            $env:AICJ_EXECUTOR_TOKEN = $apiKey
+        } else {
+            Write-Host "AICJ_EXECUTOR_TOKEN 已存在，保留现值。请用 install.ps1 -CpaToken 显式指定。"
+            $env:AICJ_EXECUTOR_TOKEN = $existingToken
+        }
     }
     Write-Host "配置：$config"
     Write-Host "凭证目录：$authDir"

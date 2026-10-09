@@ -1,4 +1,4 @@
-﻿# Parameters: -RepoDir -HomeDir -NoPrereqs -NoClaude -RepoUrl -Mode -CpaUrl -CpaToken -InstallCpa -Adapters
+﻿# Parameters: -RepoDir -HomeDir -NoPrereqs -NoClaude -RepoUrl -Mode -CpaUrl -CpaToken -CpaDir -InstallCpa -Adapters
 [CmdletBinding()]
 param(
     [string]$RepoDir,
@@ -10,6 +10,7 @@ param(
     [string]$Mode = "cc",
     [string]$CpaUrl = "http://127.0.0.1:8317",
     [string]$CpaToken,
+    [string]$CpaDir = (Join-Path $env:LOCALAPPDATA "cliproxyapi"),
     [switch]$InstallCpa,
     [string]$Adapters = ""
 )
@@ -60,10 +61,38 @@ function Set-SessionOrUser([string]$Name, [string]$Value, [bool]$Explicit) {
     }
 }
 
+function Get-CpaApiKey([string]$Path) {
+    if (-not (Test-Path $Path)) { return "" }
+    $inApiKeys = $false
+    $apiKeysIndent = -1
+    foreach ($line in Get-Content -LiteralPath $Path -Encoding UTF8) {
+        if (-not $inApiKeys) {
+            if ($line -match '^(\s*)api-keys:\s*(?:#.*)?$') {
+                $apiKeysIndent = $Matches[1].Length
+                $inApiKeys = $true
+            }
+            continue
+        }
+        if ($line -match '^\s*$') { continue }
+        $indent = ([regex]::Match($line, '^\s*')).Value.Length
+        if ($indent -le $apiKeysIndent) { break }
+        if ($line -match '^\s*-\s*(.*?)\s*(?:#.*)?$') {
+            $value = $Matches[1].Trim()
+            if ($value.Length -ge 2 -and (($value.StartsWith('"') -and $value.EndsWith('"')) -or ($value.StartsWith("'") -and $value.EndsWith("'")))) {
+                $value = $value.Substring(1, $value.Length - 2)
+            }
+            if (-not [string]::IsNullOrWhiteSpace($value)) { return $value }
+        }
+    }
+    return ""
+}
+
 function Test-Cpa([string]$Url, [string]$Token) {
     if ([string]::IsNullOrWhiteSpace($Token)) { throw "worker 模式需要 CPA token；请传 -CpaToken 或设置用户级 AICJ_EXECUTOR_TOKEN" }
     try {
-        $response = Invoke-WebRequest -Uri ($Url.TrimEnd("/") + "/v1/models") -Headers @{ Authorization = "Bearer $Token" } -UseBasicParsing -TimeoutSec 3
+        $requestParams = @{ Uri = ($Url.TrimEnd("/") + "/v1/models"); Headers = @{ Authorization = "Bearer $Token" }; UseBasicParsing = $true; TimeoutSec = 3 }
+        if ($PSVersionTable.PSVersion.Major -ge 7) { $requestParams.NoProxy = $true } else { [Net.WebRequest]::DefaultWebProxy = $null }
+        $response = Invoke-WebRequest @requestParams
         if ([int]$response.StatusCode -ne 200) { throw "HTTP $($response.StatusCode)" }
     } catch {
         throw "CPA 不可达：请先启动 CPA 或改用 -Mode cc。$($_.Exception.Message)"
@@ -111,12 +140,15 @@ try {
             $cpaScript = Join-Path $RepoDir "scripts\windows\install-cpa.ps1"
             if (-not (Test-Path $cpaScript)) { throw "找不到 install-cpa.ps1" }
             $port = ([Uri]$CpaUrl).Port
-            & powershell -ExecutionPolicy Bypass -File $cpaScript -Port $port
+            $cpaInstallArgs = @("-Port", $port, "-InstallDir", $CpaDir)
+            if ($HomeDir) { $cpaInstallArgs += "-NoUserEnv" }
+            & powershell -ExecutionPolicy Bypass -File $cpaScript @cpaInstallArgs
             Assert-ExitCode "CPA 安装"
         }
         $explicitToken = $PSBoundParameters.ContainsKey("CpaToken")
         $userToken = [Environment]::GetEnvironmentVariable("AICJ_EXECUTOR_TOKEN", "User")
-        $token = if ($explicitToken) { $CpaToken } elseif (-not [string]::IsNullOrWhiteSpace($userToken)) { $userToken } else { "" }
+        $configToken = if ($InstallCpa) { Get-CpaApiKey (Join-Path $CpaDir "config.yaml") } else { "" }
+        $token = if ($explicitToken) { $CpaToken } elseif (-not [string]::IsNullOrWhiteSpace($configToken)) { $configToken } elseif (-not [string]::IsNullOrWhiteSpace($userToken)) { $userToken } else { "" }
         if ([string]::IsNullOrWhiteSpace($token)) {
             if ($env:CI -or [Console]::IsInputRedirected) {
                 throw "非交互会话未提供 CPA token；请传 -CpaToken 或改用 -Mode cc"
@@ -146,7 +178,7 @@ try {
         $adapterNames = @($Adapters -split "," | ForEach-Object { $_.Trim() } | Where-Object { $_ })
         if ($Mode -eq "worker" -and $adapterNames -notcontains "executor") { $adapterNames += "executor" }
         $installArgs = @("install") + $homeArgs
-        if ($adapterNames.Count -gt 0) { $installArgs += @("--adapters", ($adapterNames | Select-Object -Unique) -join ",") }
+        if ($adapterNames.Count -gt 0) { $installArgs += "--adapters"; $installArgs += (($adapterNames | Select-Object -Unique) -join ",") }
         & py -3 installer/aicj.py @installArgs
         Assert-ExitCode "aicj 安装"
         $selftestArgs = @("selftest") + $homeArgs

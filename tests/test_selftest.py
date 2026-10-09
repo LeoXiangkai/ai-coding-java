@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 from conftest import AICJ, REPO
+from installer.lib import selftest as selftest_lib
 
 
 def run_aicj(*args: str, home: Path, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
@@ -202,6 +203,8 @@ def test_windows_script_has_bom_and_frozen_parameters() -> None:
     assert data.startswith(b"\xef\xbb\xbf")
     for parameter in ("-NoPrereqs", "-NoClaude", "-HomeDir", "-Mode", "ValidateSet(\"cc\", \"worker\")"):
         assert parameter in text
+    assert '@("--adapters",' not in text
+    assert "-NoUserEnv" in text and '"-InstallDir"' in text and "$CpaDir" in text
 
 
 def test_cpa_script_is_bom_safe_and_does_not_default_login() -> None:
@@ -209,8 +212,30 @@ def test_cpa_script_is_bom_safe_and_does_not_default_login() -> None:
     data = script.read_bytes()
     text = data.decode("utf-8-sig")
     assert data.startswith(b"\xef\xbb\xbf")
-    for parameter in ("$InstallDir", "$Version", "$Port", "$Login", "$NoAutostart", "$Uninstall", "$Purge"):
+    for parameter in ("$InstallDir", "$Version", "$Port", "$Login", "$NoAutostart", "$NoUserEnv", "$Uninstall", "$Purge"):
         assert parameter in text
     assert "Get-FileHash" in text and "SHA256" in text
     assert 'host: "127.0.0.1"' in text
     assert "if ($Login.Count -gt 0)" in text
+    assert "$script:Executable = $exe" in text
+    assert '"  auth-dir: ''' in text
+
+
+def test_selftest_cleanup_removes_read_only_files(tmp_path: Path) -> None:
+    root = tmp_path / "readonly-tree"
+    root.mkdir()
+    readonly = root / "object"
+    readonly.write_text("git object", encoding="utf-8")
+    readonly.chmod(0o444)
+
+    selftest_lib.remove_tree(root)
+
+    assert not root.exists()
+
+
+def test_windows_readme_and_ci_strip_utf8_bom_before_create() -> None:
+    readme = (REPO / "README.md").read_text(encoding="utf-8")
+    workflow = (REPO / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    assert "TrimStart([char]0xFEFF)" in readme
+    assert "GetString([IO.File]::ReadAllBytes" in workflow
+    assert ".TrimStart([char]0xFEFF)" in workflow

@@ -46,7 +46,7 @@ jobs:
           pwsh -File "$env:GITHUB_WORKSPACE/scripts/windows/install.ps1" -Mode worker -CpaToken $key -NoPrereqs -NoClaude -RepoUrl $env:GITHUB_WORKSPACE -RepoDir $selfTestRepo -HomeDir $selfTestHome
           pwsh -File "$env:GITHUB_WORKSPACE/scripts/windows/install.ps1" -Mode cc -NoPrereqs -NoClaude -RepoUrl $env:GITHUB_WORKSPACE -RepoDir $selfTestRepo -HomeDir $selfTestHome
           pwsh -File "$env:GITHUB_WORKSPACE/scripts/windows/install.ps1" -Mode cc -NoPrereqs -NoClaude -RepoUrl $env:GITHUB_WORKSPACE -RepoDir $selfTestRepo -HomeDir $selfTestHome
-          $raw = [Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes("$env:GITHUB_WORKSPACE/scripts/windows/install.ps1"))
+          $raw = [Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes("$env:GITHUB_WORKSPACE/scripts/windows/install.ps1")).TrimStart([char]0xFEFF)
           & ([scriptblock]::Create($raw)) -Mode cc -NoPrereqs -NoClaude -RepoUrl $env:GITHUB_WORKSPACE -RepoDir (Join-Path $env:RUNNER_TEMP "aicj-repo-iex") -HomeDir (Join-Path $env:RUNNER_TEMP "aicj-home-iex")
           if ($LASTEXITCODE -ne 0) { throw "iex smoke failed: $LASTEXITCODE" }
           Write-Host "session-alive"
