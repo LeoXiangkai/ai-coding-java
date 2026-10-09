@@ -45,10 +45,11 @@ def run_hook(stdin: dict, env: dict | None = None) -> subprocess.CompletedProces
 def make_repo(tmp_path: Path):
     remote = tmp_path / "remote.git"
     remote.mkdir()
-    subprocess.run(["git", "init", "--bare", str(remote)], check=True, capture_output=True)
+    subprocess.run(["git", "init", "--bare", "--initial-branch=main", str(remote)], check=True, capture_output=True)
 
     clone = tmp_path / "clone"
     subprocess.run(["git", "clone", str(remote), str(clone)], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(clone), "symbolic-ref", "HEAD", "refs/heads/main"], check=True, capture_output=True)
     subprocess.run(["git", "-C", str(clone), "config", "user.email", "t@t.test"], check=True, capture_output=True)
     subprocess.run(["git", "-C", str(clone), "config", "user.name", "T"], check=True, capture_output=True)
     (clone / "README.md").write_text("base\n", encoding="utf-8")
