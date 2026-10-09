@@ -63,6 +63,36 @@ python3 installer/aicj.py uninstall
 
 目标项目初始化使用 `$setup-ai-coding`。它只读检查全局层；缺失时给出安装建议，不自动安装全局组件。Claude 项目 marker 默认写 `CLAUDE.local.md`。
 
+### Windows 普通电脑安装
+
+不需要编程环境，在 PowerShell 中执行。先装 Python、Git 和 Claude Code，装完重开 PowerShell：
+
+```powershell
+winget install Python.Python.3.12
+winget install Git.Git
+irm https://claude.ai/install.ps1 | iex
+```
+
+- 没有 winget 时，从 python.org 和 git-scm.com 下载安装包，按默认选项安装。
+- 用 python.org 版 Python，不要用 Microsoft Store 版。钩子记录的是 Python 绝对路径，Store 版路径会随更新变化，导致钩子失效；装好后也不要卸载或挪动这个 Python。
+- Git for Windows 是必需的：Windows 版 Claude Code 依赖它，git 保护功能也要用它。
+
+`py -3 --version`（需 3.9+）、`git --version`、`claude --version` 都能打印版本后，下载仓库并安装：
+
+```powershell
+cd ~
+git clone https://github.com/LeoXiangkai/ai-coding-java.git
+cd ai-coding-java
+py -3 installer/aicj.py install --dry-run
+py -3 installer/aicj.py install
+py -3 installer/aicj.py doctor
+```
+
+- 克隆失败时，可在 GitHub 页面用 Code → Download ZIP 下载并解压，再进入解压目录执行。
+- `--dry-run` 只列出将写入 `C:\Users\<名>\.claude` 的文件；已有同名文件默认跳过，加 `--on-conflict backup` 则备份后覆盖。
+- Windows 默认复制安装：更新时先 `git pull`，再执行一次 `install`。
+- 卸载用 `py -3 installer/aicj.py uninstall`，只删除安装清单记录的文件。
+
 ## 常用参数
 
 | 参数 | 用途 |
