@@ -9,6 +9,18 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+try:
+    from hook_mode import hook_mode
+except ImportError:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "core" / "hooks"))
+    from hook_mode import hook_mode
+
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8")
+    except AttributeError:
+        pass
+
 
 def claude_dir() -> Path:
     value = os.environ.get("AICJ_CLAUDE_DIR")
@@ -18,7 +30,7 @@ def claude_dir() -> Path:
 
 
 def mode() -> str:
-    return os.environ.get("AICJ_HOOK_MODE", "warn").strip().lower() or "warn"
+    return hook_mode()
 
 
 def warn(message: str) -> int:
@@ -31,7 +43,7 @@ def warn(message: str) -> int:
 
 def payload() -> dict:
     try:
-        data = json.load(sys.stdin)
+        data = json.loads(sys.stdin.buffer.read().decode("utf-8"))
     except Exception:  # fail-open: unparsable input is allowed through
         return {}
     return data if isinstance(data, dict) else {}

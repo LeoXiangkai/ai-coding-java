@@ -12,6 +12,12 @@ import xml.etree.ElementTree as ET
 STATIC_REVIEW = Path(__file__).resolve().with_name("static_review.py")
 
 
+def static_command() -> str:
+    if sys.platform == "win32":
+        return f'"{Path(sys.executable).resolve()}" "{STATIC_REVIEW}" <paths>'
+    return f"python3 {shlex.quote(str(STATIC_REVIEW))} <paths>"
+
+
 def text_value(value):
     return value.strip() if isinstance(value, str) and value.strip() else None
 
@@ -163,7 +169,7 @@ def main(argv=None) -> int:
         "spring_boot_version": info["spring_boot_version"],
         "namespace": info["namespace"],
         "persistence": info["persistence"],
-        "commands": {"compile": compile_cmd, "test": test_cmd, "start": start_cmd, "static": f"python3 {shlex.quote(str(STATIC_REVIEW))} <paths>"},
+        "commands": {"compile": compile_cmd, "test": test_cmd, "start": start_cmd, "static": static_command()},
     }
     print(json.dumps(output, ensure_ascii=False, sort_keys=True))
     return 0

@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import os
 import posixpath
-import shlex
 import shutil
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -16,6 +17,7 @@ from .util import (
     atomic_write_text,
     git_commit,
     iso_now,
+    is_windows,
     sha256_file,
     sha256_text,
     timestamp,
@@ -51,16 +53,12 @@ class Report:
         self.warnings.append(text)
 
 
-def hook_command(hook: index.HookItem, home: Path, strict: bool) -> str:
+def hook_command(hook: index.HookItem, home: Path, strict: bool) -> tuple[str, tuple[str, ...]]:
     script_rel = posixpath.normpath(hook.script.replace("\\", "/"))
     if not script_rel.startswith("hooks/aicj/") or ".." in script_rel.split("/"):
         raise UserError(f"hook script must live under hooks/aicj/: {hook.script}")
     script = home / ".claude" / script_rel
-    prefix = "AICJ_HOOK_MODE=block " if strict and hook.blocking else ""
-    quoted = shlex.quote(str(script))
-    if script.suffix == ".py":
-        return f"{prefix}python3 {quoted}"
-    return f"{prefix}{quoted}"
+    return os.path.abspath(sys.executable), (str(script),)
 
 
 def hook_script_target(hook: index.HookItem) -> str:
@@ -81,15 +79,32 @@ def entry_state(target: Path, entry: manifest.Entry) -> str:
     if entry.kind == "symlink":
         if not entry.link:
             return "unverified"
-        return "ok" if target.is_symlink() and os.path.realpath(target) == entry.link else "modified"
+        return "ok" if target.is_symlink() and os.path.normcase(os.path.realpath(target)) == os.path.normcase(entry.link) else "modified"
     if not entry.sha256:
         return "unverified"
+    if entry.kind == "skill-copy":
+        try:
+            return "ok" if target.is_dir() and not target.is_symlink() and _dir_digest(target) == entry.sha256 else "modified"
+        except OSError:
+            return "modified"
     if target.is_symlink() or not target.is_file():
         return "modified"
     try:
         return "ok" if sha256_file(target) == entry.sha256 else "modified"
     except OSError:
         return "modified"
+
+
+def _dir_digest(directory: Path) -> str:
+    digest = hashlib.sha256()
+    for path in sorted(directory.rglob("*")):
+        if path.is_symlink():
+            raise OSError(f"unexpected symlink in copied skill: {path}")
+        if path.is_file():
+            digest.update(path.relative_to(directory).as_posix().encode("utf-8") + b"\0")
+            digest.update(path.read_bytes())
+            digest.update(b"\0")
+    return digest.hexdigest()
 
 
 def payload_digest(payload: dict) -> str:
@@ -180,6 +195,57 @@ class CodexPlan:
     decision: str
     entry: manifest.Entry
     backup_rel: str = ""
+
+
+@dataclass
+class GeneratedPlan:
+    data: bytes
+    decision: str
+    entry: manifest.Entry
+    backup_rel: str = ""
+
+
+def _plan_generated(rel: str, data: bytes, home: Path, options: manifest.Options,
+                    previous: dict[str, manifest.Entry], ts: str, report: Report) -> GeneratedPlan:
+    target = home / rel
+    if (blocker := _blocker(home, target.parent)) is not None:
+        raise UserError(f"{blocker} is not a directory; cannot install {rel}")
+    prev = previous.get(rel)
+    digest = hashlib.sha256(data).hexdigest()
+    backup = ""
+    if not target.exists() and not target.is_symlink():
+        decision = conflict.CREATED
+    elif target.is_file() and not target.is_symlink() and sha256_file(target) == digest:
+        decision = conflict.ADOPTED
+    elif _is_owned(prev) and entry_state(target, prev) == "ok":
+        decision = UPDATED
+    elif options.on_conflict == "backup":
+        decision = conflict.REPLACED
+        backup = unique_backup_rel(home, rel, ts)
+    else:
+        decision = conflict.SKIPPED
+    if decision == conflict.SKIPPED:
+        entry = prev if _is_owned(prev) else manifest.Entry(rel, "file", decision, digest)
+    elif decision == conflict.REPLACED:
+        original = prev.backup if _is_owned(prev) and _backup_present(home, prev.backup) else backup
+        entry = manifest.Entry(rel, "file", decision, digest, original)
+    elif _is_owned(prev):
+        entry = manifest.Entry(rel, "file", prev.action, digest, prev.backup)
+    else:
+        entry = manifest.Entry(rel, "file", decision, digest)
+    report.add(decision, rel, f"backup {backup}" if backup else "")
+    return GeneratedPlan(data, decision, entry, backup)
+
+
+def _execute_generated(plan: GeneratedPlan, home: Path, journal: Journal) -> None:
+    target = home / plan.entry.path
+    if plan.decision not in (conflict.SKIPPED, conflict.ADOPTED):
+        journal.ensure_dir(target.parent)
+        if plan.decision == conflict.REPLACED:
+            journal.record(plan.entry)
+            target.rename(home / plan.backup_rel)
+        atomic_write(target, plan.data)
+    journal.record(plan.entry)
 
 
 def _skill_dir(target: str) -> str | None:
@@ -375,17 +441,21 @@ def _plan_codex(
         if blocker is not None:
             raise UserError(f"{blocker} is not a directory; cannot link {rel}")
         decision = conflict.classify(source, target, True)
+        if prev is not None and prev.kind == "skill-copy" and _is_owned(prev) and entry_state(target, prev) == "ok":
+            decision = conflict.ADOPTED if _dir_digest(source) == prev.sha256 else UPDATED
         backup_rel = ""
         if decision == conflict.CONFLICT:
             if options.on_conflict != "backup":
                 report.add(conflict.SKIPPED, rel, "codex skill link conflict")
-                out.append(CodexPlan(rel, source, conflict.SKIPPED, manifest.Entry(rel, "symlink", conflict.SKIPPED)))
+                out.append(CodexPlan(rel, source, conflict.SKIPPED, prev if _is_owned(prev) else manifest.Entry(rel, "symlink", conflict.SKIPPED)))
                 continue
             backup_rel = unique_backup_rel(home, rel, ts)
             decision = conflict.REPLACED
         link = os.path.realpath(source)
         report.add(decision, rel, "codex skill link")
-        if decision == conflict.ADOPTED_SYMLINK and _is_owned(prev):
+        if decision == conflict.ADOPTED and prev is not None and prev.kind == "skill-copy":
+            entry = prev
+        elif _is_owned(prev) and decision in (conflict.ADOPTED_SYMLINK, UPDATED):
             entry = manifest.Entry(rel, "symlink", prev.action, "", prev.backup, link)
         else:
             entry = manifest.Entry(rel, "symlink", decision, "", backup_rel, link)
@@ -398,16 +468,20 @@ def _plan_codex(
 # ---------------------------------------------------------------------------
 
 
-def _write_item(item: index.FileItem, target: Path, link: bool, journal: Journal) -> None:
+def _write_item(item: index.FileItem, target: Path, link: bool, journal: Journal, report: Report) -> None:
     journal.ensure_dir(target.parent)
     if link:
-        target.symlink_to(item.source)
-        return
+        try:
+            target.symlink_to(item.source)
+            return
+        except OSError as exc:
+            report.warn(f"{item.target}: 软链失败，已改为复制；改仓库即生效失效 ({exc})")
     atomic_write(target, item.source.read_bytes())
-    target.chmod(item.source.stat().st_mode)
+    if not is_windows():
+        target.chmod(item.source.stat().st_mode)
 
 
-def _execute_file(plan: FilePlan, home: Path, options: manifest.Options, journal: Journal) -> None:
+def _execute_file(plan: FilePlan, home: Path, options: manifest.Options, journal: Journal, report: Report) -> None:
     target = home / plan.item.target
     if plan.decision in (conflict.SKIPPED, conflict.ADOPTED, conflict.ADOPTED_SYMLINK):
         journal.record(plan.entry)
@@ -417,9 +491,13 @@ def _execute_file(plan: FilePlan, home: Path, options: manifest.Options, journal
         target.rename(home / plan.backup_rel)
     elif plan.decision == UPDATED:
         target.unlink()
-    _write_item(plan.item, target, options.link, journal)
-    if plan.decision != conflict.REPLACED:
-        journal.record(plan.entry)
+    requested_link = options.link
+    _write_item(plan.item, target, requested_link, journal, report)
+    if requested_link and not target.is_symlink():
+        plan.entry.kind = "file"
+        plan.entry.link = ""
+        plan.entry.sha256 = sha256_file(target)
+    journal.record(plan.entry)
 
 
 def _execute_dir_backup(plan: DirBackup, home: Path, journal: Journal) -> None:
@@ -427,23 +505,31 @@ def _execute_dir_backup(plan: DirBackup, home: Path, journal: Journal) -> None:
     (home / plan.entry.path).rename(home / plan.backup_rel)
 
 
-def _execute_codex(plan: CodexPlan, home: Path, journal: Journal) -> None:
+def _execute_codex(plan: CodexPlan, home: Path, journal: Journal, report: Report) -> None:
     target = home / plan.rel
-    if plan.decision in (conflict.SKIPPED, conflict.ADOPTED_SYMLINK):
+    if plan.decision in (conflict.SKIPPED, conflict.ADOPTED, conflict.ADOPTED_SYMLINK):
         journal.record(plan.entry)
         return
     if plan.decision == conflict.REPLACED:
         journal.record(plan.entry)
         target.rename(home / plan.backup_rel)
+    elif plan.decision == UPDATED:
+        shutil.rmtree(target)
     journal.ensure_dir(target.parent)
-    target.symlink_to(plan.source)
-    if plan.decision != conflict.REPLACED:
-        journal.record(plan.entry)
+    try:
+        target.symlink_to(plan.source, target_is_directory=True)
+    except OSError as exc:
+        report.warn(f"{plan.rel}: 软链失败，已改为复制；改仓库即生效失效 ({exc})")
+        shutil.copytree(plan.source, target, copy_function=lambda src, dst: atomic_write(Path(dst), Path(src).read_bytes()))
+        plan.entry.kind = "skill-copy"
+        plan.entry.link = ""
+        plan.entry.sha256 = _dir_digest(target)
+    journal.record(plan.entry)
 
 
 def _hook_keys(rows: list[dict], target: str) -> list[settings.HookKey]:
     return [
-        settings.HookKey(str(row.get("event", "")), str(row.get("matcher", "")), str(row.get("command", "")))
+        settings.HookKey(str(row.get("event", "")), str(row.get("matcher", "")), str(row.get("command", "")), tuple(str(x) for x in row.get("args", []) or []))
         for row in rows
         if str(row.get("target", SETTINGS)) == target
     ]
@@ -541,7 +627,10 @@ def _run_install(
         report.note("previous install was interrupted; entries it recorded are still treated as ours")
 
     # 1. read and validate every input before anything is written
-    hook_targets = [SETTINGS, CODEX_HOOKS] if options.codex_hooks else [SETTINGS]
+    codex_hooks_enabled = options.codex_hooks and not is_windows()
+    if options.codex_hooks and is_windows():
+        report.note("Windows 上 Codex hooks 暂不合并：Codex hooks 行为未确认")
+    hook_targets = [SETTINGS, CODEX_HOOKS] if codex_hooks_enabled else [SETTINGS]
     hook_targets += sorted({str(row.get("target", SETTINGS)) for row in old_hooks} - set(hook_targets))
     payloads = {rel: settings.load(home / rel) for rel in hook_targets}
     claude_path = home / CLAUDE_MD
@@ -553,6 +642,18 @@ def _run_install(
     file_ops, skills = _plan_files(idx.files, home, options, ts, report, previous)
     codex_ops = _plan_codex(skills, home, options, ts, report, previous)
     planned = {op.entry.path: op.entry for op in file_ops + codex_ops}
+    generated_ops: list[GeneratedPlan] = []
+    if options.strict or _is_owned(previous.get(".claude/aicj/config.json")):
+        config_rel = ".claude/aicj/config.json"
+        mode = "block" if options.strict else "warn"
+        generated_ops.append(_plan_generated(config_rel, f'{{"hook_mode":"{mode}"}}\n'.encode("utf-8"), home, options, previous, ts, report))
+    if is_windows():
+        for op in file_ops:
+            if isinstance(op, FilePlan) and op.entry.path.startswith(".claude/bin/") and op.decision != conflict.SKIPPED:
+                name = Path(op.entry.path).name
+                rel = f".claude/bin/{name}.cmd"
+                launcher = f'@"{os.path.abspath(sys.executable)}" "%~dp0{name}" %*\r\n'
+                generated_ops.append(_plan_generated(rel, launcher.encode("utf-8"), home, options, previous, ts, report))
 
     keys: list[settings.HookKey] = []
     unknown = [name for name in options.enable_hooks if name not in {h.name for h in idx.hooks}]
@@ -565,7 +666,7 @@ def _run_install(
         if hook.optional and hook.name not in options.enable_hooks:
             report.note(f"可选钩子未启用：{hook.name}（用 --enable-hook 开启）")
             continue
-        command = hook_command(hook, home, options.strict)
+        command, args = hook_command(hook, home, options.strict)
         script_entry = planned.get(hook_script_target(hook))
         if script_entry is None or script_entry.action not in HOOK_READY_ACTIONS:
             report.warn(f"hook {hook.event} {hook.script}: script not installed, hook not registered")
@@ -575,11 +676,11 @@ def _run_install(
             report.note(f"hook {hook.name} 未注册：依赖未就绪（{', '.join(missing)}）")
             continue
         matcher = "" if hook.event in settings.NO_MATCHER_EVENTS else hook.matcher
-        keys.append(settings.HookKey(hook.event, matcher, command))
+        keys.append(settings.HookKey(hook.event, matcher, command, args))
 
     hook_plan: list[tuple[str, list, list, list]] = []
     for rel in hook_targets:
-        wanted = keys if rel == SETTINGS or (rel == CODEX_HOOKS and options.codex_hooks) else []
+        wanted = keys if rel == SETTINGS or (rel == CODEX_HOOKS and codex_hooks_enabled) else []
         owned_before = _hook_keys(old_hooks, rel)
         stale = [key for key in owned_before if key not in wanted]
         if not wanted and not stale:
@@ -603,9 +704,11 @@ def _run_install(
             if isinstance(op, DirBackup):
                 _execute_dir_backup(op, home, journal)
             else:
-                _execute_file(op, home, options, journal)
+                _execute_file(op, home, options, journal, report)
         for op in codex_ops:
-            _execute_codex(op, home, journal)
+            _execute_codex(op, home, journal, report)
+        for op in generated_ops:
+            _execute_generated(op, home, journal)
 
     hook_entries: list[manifest.Entry] = []
     for rel, wanted, stale, owned_before in hook_plan:
@@ -618,11 +721,12 @@ def _run_install(
     md_entry = _apply_md_block(home, claude_text, block_span, dry_run, report, previous.get(CLAUDE_MD), journal)
 
     ordered = [op.entry for op in file_ops + codex_ops]
+    ordered.extend(op.entry for op in generated_ops)
     names = {entry.path for entry in ordered} | {entry.path for entry in hook_entries} | {CLAUDE_MD}
     for path, entry in previous.items():
         if path in names:
             continue
-        keep_kind = entry.kind in ("file", "symlink", SKILL_DIR)
+        keep_kind = entry.kind in ("file", "symlink", "skill-copy", SKILL_DIR)
         if keep_kind and entry.action in OWNED_ACTIONS:
             report.note(f"{path}: no longer shipped, kept and still tracked for uninstall")
             ordered.append(entry)
@@ -704,14 +808,14 @@ def _restore_or_remove(entry: manifest.Entry, home: Path, report: Report, dry_ru
         return replaced
     if replaced and _backup_present(home, entry.backup):
         if not dry_run:
-            target.unlink()
+            shutil.rmtree(target) if entry.kind == "skill-copy" else target.unlink()
             os.replace(home / entry.backup, target)
         report.add("restored", entry.path, f"from {entry.backup}")
         return False
     if replaced:
         report.warn(f"{entry.path}: backup {entry.backup} missing, removed without restore")
     if not dry_run:
-        target.unlink()
+        shutil.rmtree(target) if entry.kind == "skill-copy" else target.unlink()
     gone.add(target)
     report.add("removed", entry.path)
     return False
@@ -831,7 +935,7 @@ def _run_uninstall(home: Path, dry_run: bool) -> Report:
     for row in loaded.settings_hooks:
         target = str(row.get("target", SETTINGS))
         hook_keys.setdefault(target, []).append(
-            settings.HookKey(str(row.get("event", "")), str(row.get("matcher", "")), str(row.get("command", "")))
+            settings.HookKey(str(row.get("event", "")), str(row.get("matcher", "")), str(row.get("command", "")), tuple(str(x) for x in row.get("args", []) or []))
         )
     hook_entries = {entry.path: entry for entry in loaded.entries if entry.kind == "settings-hook"}
 

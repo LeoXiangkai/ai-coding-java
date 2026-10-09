@@ -1,60 +1,71 @@
-#!/usr/bin/env bash
-# git-safe — Claude Code 用 git wrapper
-# 目的:解决 IDE/Obsidian 后台 git daemon 与 Claude 写命令(add/commit/rebase 等)在 .git/index.lock 上撞车的瞬态错误
-# 行为:
-#   - 透传 stdin/stdout,stderr 先缓冲
-#   - 命令成功 → 退出码 0,原样输出 stderr
-#   - 命令失败且 stderr 含 "Unable to create.*index.lock.*File exists" → sleep 退避后 retry,最多 10 次
-#   - 其他错误 → 原样输出 stderr 并退出
-# REAL_GIT:从 PATH 找第一个不是自身(realpath 比较)的 git;找不到报错退出 127
-# 用法:替换 `git` 调用为 `git-safe`,参数完全一致
-# 例:`git-safe add file.txt` / `git-safe commit -m "..."` / `git-safe push`
+#!/usr/bin/env python3
+"""Run git with bounded retries when .git/index.lock is temporarily busy."""
+from __future__ import annotations
 
-set -o pipefail
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+from pathlib import Path
 
-SELF=$(cd "$(dirname "$0")" && pwd -P)/$(basename "$0")
-REAL_GIT=""
-for candidate in $(command -v git 2>/dev/null; IFS=:; for d in $PATH; do [ -x "$d/git" ] && echo "$d/git"; done | awk '!seen[$0]++'); do
-    resolved=$(cd "$(dirname "$candidate")" && pwd -P)/$(basename "$candidate")
-    if [ "$resolved" != "$SELF" ]; then
-        REAL_GIT=$resolved
-        break
-    fi
-done
-if [ -z "$REAL_GIT" ]; then
-    echo "git-safe: no real git found on PATH (skipping itself)" >&2
-    exit 127
-fi
-MAX_RETRY=10
-TMPFILE=$(mktemp -t git-safe.XXXXXX) || { echo "git-safe: mktemp failed" >&2; exit 1; }
-trap 'rm -f "$TMPFILE"' EXIT
+MAX_RETRY = 10
 
-for attempt in $(seq 1 "$MAX_RETRY"); do
-    "$REAL_GIT" "$@" 2>"$TMPFILE"
-    code=$?
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8")
+    except AttributeError:
+        pass
 
-    if [[ $code -eq 0 ]]; then
-        # 成功也可能有 stderr(警告/进度信息),原样输出
-        cat "$TMPFILE" >&2
-        exit 0
-    fi
 
-    # 判定是不是 index.lock 撞车
-    if grep -q "Unable to create.*index\.lock.*File exists" "$TMPFILE"; then
-        if [[ $attempt -lt $MAX_RETRY ]]; then
-            # 退避:1s 起步,逐次 +1s,封顶 5s
-            backoff=$(( attempt < 5 ? attempt : 5 ))
-            echo "[git-safe] index.lock 撞车(第 ${attempt}/${MAX_RETRY} 次),${backoff}s 后重试..." >&2
-            sleep "$backoff"
+def real_git() -> str | None:
+    self_path = Path(__file__).resolve()
+    for entry in os.environ.get("PATH", "").split(os.pathsep):
+        candidate = Path(entry or ".") / ("git.exe" if os.name == "nt" else "git")
+        try:
+            resolved = candidate.resolve()
+        except OSError:
             continue
-        fi
-        # 重试耗尽
-        echo "[git-safe] index.lock 重试 ${MAX_RETRY} 次仍失败,放弃" >&2
-        cat "$TMPFILE" >&2
-        exit "$code"
-    fi
+        if candidate.is_file() and os.access(candidate, os.X_OK) and resolved != self_path:
+            return str(candidate)
+    found = shutil.which("git")
+    return found if found and Path(found).resolve() != self_path else None
 
-    # 非 lock 错误,原样退出
-    cat "$TMPFILE" >&2
-    exit "$code"
-done
+
+def main(argv: list[str] | None = None) -> int:
+    executable = real_git()
+    if not executable:
+        print("git-safe: no real git found on PATH (skipping itself)", file=sys.stderr)
+        return 127
+    try:
+        with tempfile.TemporaryFile(mode="w+b") as buffer:
+            for attempt in range(1, MAX_RETRY + 1):
+                buffer.seek(0)
+                buffer.truncate()
+                result = subprocess.run([executable, *(argv or sys.argv[1:])], stdout=sys.stdout, stderr=buffer)
+                buffer.seek(0)
+                error = buffer.read()
+                if result.returncode == 0:
+                    sys.stderr.buffer.write(error)
+                    return 0
+                text = error.decode("utf-8", errors="replace")
+                if "Unable to create" not in text or "index.lock" not in text or "File exists" not in text:
+                    sys.stderr.buffer.write(error)
+                    return result.returncode
+                if attempt < MAX_RETRY:
+                    backoff = min(attempt, 5)
+                    print(f"[git-safe] index.lock 撞车(第 {attempt}/{MAX_RETRY} 次),{backoff}s 后重试...", file=sys.stderr)
+                    time.sleep(backoff)
+                else:
+                    print(f"[git-safe] index.lock 重试 {MAX_RETRY} 次仍失败,放弃", file=sys.stderr)
+                    sys.stderr.buffer.write(error)
+                    return result.returncode
+    except OSError as exc:
+        print(f"git-safe: {exc}", file=sys.stderr)
+        return 1
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

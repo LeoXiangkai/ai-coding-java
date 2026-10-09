@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import json
+import os
 import re
+import sys
+from pathlib import Path
 
 import pytest
 
@@ -35,8 +38,12 @@ def adapter_commands(home):
     for event, groups in data["hooks"].items():
         for group in groups:
             for hook in group["hooks"]:
-                if "/hooks/aicj/" in hook["command"] and re.search(r"(block-handoff-poll|lesson-)", hook["command"]):
-                    rows.append((event, group.get("matcher"), hook["command"]))
+                args = hook.get("args") or []
+                locations = [hook.get("command", ""), *args]
+                if any("/hooks/aicj/" in value.replace("\\", "/") for value in locations) and re.search(
+                    r"(block-handoff-poll|lesson-)", " ".join(locations)
+                ):
+                    rows.append((event, group.get("matcher"), hook["command"], args))
     return rows
 
 
@@ -47,14 +54,14 @@ def test_install_places_files_and_registers_hooks(seeded_home):
     for rel in ADAPTER_FILES:
         assert (home / rel).is_file(), rel
     rows = adapter_commands(home)
-    assert sorted((event, matcher) for event, matcher, _ in rows) == [
+    assert sorted((event, matcher) for event, matcher, _, _ in rows) == [
         ("PreToolUse", "Bash"),
         ("PreToolUse", "Bash|Edit|Write|MultiEdit"),
         ("PreToolUse", "TaskOutput|BashOutput"),
         ("UserPromptSubmit", None),
     ]
-    assert all("/hooks/aicj/" in cmd for _, _, cmd in rows)
-    assert not any("AICJ_HOOK_MODE" in cmd for _, _, cmd in rows)
+    assert all(any("/hooks/aicj/" in value.replace("\\", "/") for value in [cmd, *args]) for _, _, cmd, args in rows)
+    assert all(args and "/hooks/aicj/" in args[0].replace("\\", "/") for _, _, _, args in rows)
     assert "MISSING" not in run_aicj("doctor", home=home, source=None).stdout
 
 
@@ -62,11 +69,8 @@ def test_strict_prefixes_only_blocking_hooks(seeded_home):
     home = seeded_home
     assert run_aicj("install", "--adapters", "executor,lesson", "--strict", home=home, source=None).returncode == 0
     rows = adapter_commands(home)
-    for _, _, cmd in rows:
-        if "lesson-capture" in cmd:
-            assert "AICJ_HOOK_MODE" not in cmd
-        else:
-            assert cmd.startswith("AICJ_HOOK_MODE=block ")
+    assert all(cmd == os.path.abspath(sys.executable) for _, _, cmd, _ in rows)
+    assert json.loads((home / ".claude/aicj/config.json").read_text(encoding="utf-8")) == {"hook_mode": "block"}
 
 
 def test_doctor_has_no_missing_and_default_install_excludes_adapters(home):

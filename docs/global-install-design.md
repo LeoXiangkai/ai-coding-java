@@ -43,6 +43,10 @@ tests/         安装器与钩子测试，全部使用临时 HOME
 
 ## 3. 安装器契约
 
+### 平台差异
+
+安装器支持 macOS、Linux 和 Windows。Windows 使用 `py -3 installer/aicj.py ...`，建议安装 Git for Windows。钩子统一写为带 `args` 的 exec 形式，解释器使用安装时的绝对 `sys.executable`；`--link` 与 `--codex` 遇到软链权限错误会回退为复制并记录 checksum。Windows 额外生成 `.cmd` bin 启动器；`--codex-hooks` 在 Windows 暂不合并，doctor 标记为 SKIPPED。
+
 ### 3.1 命令
 
 ```
@@ -88,8 +92,8 @@ aicj doctor    [--home <dir>]      只读：PASS / WARN / MISSING / SKIPPED
 ### 3.4 settings.json 钩子合并
 
 1. 写前备份为 `settings.json.aicj-bak-<ts>`（每次安装最多保留最近 1 份，旧的我方备份随之删除）；文件不存在则从 `{}` 开始。目标是软链时写到软链指向的真实文件并保持其 mode，软链本身保留。
-2. 以 `(事件, matcher, command)` 为唯一键：已存在跳过，不存在则追加到对应事件列表末尾；不改已有条目顺序与内容。
-3. 我方命令路径统一含 `/hooks/aicj/`（脚本路径经 shell 转义且规范化后必须位于 `hooks/aicj/` 下），不在 JSON 中加自定义字段；仅当脚本条目为 created/replaced/adopted 时才注册。`SessionStart` / `Stop` / `UserPromptSubmit` / `SessionEnd` / `PreCompact` / `Notification` 不写 `matcher` 键。
+2. 以 `(事件, matcher, command, args)` 为唯一键：已存在跳过，不存在则追加到对应事件列表末尾；不改已有条目顺序与内容。
+3. 我方钩子使用 `{"type":"command","command":"<绝对解释器>","args":["<绝对脚本>"]}` exec 形式，脚本路径经规范化后必须位于 `hooks/aicj/` 下；旧 shell 形式在升级时替换，用户钩子不动。仅当脚本条目为 created/replaced/adopted 时才注册。`SessionStart` / `Stop` / `UserPromptSubmit` / `SessionEnd` / `PreCompact` / `Notification` 不写 `matcher` 键。
 4. 只触碰 `hooks` 键；`env`、`permissions`、`statusLine`、`enabledPlugins` 等一律不读不写（`permissions` 不随安装带出）。
 5. 写回用临时文件 + 原子 rename，写后重新解析校验。
 6. 卸载按 manifest 中记录的键精确删除；删除后为空的 matcher 组与事件键一并清除。用户预先已有的同 command 条目记为 adopted，不进 manifest、卸载不删。
@@ -121,7 +125,7 @@ CLAUDE.md 标记块：BEGIN、END 各恰好出现一次且顺序正确才是合�
 - `core/manifest.json`：core 各类别的条目，以及钩子注册表（事件、matcher、脚本、是否拦截类）。
 - `packs/<lang>/pack.json`、`adapters/<name>/adapter.json`、`adapters/optional-plugins/<name>/plugin.json`：同构结构，额外带 `detect`（探测条件）。
 
-拦截类钩子脚本统一读取环境变量 `AICJ_HOOK_MODE`（`warn` 默认 / `block`），`--strict` 时安装器把 `AICJ_HOOK_MODE=block` 写进钩子 command 前缀。
+拦截类钩子脚本统一优先读取环境变量 `AICJ_HOOK_MODE`，其次读取 `.claude/aicj/config.json`（`warn` 默认 / `block`）；`--strict` 写入该配置文件。
 
 **可选钩子**：manifest 钩子条目可带 `"optional": true`。optional 钩子的脚本文件照常安装，但**只有被 `install --enable-hook <name>`（可重复，name = 钩子脚本去扩展名）点名才注册进 settings.json**。未点名时 install 报告列出"可选钩子未启用：<name>（用 --enable-hook 开启）"；重装时不带该参数视为关闭，移除我方先前注册的该钩子（与 `--strict` 切换同样收敛）；doctor 对未启用的 optional 钩子报 SKIPPED，不报 MISSING。传入未知 name 时 install 报错退出 2。
 

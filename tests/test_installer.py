@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import sys
 from pathlib import Path
 
 from conftest import FIXTURE, files_under, run_aicj, snapshot
@@ -151,7 +153,8 @@ def test_settings_merge_keeps_user_entries_and_is_idempotent(home: Path) -> None
     groups = merged["hooks"]["PreToolUse"]
     assert groups[0] == {"matcher": "Edit", "hooks": [{"type": "command", "command": "echo user"}]}
     assert groups[1]["matcher"] == "Bash"
-    assert "/hooks/aicj/" in groups[1]["hooks"][0]["command"]
+    assert groups[1]["hooks"][0]["command"] == os.path.abspath(sys.executable)
+    assert "/hooks/aicj/" in groups[1]["hooks"][0]["args"][0].replace("\\", "/")
 
     frozen = settings_path.read_bytes()
     result = run_aicj("install", home=home)
@@ -263,7 +266,7 @@ def test_install_option_flags_all_parse(home: Path) -> None:
     assert snapshot(home) == {}
 
 
-def test_codex_links_skills_and_strict_prefixes_hook(home: Path) -> None:
+def test_codex_links_skills_and_strict_configures_hook(home: Path) -> None:
     result = run_aicj("install", "--codex", "--codex-hooks", "--strict", "--packs", "java", home=home)
     assert result.returncode == 0, result.stdout + result.stderr
 
@@ -272,11 +275,13 @@ def test_codex_links_skills_and_strict_prefixes_hook(home: Path) -> None:
     assert link.resolve() == (home / ".claude/skills/sample-skill").resolve()
 
     merged = json.loads((home / ".claude/settings.json").read_text(encoding="utf-8"))
-    command = merged["hooks"]["PreToolUse"][0]["hooks"][0]["command"]
-    assert command.startswith("AICJ_HOOK_MODE=block ")
+    command = merged["hooks"]["PreToolUse"][0]["hooks"][0]
+    assert command["command"] == os.path.abspath(sys.executable)
+    assert "/hooks/aicj/" in command["args"][0].replace("\\", "/")
+    assert json.loads((home / ".claude/aicj/config.json").read_text(encoding="utf-8")) == {"hook_mode": "block"}
 
     codex = json.loads((home / ".codex/hooks.json").read_text(encoding="utf-8"))
-    assert "/hooks/aicj/" in codex["hooks"]["PreToolUse"][0]["hooks"][0]["command"]
+    assert "/hooks/aicj/" in codex["hooks"]["PreToolUse"][0]["hooks"][0]["args"][0].replace("\\", "/")
 
     assert run_aicj("uninstall", home=home).returncode == 0
     assert not (home / ".agents/skills/sample-skill").is_symlink()

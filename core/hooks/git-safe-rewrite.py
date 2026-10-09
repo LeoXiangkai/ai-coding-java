@@ -2,7 +2,7 @@
 """PreToolUse(Bash) hook: 把 git 写命令的命令词 `git` 改写为 <claude>/bin/git-safe 的绝对路径。
 
 <claude> 取 AICJ_CLAUDE_DIR，否则从本脚本位置推导（hooks/aicj/<x>.py -> parents[2]）；
-目标不存在或不可执行时不改写、原样放行。git-safe 透传参数，遇 .git/index.lock 撞车自动退避重试。
+目标不存在时不改写、原样放行。git-safe 透传参数，遇 .git/index.lock 撞车自动退避重试。
 只替换命令位的 `git` 一个词。用一个轻量扫描器只在顶层识别分隔符；引号、$(...)、反引号、${...}、
 heredoc 正文整体跳过。扫描器不确定(引号不配对 / heredoc 无终止行等) → 不改写；
 任何异常 → 无输出 exit 0 (fail-open)。已知不覆盖：env/command/sudo/xargs 等包装器后的 git、
@@ -15,15 +15,21 @@ import shlex
 import sys
 from pathlib import Path
 
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8")
+    except AttributeError:
+        pass
+
 
 def _replacement() -> str | None:
-    """Absolute path of <claude>/bin/git-safe, or None when it is missing or not executable."""
+    """Explicit interpreter invocation, or None when git-safe is missing."""
     env = os.environ.get("AICJ_CLAUDE_DIR")
     claude = Path(env).expanduser() if env else Path(__file__).resolve().parents[2]
     target = claude / "bin" / "git-safe"
-    if not target.is_file() or not os.access(target, os.X_OK):
+    if not target.is_file():
         return None
-    return shlex.quote(str(target))
+    return f'"{sys.executable}" "{target}"'
 
 WRITE_CMDS = frozenset((
     "add", "commit", "pull", "push", "reset", "checkout", "switch", "restore",
@@ -356,7 +362,7 @@ RECURSIVE_RM = re.compile(r"(?:^|[;&|(\n]\s*)rm\s+(?:-\S*\s+)*?(?:-\S*[rR]\S*|--
 
 def main():
     try:
-        event = json.load(sys.stdin)
+        event = json.loads(sys.stdin.buffer.read().decode("utf-8"))
         if not isinstance(event, dict) or event.get("tool_name") != "Bash":
             return 0
         tool_input = event.get("tool_input")

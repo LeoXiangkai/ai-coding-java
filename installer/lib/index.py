@@ -6,6 +6,7 @@ import posixpath
 import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
+from pathlib import PurePosixPath, PureWindowsPath
 
 from .util import UserError, read_json
 
@@ -159,8 +160,14 @@ def missing_requirements(home: Path, requirements: PluginRequirements) -> list[s
 
 
 def _target(raw: str, manifest_path: Path) -> str:
-    rel = Path(raw.strip().lstrip("/"))
-    if not raw.strip() or ".." in rel.parts:
+    text = str(raw).strip()
+    win = PureWindowsPath(text)
+    posix = PurePosixPath(text)
+    if not text or win.anchor or posix.is_absolute():
+        raise UserError(f"{manifest_path}: target must stay inside ~/.claude: {raw!r}")
+    normalized_input = text.replace("\\", "/")
+    rel = PurePosixPath(normalized_input.lstrip("/"))
+    if ".." in rel.parts:
         raise UserError(f"{manifest_path}: target must stay inside ~/.claude: {raw!r}")
     normalized = posixpath.normpath(rel.as_posix())
     if normalized in ("", "."):

@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 from . import engine, index, manifest, mdblock, settings
-from .util import UserError
+from .util import UserError, is_windows
 
 PASS = "PASS"
 WARN = "WARN"
@@ -149,7 +149,7 @@ def _hooks(home: Path, loaded: manifest.Manifest) -> list[tuple[str, str, str]]:
     for row in loaded.settings_hooks:
         target = str(row.get("target", engine.SETTINGS))
         grouped.setdefault(target, []).append(
-            settings.HookKey(str(row.get("event", "")), str(row.get("matcher", "")), str(row.get("command", "")))
+            settings.HookKey(str(row.get("event", "")), str(row.get("matcher", "")), str(row.get("command", "")), tuple(str(x) for x in row.get("args", []) or []))
         )
     for target, keys in sorted(grouped.items()):
         path = home / target
@@ -177,8 +177,8 @@ def _optional_hooks(home: Path, loaded: manifest.Manifest, source: Path | None) 
     for hook in idx.hooks:
         if not hook.optional or hook.name in loaded.options.enable_hooks:
             continue
-        command = engine.hook_command(hook, home, loaded.options.strict)
-        if command in registered:
+        command, args = engine.hook_command(hook, home, loaded.options.strict)
+        if any(row.get("command") == command and tuple(row.get("args", []) or []) == args for row in loaded.settings_hooks):
             continue
         out.append((SKIPPED, f"optional hook {hook.name}", "not enabled (--enable-hook to register)"))
     return out
@@ -198,8 +198,8 @@ def _hook_requirements(home: Path, loaded: manifest.Manifest, source: Path | Non
     for hook in idx.hooks:
         if not hook.requires:
             continue
-        command = engine.hook_command(hook, home, loaded.options.strict)
-        if command in registered:
+        command, args = engine.hook_command(hook, home, loaded.options.strict)
+        if any(row.get("command") == command and tuple(row.get("args", []) or []) == args for row in loaded.settings_hooks):
             continue
         missing = [target for target in hook.requires if not any(
             entry.path == engine.hook_required_target(target) and entry.action in engine.HOOK_READY_ACTIONS
@@ -234,8 +234,10 @@ def _codex(home: Path, loaded: manifest.Manifest) -> list[tuple[str, str, str]]:
         links = [entry for entry in loaded.entries if entry.path.startswith(engine.CODEX_SKILLS + "/")]
         for entry in links:
             target = home / entry.path
-            status = PASS if target.is_symlink() else WARN
-            out.append((status, entry.path, "skill link"))
+            status = PASS if target.is_symlink() or target.is_dir() else MISSING
+            out.append((status, entry.path, "skill link" if target.is_symlink() else "skill copy"))
+    if is_windows() and loaded.options.codex_hooks:
+        out.append((SKIPPED, "codex hooks", "Windows behavior not confirmed; hooks were not merged"))
     return out
 
 

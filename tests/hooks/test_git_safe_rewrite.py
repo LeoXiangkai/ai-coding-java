@@ -15,7 +15,7 @@ from pathlib import Path as _P
 # installed <claude>/hooks/aicj/<x>.py; tests pin the claude dir explicitly.
 REPO_CORE = _P(os.path.abspath(HOOK)).parents[1]
 DEFAULT_CLAUDE = os.environ.get("AICJ_CLAUDE_DIR") or str(REPO_CORE)
-G = shlex.quote(str(_P(DEFAULT_CLAUDE) / "bin" / "git-safe"))
+G = f'"{sys.executable}" "{_P(DEFAULT_CLAUDE) / "bin" / "git-safe"}"'
 
 
 def run(command, tool_name="Bash", extra=None, raw_stdin=None, env=None):
@@ -167,7 +167,7 @@ class MissingGitSafe(unittest.TestCase):
             rc, out, err = run("git add .", env={"AICJ_CLAUDE_DIR": str(empty_claude)})
             self.assertEqual((rc, out), (0, ""))
 
-    def test_no_rewrite_when_git_safe_not_executable(self):
+    def test_rewrite_when_git_safe_lacks_executable_bit(self):
         import tempfile
         with tempfile.TemporaryDirectory() as tmp:
             claude = _P(tmp) / "claude"
@@ -176,7 +176,8 @@ class MissingGitSafe(unittest.TestCase):
             target.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
             target.chmod(0o644)
             rc, out, err = run("git add .", env={"AICJ_CLAUDE_DIR": str(claude)})
-            self.assertEqual((rc, out), (0, ""))
+            self.assertEqual(rc, 0)
+            self.assertIn(str(target), json.loads(out)["hookSpecificOutput"]["updatedInput"]["command"])
 
 
 class GitSafeSelfSkip(unittest.TestCase):
@@ -189,7 +190,7 @@ class GitSafeSelfSkip(unittest.TestCase):
             fake_bin = _P(tmp) / "bin"
             fake_bin.mkdir()
             # a decoy 'git' that is a copy of git-safe itself: must be skipped
-            shutil.copy(core_bin / "git-safe", fake_bin / "git")
+            os.symlink(core_bin / "git-safe", fake_bin / "git")
             os.chmod(fake_bin / "git", 0o755)
             for tool in ("bash", "cat", "awk", "grep", "sed", "seq", "dirname", "basename", "mktemp", "sleep", "rm", "cp"):
                 src = shutil.which(tool)
@@ -197,7 +198,7 @@ class GitSafeSelfSkip(unittest.TestCase):
                     os.symlink(src, fake_bin / tool)
             real_git = shutil.which("git")
             env = {"PATH": f"{fake_bin}:{os.path.dirname(real_git)}:" + os.environ.get("PATH", "")}
-            proc = subprocess.run([str(core_bin / "git-safe"), "--version"], capture_output=True, text=True, env=env)
+            proc = subprocess.run([sys.executable, str(core_bin / "git-safe"), "--version"], capture_output=True, text=True, env=env)
             self.assertEqual(proc.returncode, 0, proc.stderr)
             self.assertIn("git version", proc.stdout)
 
@@ -207,7 +208,7 @@ class GitSafeSelfSkip(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             fake_bin = _P(tmp) / "bin"
             fake_bin.mkdir()
-            shutil.copy(core_bin / "git-safe", fake_bin / "git")
+            os.symlink(core_bin / "git-safe", fake_bin / "git")
             os.chmod(fake_bin / "git", 0o755)
             for tool in ("bash", "cat", "awk", "grep", "sed", "seq", "dirname", "basename", "mktemp", "sleep", "rm", "cp"):
                 src = shutil.which(tool)
@@ -215,6 +216,6 @@ class GitSafeSelfSkip(unittest.TestCase):
                     os.symlink(src, fake_bin / tool)
             # real git deliberately NOT on PATH: the only 'git' resolves to git-safe itself
             env = {"PATH": str(fake_bin)}
-            proc = subprocess.run([str(core_bin / "git-safe"), "--version"], capture_output=True, text=True, env=env)
+            proc = subprocess.run([sys.executable, str(core_bin / "git-safe"), "--version"], capture_output=True, text=True, env=env)
             self.assertEqual(proc.returncode, 127, (proc.stdout, proc.stderr))
             self.assertIn("no real git", proc.stderr)

@@ -11,6 +11,12 @@ from pathlib import Path
 STATIC_REVIEW = Path(__file__).resolve().with_name("static_review.py")
 
 
+def static_command() -> str:
+    if sys.platform == "win32":
+        return f'"{Path(sys.executable).resolve()}" "{STATIC_REVIEW}" <paths>'
+    return f"python3 {shlex.quote(str(STATIC_REVIEW))} <paths>"
+
+
 def parse_major(value: object) -> int | None:
     if not isinstance(value, str):
         return None
@@ -113,7 +119,7 @@ def detect(project: Path) -> dict:
         "playwright": "@playwright/test" in names or "playwright" in names,
     }
     if valid_package(project):
-        result["static"] = f"python3 {shlex.quote(str(STATIC_REVIEW))} <paths>"
+        result["static"] = static_command()
     return result
 
 

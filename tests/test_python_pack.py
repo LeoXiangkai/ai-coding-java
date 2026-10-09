@@ -82,7 +82,7 @@ def test_detect_django_pip_fixture_fields():
 def test_detect_no_project_defaults_without_failure():
     result = run_detect("no-project")
     assert result == {
-        "commands": {"format_check": "MISSING", "lint": "MISSING", "start": "MISSING", "test": "MISSING", "type_check": "MISSING"},
+        "commands": {"format_check": "MISSING", "lint": "MISSING", "start": "MISSING", "static": "MISSING", "test": "MISSING", "type_check": "MISSING"},
         "entry": None,
         "frameworks": [],
         "migrations": None,

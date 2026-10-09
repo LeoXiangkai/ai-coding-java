@@ -339,15 +339,18 @@ def test_hook_command_works_when_home_contains_spaces(tmp_path: Path) -> None:
     spaced.mkdir()
     ok(run_aicj("install", home=spaced))
     settings = json.loads((spaced / ".claude/settings.json").read_text(encoding="utf-8"))
-    command = settings["hooks"]["PreToolUse"][0]["hooks"][0]["command"]
-    assert "'" in command
-    run = subprocess.run(command, shell=True, capture_output=True, text=True)
+    hook = settings["hooks"]["PreToolUse"][0]["hooks"][0]
+    assert hook["command"] == os.path.abspath(sys.executable)
+    run = subprocess.run([hook["command"], *hook["args"]], input="{}", capture_output=True, text=True)
     assert run.returncode == 0, run.stderr
     strict = run_aicj("install", "--strict", home=spaced)
     ok(strict)
     settings = json.loads((spaced / ".claude/settings.json").read_text(encoding="utf-8"))
-    command = settings["hooks"]["PreToolUse"][0]["hooks"][0]["command"]
-    assert subprocess.run(command, shell=True, capture_output=True, text=True).returncode == 2
+    hook = settings["hooks"]["PreToolUse"][0]["hooks"][0]
+    assert json.loads((spaced / ".claude/aicj/config.json").read_text(encoding="utf-8")) == {"hook_mode": "block"}
+    env = {k: v for k, v in os.environ.items() if k != "AICJ_HOOK_MODE"}
+    blocked = subprocess.run([hook["command"], *hook["args"]], input="{}", capture_output=True, text=True, env=env)
+    assert blocked.returncode == 2, blocked.stderr
 
 
 def test_hook_with_skipped_script_is_not_registered(home: Path) -> None:
@@ -374,7 +377,7 @@ def test_malformed_manifest_hook_is_rejected_by_install_and_uninstall(
     user_payload = {"hooks": {"PreToolUse": [{"matcher": "Bash", "hooks": [{"type": "command", "command": "echo user"}]}]}}
     settings_path.write_text(json.dumps(user_payload), encoding="utf-8")
     ok(run_aicj("install", home=home))
-    assert any("/hooks/aicj/" in row["command"] for row in manifest_of(home)["settings_hooks"])
+    assert any("/hooks/aicj/" in row["args"][0].replace("\\", "/") for row in manifest_of(home)["settings_hooks"])
     victim.write_text(settings_path.read_text(encoding="utf-8"), encoding="utf-8")
     manifest_path = home / ".claude/aicj/manifest.json"
     data = manifest_of(home)
@@ -409,7 +412,7 @@ def test_hook_requires_existing_user_skill_is_not_registered(home: Path) -> None
     clean.mkdir()
     ok(run_aicj("install", home=clean, source=None))
     clean_payload = json.loads((clean / ".claude/settings.json").read_text(encoding="utf-8"))
-    assert any("push-review-gate.py" in hook["command"] for group in clean_payload["hooks"]["PreToolUse"] for hook in group["hooks"])
+    assert any("push-review-gate.py" in " ".join([hook["command"], *(hook.get("args") or [])]) for group in clean_payload["hooks"]["PreToolUse"] for hook in group["hooks"])
     clean_doctor = run_aicj("doctor", home=clean, source=None)
     assert clean_doctor.returncode == 0, clean_doctor.stdout + clean_doctor.stderr
     assert "hook push-review-gate requirements" not in clean_doctor.stdout

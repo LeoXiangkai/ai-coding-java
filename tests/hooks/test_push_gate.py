@@ -2,6 +2,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
@@ -31,7 +32,7 @@ def isolated_aicj_env(tmp_path, monkeypatch):
 def run_hook(stdin: dict, env: dict | None = None) -> subprocess.CompletedProcess[str]:
     env = {**os.environ, **(env or {})}
     return subprocess.run(
-        ["python3", str(HOOK_SCRIPT)],
+        [sys.executable, str(HOOK_SCRIPT)],
         input=json.dumps(stdin),
         text=True,
         stdout=subprocess.PIPE,
@@ -74,7 +75,7 @@ def commit(repo: Path, rel_path: str, content: str, message: str) -> str:
 def record_outcome(repo: Path, log_dir: Path, reviewers: int = 1, gate: str = "single") -> None:
     env = {**os.environ, "AICJ_REVIEW_LOG_DIR": str(log_dir)}
     result = subprocess.run(
-        ["python3", str(SCOPE_SCRIPT), "--target", str(repo), "--outcome",
+        [sys.executable, str(SCOPE_SCRIPT), "--target", str(repo), "--outcome",
          "--reviewers", str(reviewers), "--findings", "0", "--confirmed", "0"],
         env=env,
         text=True,

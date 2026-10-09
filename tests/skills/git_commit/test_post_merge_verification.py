@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
 
-SCRIPT = Path(__file__).resolve().parents[3] / "core" / "skills" / "git-commit" / "scripts" / "post-merge-verification.sh"
+SCRIPT = Path(__file__).resolve().parents[3] / "core" / "skills" / "git-commit" / "scripts" / "post-merge-verification.py"
 
 
 def git(repo: Path, *args: str) -> str:
@@ -40,7 +41,7 @@ def commit_file(repo: Path, name: str, content: str) -> None:
 def decision(repo: Path, fork: str, before: str, after: str, *extra: str) -> list[str]:
     result = subprocess.run(
         [
-            str(SCRIPT),
+            sys.executable, str(SCRIPT),
             "--repo", str(repo),
             "--fork", fork,
             "--baseline-before", before,
@@ -114,7 +115,7 @@ def test_runs_targeted_for_conflict_or_unknown_source(
     if expected.endswith("fallback"):
         result = subprocess.run(
             [
-                str(SCRIPT), "--repo", str(repo), "--fork", fork,
+                sys.executable, str(SCRIPT), "--repo", str(repo), "--fork", fork,
                 "--baseline-before", before, "--baseline-after", after,
                 "--fork-source", "fallback", "--integration-mode", "managed-no-ff",
             ], check=True, capture_output=True, text=True,
