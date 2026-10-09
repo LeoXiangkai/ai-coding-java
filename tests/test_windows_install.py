@@ -57,7 +57,7 @@ def test_windows_launchers_strict_and_codex_skip(home, monkeypatch):
     report, installed = engine.run_install(home, REPO, options(codex=True, codex_hooks=True, strict=True), False)
     launchers = [e for e in installed.entries if e.path.endswith('.cmd')]
     assert launchers and all((home / e.path).read_bytes() == f'@"{os.path.abspath(sys.executable)}" "%~dp0{Path(e.path).stem}" %*\r\n'.encode('utf-8') for e in launchers)
-    assert json.loads((home / '.claude/aicj/config.json').read_text(encoding='utf-8')) == {'hook_mode': 'block'}
+    assert json.loads((home / '.claude/aicj/config.json').read_text(encoding='utf-8')) == {'hook_mode': 'block', 'executor_mode': 'cc'}
     hooks = json.loads((home / '.claude/settings.json').read_text(encoding='utf-8'))['hooks']
     assert all(Path(h['command']).is_absolute() and h['command'] == os.path.abspath(sys.executable) and h['args'] for groups in hooks.values() for g in groups for h in g['hooks'])
     assert not (home / '.codex/hooks.json').exists()
@@ -68,7 +68,7 @@ def test_windows_launchers_strict_and_codex_skip(home, monkeypatch):
     monkeypatch.setattr(engine, 'is_windows', lambda: False)
     engine.run_install(home, FIXTURE, options(), False)
     assert not list(home.rglob('*.cmd'))
-    assert not (home / '.claude/aicj/config.json').exists()
+    assert json.loads((home / '.claude/aicj/config.json').read_text(encoding='utf-8')) == {'hook_mode': 'warn', 'executor_mode': 'cc'}
     engine.run_uninstall(home, False)
     assert files_under(home) == []
 
@@ -87,7 +87,7 @@ def test_generated_config_and_launcher_preserve_user_conflicts(home, monkeypatch
     engine.run_uninstall(home, False)
     assert all(p.read_bytes() == contents for p, contents in before.items())
     engine.run_install(home, REPO, options(strict=True, on_conflict='backup'), False)
-    assert json.loads(config.read_text(encoding='utf-8')) == {'hook_mode': 'block'}
+    assert json.loads(config.read_text(encoding='utf-8')) == {'hook_mode': 'block', 'executor_mode': 'cc'}
     engine.run_uninstall(home, False)
     assert all(p.read_bytes() == contents for p, contents in before.items())
 

@@ -27,6 +27,31 @@ jobs:
       - run: python scripts/sanitize_check.py
       - run: python scripts/template_integrity_check.py
       - run: python scripts/install_roundtrip_check.py
+      - name: Windows PowerShell 5.1 one-click install smoke
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          $selfTestHome = Join-Path $env:RUNNER_TEMP "aicj-home-powershell"
+          $selfTestRepo = Join-Path $env:RUNNER_TEMP "aicj-repo-powershell"
+          powershell -ExecutionPolicy Bypass -File scripts/windows/install.ps1 -Mode cc -NoPrereqs -NoClaude -RepoUrl $env:GITHUB_WORKSPACE -RepoDir $selfTestRepo -HomeDir $selfTestHome
+      - name: Windows PowerShell 7 one-click install smoke
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $cpaDir = Join-Path $env:RUNNER_TEMP "cliproxyapi"
+          pwsh -File "$env:GITHUB_WORKSPACE/scripts/windows/install-cpa.ps1" -InstallDir $cpaDir -NoAutostart
+          $key = (Get-Content (Join-Path $cpaDir "config.yaml") | Where-Object { $_ -match '^\s*-\s*([^\s#]+)' } | Select-Object -First 1) -replace '^\s*-\s*',''
+          $selfTestHome = Join-Path $env:RUNNER_TEMP "aicj-home-pwsh"
+          $selfTestRepo = Join-Path $env:RUNNER_TEMP "aicj-repo-pwsh"
+          pwsh -File "$env:GITHUB_WORKSPACE/scripts/windows/install.ps1" -Mode worker -CpaToken $key -NoPrereqs -NoClaude -RepoUrl $env:GITHUB_WORKSPACE -RepoDir $selfTestRepo -HomeDir $selfTestHome
+          pwsh -File "$env:GITHUB_WORKSPACE/scripts/windows/install.ps1" -Mode cc -NoPrereqs -NoClaude -RepoUrl $env:GITHUB_WORKSPACE -RepoDir $selfTestRepo -HomeDir $selfTestHome
+          pwsh -File "$env:GITHUB_WORKSPACE/scripts/windows/install.ps1" -Mode cc -NoPrereqs -NoClaude -RepoUrl $env:GITHUB_WORKSPACE -RepoDir $selfTestRepo -HomeDir $selfTestHome
+          $raw = [Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes("$env:GITHUB_WORKSPACE/scripts/windows/install.ps1")).TrimStart([char]0xFEFF)
+          & ([scriptblock]::Create($raw)) -Mode cc -NoPrereqs -NoClaude -RepoUrl $env:GITHUB_WORKSPACE -RepoDir (Join-Path $env:RUNNER_TEMP "aicj-repo-iex") -HomeDir (Join-Path $env:RUNNER_TEMP "aicj-home-iex")
+          if ($LASTEXITCODE -ne 0) { throw "iex smoke failed: $LASTEXITCODE" }
+          Write-Host "session-alive"
+          if ($LASTEXITCODE -ne 0) { throw "PowerShell session did not remain usable" }
+          pwsh -File "$env:GITHUB_WORKSPACE/scripts/windows/install-cpa.ps1" -InstallDir $cpaDir -Uninstall -Purge
 
   wsl:
     runs-on: windows-latest

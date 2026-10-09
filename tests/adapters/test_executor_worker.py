@@ -4,6 +4,8 @@ import json
 import os
 import subprocess
 import sys
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
 import pytest
@@ -182,3 +184,86 @@ def test_timeout_returns_124(repo, tmp_path):
     assert result.stdout == ""
     control = worker("--cd", str(repo[1]), "--tier", "high", "x", claude=tmp_path, path=path, env_extra={"AICJ_EXECUTOR_TIMEOUT": ""})
     assert (control.returncode, control.stdout, control.stderr) == (0, "completed\n", "")
+
+
+def _cpa_server(expected_token: str, status: int = 200):
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            if self.path != "/v1/models":
+                self.send_response(404)
+            elif self.headers.get("Authorization") != "Bearer " + expected_token:
+                self.send_response(401)
+            else:
+                self.send_response(status)
+            self.end_headers()
+
+        def log_message(self, _format, *_args):
+            return
+
+    server = HTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    return server
+
+
+def test_claude_cpa_environment_is_isolated_and_engine_runs(repo, tmp_path):
+    server = _cpa_server("test-token")
+    try:
+        fake = tmp_path / "fake-bin"
+        marker = repo[1] / "worker-env.txt"
+        fake_command(fake, "claude", """
+import os
+from pathlib import Path
+Path('worker-env.txt').write_text('BASE=' + os.environ.get('ANTHROPIC_BASE_URL', '') + '\\nCONFIG=' + os.environ.get('CLAUDE_CONFIG_DIR', '') + '\\nKEY=' + os.environ.get('ANTHROPIC_API_KEY', '<missing>') + '\\nNO_PROXY=' + os.environ.get('NO_PROXY', '') + '\\nno_proxy=' + os.environ.get('no_proxy', ''), encoding='utf-8')
+""")
+        path = os.pathsep.join([str(fake), str(git_only_path(tmp_path))])
+        env = {
+            "AICJ_EXECUTOR_BASE_URL": f"http://127.0.0.1:{server.server_port}",
+            "AICJ_EXECUTOR_TOKEN": "test-token",
+            "AICJ_EXECUTOR_CONFIG_DIR": str(tmp_path / "isolated"),
+            "ANTHROPIC_API_KEY": "must-disappear",
+            "CLAUDECODE": "must-disappear",
+        }
+        result = worker("--cd", str(repo[1]), "--tier", "low", "x", claude=tmp_path, path=path, env_extra=env)
+        assert result.returncode == 0, result.stderr
+        text = marker.read_text(encoding="utf-8")
+        assert f"BASE=http://127.0.0.1:{server.server_port}" in text
+        assert f"CONFIG={tmp_path / 'isolated'}" in text
+        assert "KEY=<missing>" in text
+        assert "127.0.0.1" in text and "localhost" in text
+    finally:
+        server.shutdown()
+
+
+def test_claude_cpa_failure_returns_69_without_engine(repo, tmp_path):
+    server = _cpa_server("right-token")
+    try:
+        fake = tmp_path / "fake-bin"
+        marker = repo[1] / "called"
+        fake_command(fake, "claude", f"from pathlib import Path; Path({str(marker)!r}).touch()")
+        path = os.pathsep.join([str(fake), str(git_only_path(tmp_path))])
+        bad = worker("--cd", str(repo[1]), "--tier", "low", "x", claude=tmp_path, path=path, env_extra={
+            "AICJ_EXECUTOR_BASE_URL": f"http://127.0.0.1:{server.server_port}",
+            "AICJ_EXECUTOR_TOKEN": "wrong-token",
+        })
+        assert bad.returncode == 69 and not marker.exists()
+        missing = worker("--cd", str(repo[1]), "--tier", "low", "x", claude=tmp_path, path=path, env_extra={
+            "AICJ_EXECUTOR_BASE_URL": f"http://127.0.0.1:{server.server_port}",
+            "AICJ_EXECUTOR_TOKEN": "",
+        })
+        assert missing.returncode == 69 and not marker.exists()
+    finally:
+        server.shutdown()
+
+
+def test_claude_dry_run_does_not_contact_cpa(repo, tmp_path):
+    server = _cpa_server("test-token", status=500)
+    try:
+        result = worker("--cd", str(repo[1]), "--tier", "low", "--dry-run", "x", claude=tmp_path, env_extra={
+            "AICJ_EXECUTOR_BASE_URL": f"http://127.0.0.1:{server.server_port}",
+            "AICJ_EXECUTOR_TOKEN": "test-token",
+        })
+        assert result.returncode == 0
+        assert f"AICJ_EXECUTOR_BASE_URL=http://127.0.0.1:{server.server_port}" in result.stderr
+    finally:
+        server.shutdown()

@@ -29,7 +29,7 @@ def main() -> int:
         if doctor.returncode != 0 or any(line.startswith(("MISSING", "FAIL")) for line in doctor.stdout.splitlines()):
             return 1
         config = home / ".claude/aicj/config.json"
-        if json.loads(config.read_text(encoding="utf-8")) != {"hook_mode": "block"}:
+        if json.loads(config.read_text(encoding="utf-8")) != {"hook_mode": "block", "executor_mode": "cc"}:
             return 1
         uninstall = run(repo, home, "uninstall")
         if uninstall.returncode != 0:

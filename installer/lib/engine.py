@@ -645,10 +645,11 @@ def _run_install(
     codex_ops = _plan_codex(skills, home, options, ts, report, previous)
     planned = {op.entry.path: op.entry for op in file_ops + codex_ops}
     generated_ops: list[GeneratedPlan] = []
-    if options.strict or _is_owned(previous.get(".claude/aicj/config.json")):
-        config_rel = ".claude/aicj/config.json"
-        mode = "block" if options.strict else "warn"
-        generated_ops.append(_plan_generated(config_rel, f'{{"hook_mode":"{mode}"}}\n'.encode("utf-8"), home, options, previous, ts, report))
+    config_rel = ".claude/aicj/config.json"
+    mode = "block" if options.strict else "warn"
+    executor_mode = "worker" if any(str(name).strip().casefold() == "executor" for name in options.adapters) else "cc"
+    config = json.dumps({"hook_mode": mode, "executor_mode": executor_mode}, ensure_ascii=False, separators=(",", ":")) + "\n"
+    generated_ops.append(_plan_generated(config_rel, config.encode("utf-8"), home, options, previous, ts, report))
     if is_windows():
         for op in file_ops:
             if isinstance(op, FilePlan) and op.entry.path.startswith(".claude/bin/") and op.decision != conflict.SKIPPED:

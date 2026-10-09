@@ -57,6 +57,7 @@ aicj install   [--global | --project <dir>] [--packs auto|java,python,vue] [--ad
 aicj uninstall [--global | --project <dir>] [--dry-run] [--home <dir>]
 aicj status    [--home <dir>]      只读：逐项列出 已装/未装/与仓库不同，并给出 diff 命令
 aicj doctor    [--home <dir>]      只读：PASS / WARN / MISSING / SKIPPED
+aicj selftest  [--home <dir>] [--source <dir>] [--with-claude]  在临时仓库验证安装效果
 ```
 
 - 只用 Python 3 标准库；不创建虚拟环境。
