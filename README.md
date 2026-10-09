@@ -7,6 +7,8 @@
 - **全局层**：`installer/aicj.py` 将语言无关的 `core/`、语言包 `packs/` 和按需选择的 `adapters/` 安装到 `~/.claude`。默认复制，`--link` 使用软链接。`--codex` 额外把 skills 链接到 `~/.agents/skills`。
 - **项目档案层**：`skills/setup-ai-coding/SKILL.md` 初始化目标项目工作区，用 `scripts/init_target_project.py` 写入 `.ai-coding-java/` 和入口 marker。素材来自根 `rules/`、`workflow/`、`templates/`、`docs/`；根 `rules/` 是 Java 8 / Spring Boot 2 项目档案规则，保留供既有项目使用。
 
+> **平台支持：仅支持 macOS / Linux。** Windows 尚未支持：钩子命令写死 `python3` 并使用 POSIX shell 语法，`--link` 与 `--codex` 依赖软链接，`core/bin/git-safe` 等脚本依赖 bash，bin 工具依赖 `#!` 与可执行位。
+
 安装行为以[全局安装设计](docs/global-install-design.md)为准；项目规则从[规则索引](docs/rule-index.md)进入。技能来源见[运行时边界](docs/runtime-skill-boundary.md)，项目注入细节见[使用指南](USAGE.md)。
 
 ## 目录地图
