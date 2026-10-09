@@ -1,10 +1,11 @@
-﻿# Parameters: -RepoDir -HomeDir -NoPrereqs -NoClaude -RepoUrl -Mode -CpaUrl -CpaToken -CpaDir -InstallCpa -Adapters
+﻿# Parameters: -RepoDir -HomeDir -NoPrereqs -NoClaude -NoCcLauncher -RepoUrl -Mode -CpaUrl -CpaToken -CpaDir -InstallCpa -Adapters
 [CmdletBinding()]
 param(
     [string]$RepoDir,
     [string]$HomeDir,
     [switch]$NoPrereqs,
     [switch]$NoClaude,
+    [switch]$NoCcLauncher,
     [string]$RepoUrl = "https://github.com/LeoXiangkai/ai-coding-java.git",
     [ValidateSet("cc", "worker")]
     [string]$Mode = "cc",
@@ -99,6 +100,50 @@ function Test-Cpa([string]$Url, [string]$Token) {
     }
 }
 
+function Install-CcLauncher {
+    if ($HomeDir) {
+        Write-Host "沙箱模式（-HomeDir）不创建 cc 启动器"
+        return
+    }
+    if ($NoCcLauncher) { return }
+
+    $claudeCommand = Get-Command claude -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+    if (-not $claudeCommand) {
+        Write-Host "未找到 claude，跳过 cc 启动器；安装 Claude Code 后重跑本脚本"
+        return
+    }
+
+    $claudePath = if ($claudeCommand.Source) { $claudeCommand.Source } else { $claudeCommand.Path }
+    if ([string]::IsNullOrWhiteSpace($claudePath)) {
+        Write-Host "未找到 claude，跳过 cc 启动器；安装 Claude Code 后重跑本脚本"
+        return
+    }
+    $target = Join-Path (Split-Path -Parent $claudePath) "cc.cmd"
+    $content = "@claude --dangerously-skip-permissions %*"
+    try {
+        if (Test-Path -LiteralPath $target) {
+            $existing = [IO.File]::ReadAllText($target)
+            if ($existing.Trim() -eq $content) {
+                Write-Host "cc 启动器已存在"
+            } else {
+                Write-Warning "$target 已存在且内容不同，未覆盖"
+            }
+        } else {
+            [IO.File]::WriteAllText($target, "$content`r`n", [Text.Encoding]::ASCII)
+            $ccCommand = Get-Command cc -ErrorAction SilentlyContinue | Select-Object -First 1
+            $ccPath = if ($ccCommand) { if ($ccCommand.Source) { $ccCommand.Source } else { $ccCommand.Path } } else { "" }
+            $targetFullPath = [IO.Path]::GetFullPath($target)
+            $ccFullPath = if ([string]::IsNullOrWhiteSpace($ccPath)) { "" } else { [IO.Path]::GetFullPath($ccPath) }
+            if ($ccFullPath -and $ccFullPath -ine $targetFullPath) {
+                Write-Warning "PATH 中的 cc 指向 $ccPath，请改用 $target 或调整 PATH"
+            }
+            Write-Host "已创建 cc 启动器：$target（等价于 claude --dangerously-skip-permissions）"
+        }
+    } catch {
+        Write-Warning "无法写入 $target：$($_.Exception.Message)；可手动创建"
+    }
+}
+
 try {
     if (-not $RepoDir) {
         if ($PSScriptRoot) {
@@ -181,6 +226,7 @@ try {
         if ($adapterNames.Count -gt 0) { $installArgs += "--adapters"; $installArgs += (($adapterNames | Select-Object -Unique) -join ",") }
         & py -3 installer/aicj.py @installArgs
         Assert-ExitCode "aicj 安装"
+        Install-CcLauncher
         $selftestArgs = @("selftest") + $homeArgs
         if (-not $NoClaude) { $selftestArgs += "--with-claude" }
         & py -3 installer/aicj.py @selftestArgs

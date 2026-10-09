@@ -81,6 +81,8 @@ powershell -ExecutionPolicy Bypass -File scripts\windows\install.ps1
 
 脚本会检查并安装前置工具、更新或克隆仓库、执行 `install`，再运行 `selftest`。默认 `-Mode cc`，B/C 档使用 Claude Code 子代理；需要让执行体经本机 CPA 使用其他后端或更便宜模型时选 `-Mode worker -CpaToken <key>`，它会安装 executor 适配并先检查 CPA。相同账号场景用 cc 更快更省。`-Mode worker` 未传 token 时交互读取，非交互会话会报错；`-InstallCpa` 可先安装本机 CLIProxyAPI。selftest 中 cc 模式不适用的 worker 项显示 `N/A`，不计入 SKIP。
 
+默认会在 `claude` 同目录创建 `cc.cmd`（等价于 `claude --dangerously-skip-permissions`，跳过权限确认但 aicj 钩子照常生效）。用 `-NoCcLauncher` 关闭；`-HomeDir` 时不创建。它不随 `aicj uninstall` 删除，需要时手动删 `cc.cmd`。
+
 CPA 可单独安装（不会默认登录任何服务商）：
 
 ```powershell

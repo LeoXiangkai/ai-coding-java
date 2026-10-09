@@ -199,8 +199,10 @@ def test_windows_script_has_bom_and_frozen_parameters() -> None:
     data = script.read_bytes()
     text = data.decode("utf-8-sig")
     assert data.startswith(b"\xef\xbb\xbf")
-    for parameter in ("-NoPrereqs", "-NoClaude", "-HomeDir", "-Mode", "ValidateSet(\"cc\", \"worker\")"):
+    for parameter in ("-NoPrereqs", "-NoClaude", "-NoCcLauncher", "-HomeDir", "-Mode", "ValidateSet(\"cc\", \"worker\")"):
         assert parameter in text
+    assert "@claude --dangerously-skip-permissions %*" in text
+    assert "-CommandType Application" in text
     assert '@("--adapters",' not in text
     assert "-NoUserEnv" in text and '"-InstallDir"' in text and "$CpaDir" in text
 
