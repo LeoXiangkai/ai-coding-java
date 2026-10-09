@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import configparser
 import os
 import shutil
 import subprocess
 from pathlib import Path
 
 from .util import UserError, abspath
+
+WSL_CONF = Path("/etc/wsl.conf")
 
 
 def is_wsl() -> bool:
@@ -22,7 +25,15 @@ def is_wsl() -> bool:
 
 def _mount_root() -> Path:
     configured = os.environ.get("AICJ_WSL_MOUNT_ROOT", "").strip()
-    return abspath(configured or "/mnt")
+    if configured:
+        return abspath(configured)
+    parser = configparser.ConfigParser()
+    try:
+        parser.read(WSL_CONF, encoding="utf-8")
+        root = parser.get("automount", "root", fallback="").strip().strip("'\"").strip()
+    except (configparser.Error, OSError, UnicodeError):
+        root = ""
+    return abspath(root or "/mnt")
 
 
 def windows_mount(path: str | Path) -> bool:

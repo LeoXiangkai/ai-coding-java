@@ -45,6 +45,17 @@ def test_windows_mount_and_override(monkeypatch: pytest.MonkeyPatch, tmp_path: P
     assert not wsl.windows_mount(root / "data" / "work")
 
 
+def test_windows_mount_reads_wsl_conf_root(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    conf = tmp_path / "wsl.conf"
+    monkeypatch.delenv("AICJ_WSL_MOUNT_ROOT", raising=False)
+    monkeypatch.setattr(wsl, "WSL_CONF", conf)
+    conf.write_text("[automount]\nroot = /\n", encoding="utf-8")
+    assert wsl.windows_mount("/c/Users/x")
+    assert not wsl.windows_mount("/home/x")
+    conf.write_text('[automount]\nroot = "/win/"\n', encoding="utf-8")
+    assert wsl.windows_mount("/win/d/x")
+
+
 def _fake_wsl_commands(tmp_path: Path, record: Path, mount: Path, exit_code: int = 17, probe: str = "True") -> Path:
     commands = tmp_path / "commands"
     fake_command(
@@ -75,7 +86,7 @@ else:
     return commands
 
 
-def _run_handoff(tmp_path: Path, *extra: str, home: Path, source: Path | None = None, env_extra: dict[str, str] | None = None):
+def _run_handoff(tmp_path: Path, *extra: str, home: Path | None, source: Path | None = None, command: str = "install", env_extra: dict[str, str] | None = None):
     record = tmp_path / "handoff.txt"
     mount = tmp_path / "mnt"
     commands = _fake_wsl_commands(tmp_path, record, mount)
@@ -86,7 +97,9 @@ def _run_handoff(tmp_path: Path, *extra: str, home: Path, source: Path | None = 
     env["PATH"] = os.pathsep.join((str(commands), str(Path(git).parent)))
     if env_extra:
         env.update(env_extra)
-    args = [sys.executable, str(AICJ), "install", "--home", str(home)]
+    args = [sys.executable, str(AICJ), command]
+    if home is not None:
+        args += ["--home", str(home)]
     if source is not None:
         args += ["--source", str(source)]
     args += list(extra)
@@ -109,9 +122,12 @@ def test_handoff_converts_paths_preserves_arguments_and_status(tmp_path: Path) -
 
 @pytest.mark.skipif(os.name == "nt", reason="uses POSIX fake wslpath and py.exe commands")
 def test_non_windows_home_does_not_handoff(tmp_path: Path) -> None:
-    result, record = _run_handoff(tmp_path, "--dry-run", home=tmp_path / "home", source=tmp_path / "source")
-    assert result.returncode == 2
+    source = tmp_path / "source"
+    shutil.copytree(REPO / "tests/fixtures/fake-component", source)
+    result, record = _run_handoff(tmp_path, "--dry-run", home=tmp_path / "home", source=source)
+    assert result.returncode == 0
     assert not record.exists()
+    assert "已转交" not in result.stderr
 
 
 @pytest.mark.skipif(os.name == "nt", reason="uses POSIX fake wslpath and py.exe commands")
@@ -119,6 +135,47 @@ def test_handoff_guard_prevents_recursion(tmp_path: Path) -> None:
     result, record = _run_handoff(tmp_path, "--dry-run", home=tmp_path / "mnt" / "C" / "home", env_extra={"AICJ_WSL_HANDOFF": "1"})
     assert result.returncode == 0
     assert not record.exists()
+    assert "已转交" not in result.stderr
+
+
+@pytest.mark.skipif(os.name == "nt", reason="uses POSIX fake wslpath and py.exe commands")
+@pytest.mark.parametrize("command", ["uninstall", "doctor"])
+def test_handoff_converts_equals_paths_and_commands(tmp_path: Path, command: str) -> None:
+    mount = tmp_path / "mnt"
+    home = mount / "C" / "Users" / "x" / "aicj"
+    extra = ("--home=" + str(home),) if command == "doctor" else ("--home=" + str(home), "--source=" + str(mount / "C" / "repo"))
+    result, record = _run_handoff(tmp_path, *extra, home=None, command=command)
+    assert result.returncode == 17
+    lines = record.read_text(encoding="utf-8").splitlines()
+    assert lines[3] == command
+    assert any(r"C:\Users\x\aicj" in line for line in lines)
+
+
+@pytest.mark.skipif(os.name == "nt", reason="uses POSIX fake wslpath and py.exe commands")
+def test_handoff_drops_link_and_adds_home_from_environment(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    mount = tmp_path / "mnt"
+    home = mount / "C" / "Users" / "x" / "aicj"
+    monkeypatch.setenv("HOME", str(home))
+    result, record = _run_handoff(tmp_path, "--link", "--dry-run", home=None)
+    assert result.returncode == 17
+    lines = record.read_text(encoding="utf-8").splitlines()
+    assert "--link" not in lines[3:]
+    assert lines[4:] == ["--dry-run", "--home", r"C:\Users\x\aicj"]
+    assert "不支持 --link" in result.stderr
+
+
+@pytest.mark.skipif(os.name == "nt", reason="uses POSIX fake wslpath and py.exe commands")
+def test_handoff_converts_relative_home(tmp_path: Path) -> None:
+    mount = tmp_path / "mnt"
+    cwd = mount / "C" / "work"
+    cwd.mkdir(parents=True)
+    record = tmp_path / "handoff.txt"
+    commands = _fake_wsl_commands(tmp_path, record, mount)
+    env = {k: v for k, v in os.environ.items() if not k.startswith("AICJ_")}
+    env.update({"WSL_DISTRO_NAME": "Ubuntu", "AICJ_WSL_MOUNT_ROOT": str(mount), "PATH": os.pathsep.join((str(commands), str(Path(shutil.which("git")).parent)))})
+    result = subprocess.run([sys.executable, str(AICJ), "install", "--home", "../home", "--dry-run"], cwd=cwd, capture_output=True, text=True, encoding="utf-8", env=env)
+    assert result.returncode == 17
+    assert r"C:\home" in record.read_text(encoding="utf-8")
 
 
 def test_python_exe_fallback_and_missing_python(monkeypatch: pytest.MonkeyPatch) -> None:

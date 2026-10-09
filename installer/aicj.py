@@ -23,10 +23,10 @@ for _stream in (sys.stdout, sys.stderr):
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="aicj", description="ai-coding-java global installer")
+    parser = argparse.ArgumentParser(prog="aicj", description="ai-coding-java global installer", allow_abbrev=False)
     sub = parser.add_subparsers(dest="command", required=True)
 
-    install = sub.add_parser("install", help="install components into the global home")
+    install = sub.add_parser("install", help="install components into the global home", allow_abbrev=False)
     _common(install)
     _scope(install)
     install.add_argument("--packs", default="auto", help="auto or comma separated pack names")
@@ -46,15 +46,15 @@ def build_parser() -> argparse.ArgumentParser:
     install.add_argument("--on-conflict", choices=("skip", "backup"), default="skip")
     install.add_argument("--dry-run", action="store_true")
 
-    uninstall = sub.add_parser("uninstall", help="remove what the manifest records as ours")
+    uninstall = sub.add_parser("uninstall", help="remove what the manifest records as ours", allow_abbrev=False)
     _common(uninstall)
     _scope(uninstall)
     uninstall.add_argument("--dry-run", action="store_true")
 
-    status = sub.add_parser("status", help="read-only install report")
+    status = sub.add_parser("status", help="read-only install report", allow_abbrev=False)
     _common(status)
 
-    check = sub.add_parser("doctor", help="read-only health report")
+    check = sub.add_parser("doctor", help="read-only health report", allow_abbrev=False)
     _common(check)
     return parser
 
@@ -180,8 +180,8 @@ def _maybe_handoff(argv: list[str], args: argparse.Namespace) -> int | None:
     if not wsl.is_wsl():
         return None
 
-    home = _home(args)
-    source = abspath(args.source) if args.source else REPO_ROOT
+    home = _home(args).resolve()
+    source = (abspath(args.source) if args.source else REPO_ROOT).resolve()
     if wsl.windows_mount(source):
         print(
             "warning: WSL 仓库位于 Windows 盘，读写较慢，换行符与权限位可能出问题；"
@@ -198,11 +198,17 @@ def _maybe_handoff(argv: list[str], args: argparse.Namespace) -> int | None:
     win_python, prefix = found
     paths = {
         "--home": wsl.wslpath_windows(home),
-        "--source": wsl.wslpath_windows(abspath(args.source)) if args.source else "",
-        "--project": wsl.wslpath_windows(abspath(args.project)) if getattr(args, "project", None) else "",
+        "--source": wsl.wslpath_windows(source) if args.source else "",
+        "--project": wsl.wslpath_windows(abspath(args.project).resolve()) if getattr(args, "project", None) else "",
     }
     paths = {option: value for option, value in paths.items() if value}
     forwarded, home_seen = _replace_path_arguments(argv, paths)
+    if "--link" in forwarded:
+        forwarded = [token for token in forwarded if token != "--link"]
+        print(
+            "WSL 转交到 Windows 时不支持 --link（源在 \\wsl.localhost 下，发行版关闭即失效），已改为复制安装",
+            file=sys.stderr,
+        )
     if not home_seen:
         forwarded.extend(("--home", paths["--home"]))
     win_script = wsl.wslpath_windows(Path(__file__).resolve())

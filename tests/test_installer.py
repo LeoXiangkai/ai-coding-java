@@ -226,6 +226,12 @@ def test_dry_run_install_and_uninstall_write_nothing(home: Path) -> None:
     assert snapshot(home) == installed
 
 
+def test_install_rejects_abbreviated_home_option(tmp_path: Path) -> None:
+    result = run_aicj("install", "--hom", str(tmp_path / "home"), home=tmp_path / "ignored")
+    assert result.returncode == 2
+    assert "usage:" in result.stderr
+
+
 def test_status_and_doctor_after_install(home: Path) -> None:
     assert run_aicj("install", home=home).returncode == 0
     status = run_aicj("status", home=home)

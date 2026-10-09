@@ -57,13 +57,20 @@ jobs:
           windows_userprofile="$(cmd.exe /c echo %USERPROFILE% | tr -d '\r')"
           windows_home="$(wslpath -u "$windows_userprofile")/aicj-wsl-smoke"
           stderr_file="$(mktemp)"
+          stdout_file="$(mktemp)"
           set +e
-          python3 ~/repo/installer/aicj.py install --home "$windows_home" --dry-run 2>"$stderr_file"
+          python3 ~/repo/installer/aicj.py install --home "$windows_home" --dry-run >"$stdout_file" 2>"$stderr_file"
           status=$?
           set -e
+          cat "$stdout_file"
           cat "$stderr_file" >&2
           if [ "$status" -ne 0 ]; then
             echo "Windows Python interop is unavailable or the WSL handoff failed on this runner" >&2
+            echo "stdout:" >&2
+            cat "$stdout_file" >&2
+            echo "stderr:" >&2
+            cat "$stderr_file" >&2
             exit 1
           fi
           grep -F "已转交" "$stderr_file"
+          grep -F "aicj-wsl-smoke" "$stdout_file" | grep -F '\'
