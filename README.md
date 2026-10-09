@@ -65,17 +65,31 @@ python3 installer/aicj.py uninstall
 
 ### Windows 普通电脑安装
 
-不需要编程环境，在 PowerShell 中执行。先装 Python、Git 和 Claude Code，装完重开 PowerShell：
+首选一键脚本。在 PowerShell 中运行下面一行即可自动安装 Git、Python、Claude Code，获取仓库，安装 aicj 并执行 selftest。远程 `iex` 写法用 scriptblock，执行结束后不会关闭当前窗口：
 
 ```powershell
-winget install Python.Python.3.12
-winget install Git.Git
-irm https://claude.ai/install.ps1 | iex
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/LeoXiangkai/ai-coding-java/main/scripts/windows/install.ps1)))
 ```
 
-- 没有 winget 时，从 python.org 和 git-scm.com 下载安装包，按默认选项安装。
-- 用 python.org 版 Python，不要用 Microsoft Store 版。钩子记录的是 Python 绝对路径，Store 版路径会随更新变化，导致钩子失效；装好后也不要卸载或挪动这个 Python。
-- Git for Windows 是必需的：Windows 版 Claude Code 依赖它，git 保护功能也要用它。
+带参数时同样保留 scriptblock 调用形式，例如：`& ([scriptblock]::Create((irm https://raw.githubusercontent.com/LeoXiangkai/ai-coding-java/main/scripts/windows/install.ps1))) -Mode worker -CpaToken $env:CPA_TOKEN`。
+
+已经克隆仓库时，在仓库根目录运行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\windows\install.ps1
+```
+
+脚本会检查并安装前置工具、更新或克隆仓库、执行 `install`，再运行 `selftest`。默认 `-Mode cc`，B/C 档使用 Claude Code 子代理；需要让执行体经本机 CPA 使用其他后端或更便宜模型时选 `-Mode worker -CpaToken <key>`，它会安装 executor 适配并先检查 CPA。相同账号场景用 cc 更快更省。`-Mode worker` 未传 token 时交互读取，非交互会话会报错；`-InstallCpa` 可先安装本机 CLIProxyAPI。selftest 中 cc 模式不适用的 worker 项显示 `N/A`，不计入 SKIP。
+
+CPA 可单独安装（不会默认登录任何服务商）：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\windows\install-cpa.ps1
+```
+
+使用各服务商账号须遵守其服务条款。
+
+手动安装：没有 winget 时，从 python.org 和 git-scm.com 下载安装包，按默认选项安装，再执行 `py -3 installer/aicj.py install`。Git for Windows 是必需的。
 
 `py -3 --version`（需 3.9+）、`git --version`、`claude --version` 都能打印版本后，下载仓库并安装：
 
@@ -86,6 +100,7 @@ cd ai-coding-java
 py -3 installer/aicj.py install --dry-run
 py -3 installer/aicj.py install
 py -3 installer/aicj.py doctor
+py -3 installer/aicj.py selftest
 ```
 
 - 克隆失败时，可在 GitHub 页面用 Code → Download ZIP 下载并解压，再进入解压目录执行。
@@ -109,6 +124,7 @@ py -3 installer/aicj.py doctor
 | `--enable-hook <name>` | 点名注册可选 hook，可重复；未点名脚本仍安装但不注册 |
 | `--codex` | 额外安装 Codex skill 链接 |
 | `--codex-hooks` | 显式合并 Codex hooks.json |
+| `selftest` | 在临时仓库执行安装行为自检 |
 
 参数适用命令以对应 `--help` 为准。
 

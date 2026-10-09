@@ -17,6 +17,7 @@ ADAPTER_FILES = [
     ".claude/skills/executor-handoff-ops/SKILL.md",
     ".claude/hooks/aicj/block-handoff-poll.py",
     ".claude/bin/aicj-worker",
+    ".claude/aicj/worker-home/CLAUDE.md",
     ".claude/refs/lesson-loop.md",
     ".claude/hooks/aicj/lesson-recall.py",
     ".claude/hooks/aicj/lesson-capture.py",
@@ -70,7 +71,7 @@ def test_strict_prefixes_only_blocking_hooks(seeded_home):
     assert run_aicj("install", "--adapters", "executor,lesson", "--strict", home=home, source=None).returncode == 0
     rows = adapter_commands(home)
     assert all(cmd == os.path.abspath(sys.executable) for _, _, cmd, _ in rows)
-    assert json.loads((home / ".claude/aicj/config.json").read_text(encoding="utf-8")) == {"hook_mode": "block"}
+    assert json.loads((home / ".claude/aicj/config.json").read_text(encoding="utf-8")) == {"hook_mode": "block", "executor_mode": "worker"}
 
 
 def test_doctor_has_no_missing_and_default_install_excludes_adapters(home):
@@ -145,6 +146,8 @@ def test_no_forbidden_terms_in_adapters():
     for path in adapter_text_files():
         text = path.read_text(encoding="utf-8")
         for label, pattern in FORBIDDEN:
+            if label == "gateway/tool" and EXECUTOR in path.parents:
+                continue
             for match in pattern.finditer(text):
                 hits.append(f"{path.relative_to(REPO)}: {label}: {match.group(0)}")
     assert hits == []

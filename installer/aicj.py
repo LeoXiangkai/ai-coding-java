@@ -10,6 +10,7 @@ from pathlib import Path
 
 from lib import doctor as doctor_mod
 from lib import engine, index, manifest
+from lib import selftest as selftest_mod
 from lib.util import UserError, abspath
 from lib import wsl
 
@@ -56,6 +57,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     check = sub.add_parser("doctor", help="read-only health report", allow_abbrev=False)
     _common(check)
+
+    selftest = sub.add_parser("selftest", help="verify installed components in disposable repositories", allow_abbrev=False)
+    _common(selftest)
+    selftest.add_argument("--with-claude", action="store_true", help="also run the Claude Code end-to-end check")
     return parser
 
 
@@ -107,7 +112,14 @@ def cmd_install(args: argparse.Namespace) -> int:
         return 0
 
     packs = index.resolve_packs(args.packs, Path.cwd(), index.available_names(source, "pack"), not args.project)
-    adapters = [part.strip() for part in args.adapters.split(",") if part.strip()]
+    adapters = []
+    seen_adapters = set()
+    for part in args.adapters.split(","):
+        name = part.strip()
+        key = name.casefold()
+        if name and key not in seen_adapters:
+            adapters.append(name)
+            seen_adapters.add(key)
     options = manifest.Options(
         packs=packs,
         adapters=adapters,
@@ -147,6 +159,10 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     counts = Counter(status for status, _name, _detail in checks)
     print("summary          " + " ".join(f"{name}={counts[name]}" for name in sorted(counts)))
     return code
+
+
+def cmd_selftest(args: argparse.Namespace) -> int:
+    return selftest_mod.run_selftest(_home(args), _source(args, None), args.with_claude)
 
 
 def _replace_path_arguments(argv: list[str], values: dict[str, str]) -> tuple[list[str], bool]:
@@ -223,6 +239,7 @@ COMMANDS = {
     "uninstall": cmd_uninstall,
     "status": cmd_status,
     "doctor": cmd_doctor,
+    "selftest": cmd_selftest,
 }
 
 

@@ -8,7 +8,7 @@
     "skills": [{"source": "skills/executor-handoff-ops", "target": "skills/executor-handoff-ops"}],
     "hooks": [{"source": "hooks/block-handoff-poll.py", "target": "hooks/aicj/block-handoff-poll.py"}],
     "bin": [{"source": "bin/aicj-worker", "target": "bin/aicj-worker"}],
-    "templates": []
+    "templates": [{"source": "worker-home/CLAUDE.md", "target": "aicj/worker-home/CLAUDE.md"}]
   },
   "hooks": [
     {"event": "PreToolUse", "matcher": "Bash", "script": "hooks/aicj/block-handoff-poll.py", "blocking": true},

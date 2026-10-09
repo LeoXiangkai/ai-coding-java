@@ -349,7 +349,7 @@ def test_hook_command_works_when_home_contains_spaces(tmp_path: Path) -> None:
     ok(strict)
     settings = json.loads((spaced / ".claude/settings.json").read_text(encoding="utf-8"))
     hook = settings["hooks"]["PreToolUse"][0]["hooks"][0]
-    assert json.loads((spaced / ".claude/aicj/config.json").read_text(encoding="utf-8")) == {"hook_mode": "block"}
+    assert json.loads((spaced / ".claude/aicj/config.json").read_text(encoding="utf-8")) == {"hook_mode": "block", "executor_mode": "cc"}
     env = {k: v for k, v in os.environ.items() if k != "AICJ_HOOK_MODE"}
     blocked = subprocess.run([hook["command"], *hook["args"]], input="{}", capture_output=True, text=True, encoding="utf-8", env=env)
     assert blocked.returncode == 2, blocked.stderr

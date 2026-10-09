@@ -284,7 +284,7 @@ def test_codex_links_skills_and_strict_configures_hook(home: Path) -> None:
     command = merged["hooks"]["PreToolUse"][0]["hooks"][0]
     assert command["command"] == os.path.abspath(sys.executable)
     assert "/hooks/aicj/" in command["args"][0].replace("\\", "/")
-    assert json.loads((home / ".claude/aicj/config.json").read_text(encoding="utf-8")) == {"hook_mode": "block"}
+    assert json.loads((home / ".claude/aicj/config.json").read_text(encoding="utf-8")) == {"hook_mode": "block", "executor_mode": "cc"}
 
     codex_hooks = home / ".codex/hooks.json"
     if os.name == "nt":

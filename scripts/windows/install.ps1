@@ -1,0 +1,172 @@
+﻿# Parameters: -RepoDir -HomeDir -NoPrereqs -NoClaude -RepoUrl -Mode -CpaUrl -CpaToken -InstallCpa -Adapters
+[CmdletBinding()]
+param(
+    [string]$RepoDir,
+    [string]$HomeDir,
+    [switch]$NoPrereqs,
+    [switch]$NoClaude,
+    [string]$RepoUrl = "https://github.com/LeoXiangkai/ai-coding-java.git",
+    [ValidateSet("cc", "worker")]
+    [string]$Mode = "cc",
+    [string]$CpaUrl = "http://127.0.0.1:8317",
+    [string]$CpaToken,
+    [switch]$InstallCpa,
+    [string]$Adapters = ""
+)
+
+$ErrorActionPreference = "Stop"
+
+function Refresh-Path {
+    $machine = [Environment]::GetEnvironmentVariable("Path", "Machine")
+    $user = [Environment]::GetEnvironmentVariable("Path", "User")
+    $parts = @($machine, $user, $env:Path) | Where-Object { $_ }
+    $env:Path = ($parts | Select-Object -Unique) -join [IO.Path]::PathSeparator
+}
+
+function Install-WingetPackage([string]$Id) {
+    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+        throw "未找到 winget。请先手动安装 $Id：Git https://git-scm.com/download/win；Python https://www.python.org/downloads/windows/"
+    }
+    & winget install -e --id $Id --silent --accept-source-agreements --accept-package-agreements
+    if ($LASTEXITCODE -ne 0) { throw "winget 安装 $Id 失败，退出码 $LASTEXITCODE" }
+    Refresh-Path
+}
+
+function Assert-ExitCode([string]$Action) {
+    if ($LASTEXITCODE -ne 0) { throw "$Action 失败，退出码 $LASTEXITCODE" }
+}
+
+function Complete-Script([int]$Code) {
+    if ($PSCommandPath) {
+        exit $Code
+    }
+    $global:LASTEXITCODE = $Code
+    return
+}
+
+function Set-SessionOrUser([string]$Name, [string]$Value, [bool]$Explicit) {
+    if ($HomeDir) {
+        [Environment]::SetEnvironmentVariable($Name, $Value, "Process")
+        return
+    }
+    $existing = [Environment]::GetEnvironmentVariable($Name, "User")
+    if ($Explicit -or [string]::IsNullOrWhiteSpace($existing)) {
+        [Environment]::SetEnvironmentVariable($Name, $Value, "User")
+        [Environment]::SetEnvironmentVariable($Name, $Value, "Process")
+    } else {
+        $envValue = [Environment]::GetEnvironmentVariable($Name, "Process")
+        if ([string]::IsNullOrWhiteSpace($envValue)) { [Environment]::SetEnvironmentVariable($Name, $existing, "Process") }
+        Write-Host "$Name 已存在，保留现值。"
+    }
+}
+
+function Test-Cpa([string]$Url, [string]$Token) {
+    if ([string]::IsNullOrWhiteSpace($Token)) { throw "worker 模式需要 CPA token；请传 -CpaToken 或设置用户级 AICJ_EXECUTOR_TOKEN" }
+    try {
+        $response = Invoke-WebRequest -Uri ($Url.TrimEnd("/") + "/v1/models") -Headers @{ Authorization = "Bearer $Token" } -UseBasicParsing -TimeoutSec 3
+        if ([int]$response.StatusCode -ne 200) { throw "HTTP $($response.StatusCode)" }
+    } catch {
+        throw "CPA 不可达：请先启动 CPA 或改用 -Mode cc。$($_.Exception.Message)"
+    }
+}
+
+try {
+    if (-not $RepoDir) {
+        if ($PSScriptRoot) {
+            $RepoDir = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+        } else {
+            $RepoDir = Join-Path $HOME "src\ai-coding-java"
+        }
+    }
+    $RepoDir = [IO.Path]::GetFullPath($RepoDir)
+
+    if (-not $NoPrereqs) {
+        if (-not (Get-Command git -ErrorAction SilentlyContinue)) { Install-WingetPackage "Git.Git" }
+        $python = Get-Command py -ErrorAction SilentlyContinue
+        if (-not $python) { Install-WingetPackage "Python.Python.3.12" }
+        & py -3 -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 9) else 1)"
+        if ($LASTEXITCODE -ne 0) { Install-WingetPackage "Python.Python.3.12" }
+        & py -3 -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 9) else 1)"
+        Assert-ExitCode "Python 3.9+ 版本检查"
+        if (-not (Get-Command claude -ErrorAction SilentlyContinue) -and -not $NoClaude) {
+            Write-Host "未找到 Claude Code，正在运行官方安装器..."
+            Invoke-Expression (Invoke-RestMethod https://claude.ai/install.ps1)
+            $localBin = Join-Path $HOME ".local\bin"
+            if (Test-Path $localBin) { $env:Path = "$localBin$([IO.Path]::PathSeparator)$env:Path" }
+        }
+    }
+
+    if (Test-Path (Join-Path $RepoDir ".git")) {
+        & git -C $RepoDir pull --ff-only
+        Assert-ExitCode "仓库更新"
+    } else {
+        $parent = Split-Path $RepoDir -Parent
+        if (-not (Test-Path $parent)) { New-Item -ItemType Directory -Path $parent -Force | Out-Null }
+        & git clone $RepoUrl $RepoDir
+        Assert-ExitCode "仓库克隆"
+    }
+
+    if ($Mode -eq "worker") {
+        if ($InstallCpa) {
+            $cpaScript = Join-Path $RepoDir "scripts\windows\install-cpa.ps1"
+            if (-not (Test-Path $cpaScript)) { throw "找不到 install-cpa.ps1" }
+            $port = ([Uri]$CpaUrl).Port
+            & powershell -ExecutionPolicy Bypass -File $cpaScript -Port $port
+            Assert-ExitCode "CPA 安装"
+        }
+        $explicitToken = $PSBoundParameters.ContainsKey("CpaToken")
+        $userToken = [Environment]::GetEnvironmentVariable("AICJ_EXECUTOR_TOKEN", "User")
+        $token = if ($explicitToken) { $CpaToken } elseif (-not [string]::IsNullOrWhiteSpace($userToken)) { $userToken } else { "" }
+        if ([string]::IsNullOrWhiteSpace($token)) {
+            if ($env:CI -or [Console]::IsInputRedirected) {
+                throw "非交互会话未提供 CPA token；请传 -CpaToken 或改用 -Mode cc"
+            }
+            $secure = Read-Host "请输入 CPA token" -AsSecureString
+            $ptr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
+            try { $token = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr) } finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ptr) }
+        }
+        Test-Cpa $CpaUrl $token
+        Set-SessionOrUser "AICJ_EXECUTOR_BASE_URL" $CpaUrl.TrimEnd("/") $PSBoundParameters.ContainsKey("CpaUrl")
+        Set-SessionOrUser "AICJ_EXECUTOR_TOKEN" $token $explicitToken
+        foreach ($model in @(@("AICJ_EXECUTOR_MODEL_HIGH", "opus"), @("AICJ_EXECUTOR_MODEL_MID", "sonnet"), @("AICJ_EXECUTOR_MODEL_LOW", "haiku"))) {
+            $current = [Environment]::GetEnvironmentVariable($model[0], "User")
+            if ([string]::IsNullOrWhiteSpace($current)) {
+                Set-SessionOrUser $model[0] $model[1] $false
+            } else {
+                [Environment]::SetEnvironmentVariable($model[0], $current, "Process")
+                Write-Host "$($model[0]) 已存在，保留现值：$current"
+            }
+        }
+    }
+
+    Push-Location $RepoDir
+    try {
+        $homeArgs = @()
+        if ($HomeDir) { $homeArgs = @("--home", $HomeDir) }
+        $adapterNames = @($Adapters -split "," | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+        if ($Mode -eq "worker" -and $adapterNames -notcontains "executor") { $adapterNames += "executor" }
+        $installArgs = @("install") + $homeArgs
+        if ($adapterNames.Count -gt 0) { $installArgs += @("--adapters", ($adapterNames | Select-Object -Unique) -join ",") }
+        & py -3 installer/aicj.py @installArgs
+        Assert-ExitCode "aicj 安装"
+        $selftestArgs = @("selftest") + $homeArgs
+        if (-not $NoClaude) { $selftestArgs += "--with-claude" }
+        & py -3 installer/aicj.py @selftestArgs
+        $selftestCode = $LASTEXITCODE
+    } finally {
+        Pop-Location
+    }
+    $displayHome = if ($HomeDir) { $HomeDir } else { $HOME }
+    $installDir = Join-Path $displayHome ".claude"
+    $meaning = if ($Mode -eq "worker") { "worker：B/C 档先经 CPA 使用外部执行体，失败才降级为子代理。" } else { "cc：B/C 档直接使用 Claude Code 子代理。" }
+    if ($selftestCode -eq 0) {
+        Write-Host "aicj Windows 一键安装与自检完成。安装目录：$installDir；重新自检：cd `"$RepoDir`"; py -3 installer/aicj.py selftest --home `"$displayHome`"。当前模式：$Mode。$meaning"
+    } else {
+        Write-Host "aicj 安装完成，但自检失败（退出码 $selftestCode）。安装目录：$installDir；重新自检：cd `"$RepoDir`"; py -3 installer/aicj.py selftest --home `"$displayHome`"。当前模式：$Mode。$meaning"
+    }
+    Complete-Script $selftestCode
+} catch {
+    Write-Host ("Windows 一键安装失败：" + $_.Exception.Message) -ForegroundColor Red
+    Complete-Script 1
+}
+
