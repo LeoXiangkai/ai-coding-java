@@ -7,6 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from adapters.adapter_helpers import fake_command
 from conftest import AICJ, REPO
 from installer.lib import selftest as selftest_lib
 
@@ -66,10 +67,7 @@ def _path_without_claude(directory: Path) -> str:
 
 
 def _fake_claude(directory: Path, body: str) -> None:
-    directory.mkdir(parents=True, exist_ok=True)
-    path = directory / "claude"
-    path.write_text(f"#!{sys.executable}\n{body}\n", encoding="utf-8")
-    path.chmod(0o755)
+    fake_command(directory, "claude", body + "\n")
 
 
 def test_selftest_with_fake_claude_executes_registered_hook(tmp_path: Path) -> None:
