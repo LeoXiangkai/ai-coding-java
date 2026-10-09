@@ -7,7 +7,11 @@
 - **全局层**：`installer/aicj.py` 将语言无关的 `core/`、语言包 `packs/` 和按需选择的 `adapters/` 安装到 `~/.claude`。默认复制，`--link` 使用软链接。`--codex` 额外把 skills 链接到 `~/.agents/skills`。
 - **项目档案层**：`skills/setup-ai-coding/SKILL.md` 初始化目标项目工作区，用 `scripts/init_target_project.py` 写入 `.ai-coding-java/` 和入口 marker。素材来自根 `rules/`、`workflow/`、`templates/`、`docs/`；根 `rules/` 是 Java 8 / Spring Boot 2 项目档案规则，保留供既有项目使用。
 
-> **平台支持：macOS / Linux / Windows。** Windows 建议安装 Git for Windows；使用 `py -3 installer/aicj.py ...`。`--link` 与 `--codex` 没有软链权限时自动改为复制，改仓库不会即时生效。Windows 暂不合并 Codex hooks（行为尚未确认）。
+> **平台支持：macOS / Linux / Windows / WSL。** Windows 建议安装 Git for Windows；使用 `py -3 installer/aicj.py ...`。`--link` 与 `--codex` 没有软链权限时自动改为复制，改仓库不会即时生效。Windows 暂不合并 Codex hooks（行为尚未确认）。
+
+### WSL
+
+WSL 内的 Claude Code 使用 WSL 自己的 `~`，可直接在 WSL 内安装。Windows 版 Claude Code 请在 Windows 终端用 `py -3 installer/aicj.py ...` 安装；也可以在 WSL 中把 `--home` 指向 `/mnt/c/Users/<名>`，安装器会自动转交 Windows Python。仓库建议克隆到 WSL 文件系统（如 `~/src`），不要放在 `/mnt/c` 下，以避免读写、换行符和权限位问题。
 
 安装行为以[全局安装设计](docs/global-install-design.md)为准；项目规则从[规则索引](docs/rule-index.md)进入。技能来源见[运行时边界](docs/runtime-skill-boundary.md)，项目注入细节见[使用指南](USAGE.md)。
 

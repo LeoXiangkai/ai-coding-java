@@ -27,3 +27,43 @@ jobs:
       - run: python scripts/sanitize_check.py
       - run: python scripts/template_integrity_check.py
       - run: python scripts/install_roundtrip_check.py
+
+  wsl:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Vampire/setup-wsl@v5
+        with:
+          distribution: Ubuntu-24.04
+          additional-packages: python3 python3-pytest git
+      - name: Verify in WSL filesystem
+        shell: wsl-bash {0}
+        run: |
+          set -euo pipefail
+          git config --global user.name aicj-ci
+          git config --global user.email aicj-ci@example.invalid
+          git config --global init.defaultBranch main
+          rm -rf ~/repo
+          cp -r "$(wslpath -u '${{ github.workspace }}')" ~/repo
+          git -C ~/repo config core.autocrlf false
+          git -C ~/repo checkout -- .
+          cd ~/repo
+          python3 -m pytest tests -q -p no:cacheprovider
+          python3 scripts/install_roundtrip_check.py
+      - name: Verify Windows Python handoff from WSL
+        shell: wsl-bash {0}
+        run: |
+          set -euo pipefail
+          windows_userprofile="$(cmd.exe /c echo %USERPROFILE% | tr -d '\r')"
+          windows_home="$(wslpath -u "$windows_userprofile")/aicj-wsl-smoke"
+          stderr_file="$(mktemp)"
+          set +e
+          python3 ~/repo/installer/aicj.py install --home "$windows_home" --dry-run 2>"$stderr_file"
+          status=$?
+          set -e
+          cat "$stderr_file" >&2
+          if [ "$status" -ne 0 ]; then
+            echo "Windows Python interop is unavailable or the WSL handoff failed on this runner" >&2
+            exit 1
+          fi
+          grep -F "已转交" "$stderr_file"

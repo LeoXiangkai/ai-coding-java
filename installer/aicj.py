@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import argparse
+import os
+import subprocess
 import sys
 from collections import Counter
 from pathlib import Path
@@ -9,6 +11,7 @@ from pathlib import Path
 from lib import doctor as doctor_mod
 from lib import engine, index, manifest
 from lib.util import UserError, abspath
+from lib import wsl
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -146,6 +149,69 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     return code
 
 
+def _replace_path_arguments(argv: list[str], values: dict[str, str]) -> tuple[list[str], bool]:
+    converted: list[str] = []
+    home_seen = False
+    index = 0
+    while index < len(argv):
+        token = argv[index]
+        matched = False
+        for option, value in values.items():
+            if token == option:
+                converted.extend((option, value))
+                home_seen = home_seen or option == "--home"
+                index += 2
+                matched = True
+                break
+            prefix = option + "="
+            if token.startswith(prefix):
+                converted.append(prefix + value)
+                home_seen = home_seen or option == "--home"
+                index += 1
+                matched = True
+                break
+        if not matched:
+            converted.append(token)
+            index += 1
+    return converted, home_seen
+
+
+def _maybe_handoff(argv: list[str], args: argparse.Namespace) -> int | None:
+    if not wsl.is_wsl():
+        return None
+
+    home = _home(args)
+    source = abspath(args.source) if args.source else REPO_ROOT
+    if wsl.windows_mount(source):
+        print(
+            "warning: WSL 仓库位于 Windows 盘，读写较慢，换行符与权限位可能出问题；"
+            "建议克隆到 WSL 文件系统（如 ~/src）。",
+            file=sys.stderr,
+        )
+
+    if "AICJ_WSL_HANDOFF" in os.environ or not wsl.windows_mount(home):
+        return None
+
+    found = wsl.find_windows_python()
+    if found is None:
+        raise wsl.windows_python_missing_error()
+    win_python, prefix = found
+    paths = {
+        "--home": wsl.wslpath_windows(home),
+        "--source": wsl.wslpath_windows(abspath(args.source)) if args.source else "",
+        "--project": wsl.wslpath_windows(abspath(args.project)) if getattr(args, "project", None) else "",
+    }
+    paths = {option: value for option, value in paths.items() if value}
+    forwarded, home_seen = _replace_path_arguments(argv, paths)
+    if not home_seen:
+        forwarded.extend(("--home", paths["--home"]))
+    win_script = wsl.wslpath_windows(Path(__file__).resolve())
+    print(f"检测到 WSL 且目标为 Windows 目录，已转交 Windows Python：{win_python}", file=sys.stderr)
+    environment = {**os.environ, "AICJ_WSL_HANDOFF": "1"}
+    result = subprocess.run([win_python, *prefix, win_script, *forwarded], env=environment)
+    return result.returncode
+
+
 COMMANDS = {
     "install": cmd_install,
     "uninstall": cmd_uninstall,
@@ -156,8 +222,12 @@ COMMANDS = {
 
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
-    args = parser.parse_args(argv)
+    raw_argv = list(sys.argv[1:] if argv is None else argv)
+    args = parser.parse_args(raw_argv)
     try:
+        handoff = _maybe_handoff(raw_argv, args)
+        if handoff is not None:
+            return handoff
         return COMMANDS[args.command](args)
     except UserError as exc:
         print(f"error: {exc}", file=sys.stderr)
