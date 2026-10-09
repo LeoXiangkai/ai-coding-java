@@ -11,7 +11,7 @@
 
 ### WSL
 
-WSL 内的 Claude Code 使用 WSL 自己的 `~`，可直接在 WSL 内安装。Windows 版 Claude Code 请在 Windows 终端用 `py -3 installer/aicj.py ...` 安装；也可以在 WSL 中把 `--home` 指向 `/mnt/c/Users/<名>`，安装器会自动转交 Windows Python。自定义 automount 根从 `/etc/wsl.conf` 的 `[automount] root` 读取；转交到 Windows 时 `--link` 会改为复制安装。仓库建议克隆到 WSL 文件系统（如 `~/src`），不要放在 `/mnt/c` 下，以避免读写、换行符和权限位问题。
+WSL 内的 Claude Code 使用 WSL 自己的 `~`，可直接在 WSL 内安装。Windows 版 Claude Code 请在 Windows 终端用 `py -3 installer/aicj.py ...` 安装；也可以在 WSL 中把 `--home` 指向 `/mnt/c/Users/<名>`，安装器会自动转交 Windows Python。自定义 automount 根从 `/etc/wsl.conf` 的 `[automount] root` 读取；转交到 Windows 时 `--link` 会改为复制安装。已知限制：防重复转交的 `AICJ_WSL_HANDOFF` 未经 `WSLENV` 传到 Windows 侧，因 Windows 上不判定为 WSL，不会形成循环。仓库建议克隆到 WSL 文件系统（如 `~/src`），不要放在 `/mnt/c` 下，以避免读写、换行符和权限位问题。
 
 安装行为以[全局安装设计](docs/global-install-design.md)为准；项目规则从[规则索引](docs/rule-index.md)进入。技能来源见[运行时边界](docs/runtime-skill-boundary.md)，项目注入细节见[使用指南](USAGE.md)。
 
