@@ -161,7 +161,11 @@ def test_jev_consumer_rejects_missing_or_invalid_env_file(tmp_path, content, exp
     env_file = tmp_path / "jev.env"
     if content is not None:
         env_file.write_text(content, encoding="utf-8")
-    result = run_jev("data", "needle", str(repo), claude=claude, env_extra={"JEV_ENV_FILE": str(env_file)})
+    # the node check runs before the env file is read; hosts without node would fail earlier
+    node_dir = tmp_path / "node-bin"
+    fake_command(node_dir, "node", "import sys\nsys.exit(0)\n")
+    path = str(node_dir) + os.pathsep + os.environ["PATH"]
+    result = run_jev("data", "needle", str(repo), claude=claude, env_extra={"JEV_ENV_FILE": str(env_file), "PATH": path})
     assert result.returncode == 2 and expected in result.stderr
 
 

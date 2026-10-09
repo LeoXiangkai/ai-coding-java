@@ -45,7 +45,9 @@ tests/         安装器与钩子测试，全部使用临时 HOME
 
 ### 平台差异
 
-安装器支持 macOS、Linux 和 Windows。Windows 使用 `py -3 installer/aicj.py ...`，建议安装 Git for Windows。钩子统一写为带 `args` 的 exec 形式，解释器使用安装时的绝对 `sys.executable`；`--link` 与 `--codex` 遇到软链权限错误会回退为复制并记录 checksum。Windows 额外生成 `.cmd` bin 启动器；`--codex-hooks` 在 Windows 暂不合并，doctor 标记为 SKIPPED。
+安装器支持 macOS、Linux、Windows 和 WSL。Windows 使用 `py -3 installer/aicj.py ...`，建议安装 Git for Windows。钩子统一写为带 `args` 的 exec 形式，解释器使用安装时的绝对 `sys.executable`；`--link` 与 `--codex` 遇到软链权限错误会回退为复制并记录 checksum。Windows 额外生成 `.cmd` bin 启动器；`--codex-hooks` 在 Windows 暂不合并，doctor 标记为 SKIPPED。
+
+WSL 内运行的安装器按 Linux 工作，并使用 WSL 的用户目录。若在 WSL 中将有效 `--home` 指向 `/mnt/<盘符>/...`（或 `AICJ_WSL_MOUNT_ROOT` 下的单字母盘符目录），安装器会把脚本、目标路径及显式的 `--source` / `--project` 转换为 Windows 路径，交给 Windows Python 执行；需先安装 Python 3.9+。WSL 中的仓库源位于 Windows 盘时只给出性能、换行符和权限位警告，建议迁移到 WSL 文件系统。
 
 ### 3.1 命令
 
