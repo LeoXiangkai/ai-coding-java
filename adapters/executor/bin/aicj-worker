@@ -60,10 +60,10 @@ def main(argv: list[str] | None = None) -> int:
     prompt = args.prompt
     argv_out: list[str]
     if engine == "claude":
-        argv_out = ["claude", "-p", "--dangerously-skip-permissions", "--disallowedTools", "Agent", "--"]
+        argv_out = ["claude", "-p", "--dangerously-skip-permissions", "--disallowedTools", "Agent"]
         if model:
             argv_out.extend(["--model", model])
-        argv_out.append(prompt)
+        argv_out.extend(["--", prompt])
     else:
         prompt = prompt.rstrip() + "\n不得再派子代理、不得 commit/push"
         # default read-only sandbox cannot edit files; full access mirrors the claude engine's skipped permissions
@@ -92,13 +92,22 @@ def main(argv: list[str] | None = None) -> int:
     try:
         # Batch files are not directly executable by CreateProcess; invoke them through cmd.exe.
         invocation = argv_out
+        stdin_prompt = False
         if os.name == "nt":
             resolved = shutil.which(argv_out[0])
             if resolved and Path(resolved).suffix.casefold() in {".cmd", ".bat"}:
-                invocation = [os.environ.get("ComSpec", "cmd.exe"), "/d", "/c", resolved, *argv_out[1:]]
+                invocation = [os.environ.get("ComSpec", "cmd.exe"), "/d", "/c", resolved, *argv_out[1:-1]]
+                if engine == "claude" and invocation[-1] == "--":
+                    invocation.pop()
+                elif engine == "codex":
+                    invocation.append("-")
+                stdin_prompt = True
         # a background caller's stdin is a pipe that never closes; engines would wait on it forever
-        proc = subprocess.Popen(invocation, cwd=worktree, env=os.environ.copy(), stdin=subprocess.DEVNULL)
+        proc = subprocess.Popen(invocation, cwd=worktree, env=os.environ.copy(), stdin=subprocess.PIPE if stdin_prompt else subprocess.DEVNULL)
         try:
+            if stdin_prompt:
+                proc.communicate(input=prompt.encode("utf-8"), timeout=timeout)
+                return proc.returncode
             return proc.wait(timeout=timeout)
         except subprocess.TimeoutExpired:
             # killing cmd.exe alone leaves the engine running; terminate the whole tree on Windows

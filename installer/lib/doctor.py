@@ -20,6 +20,12 @@ THIRD_PARTY_SKILLS = (
 )
 
 
+def _same_hook_script(left: dict, command: str, args: tuple[str, ...]) -> bool:
+    expected = settings._script_path(command, args)
+    actual = settings._script_path(left.get("command", ""), tuple(left.get("args", []) or []))
+    return bool(expected) and actual == expected
+
+
 def run_doctor(home: Path, source: Path | None = None) -> tuple[list[tuple[str, str, str]], int]:
     checks: list[tuple[str, str, str]] = []
     claude_dir = home / ".claude"
@@ -172,13 +178,12 @@ def _optional_hooks(home: Path, loaded: manifest.Manifest, source: Path | None) 
         idx = index.load_index(source, loaded.options.packs, loaded.options.adapters)
     except UserError:
         return []
-    registered = {str(row.get("command", "")) for row in loaded.settings_hooks}
     out: list[tuple[str, str, str]] = []
     for hook in idx.hooks:
         if not hook.optional or hook.name in loaded.options.enable_hooks:
             continue
         command, args = engine.hook_command(hook, home, loaded.options.strict)
-        if any(row.get("command") == command and tuple(row.get("args", []) or []) == args for row in loaded.settings_hooks):
+        if any(_same_hook_script(row, command, args) for row in loaded.settings_hooks):
             continue
         out.append((SKIPPED, f"optional hook {hook.name}", "not enabled (--enable-hook to register)"))
     return out
@@ -193,13 +198,12 @@ def _hook_requirements(home: Path, loaded: manifest.Manifest, source: Path | Non
         idx = index.load_index(source, loaded.options.packs, loaded.options.adapters)
     except UserError:
         return []
-    registered = {str(row.get("command", "")) for row in loaded.settings_hooks}
     out = []
     for hook in idx.hooks:
         if not hook.requires:
             continue
         command, args = engine.hook_command(hook, home, loaded.options.strict)
-        if any(row.get("command") == command and tuple(row.get("args", []) or []) == args for row in loaded.settings_hooks):
+        if any(_same_hook_script(row, command, args) for row in loaded.settings_hooks):
             continue
         missing = [target for target in hook.requires if not any(
             entry.path == engine.hook_required_target(target) and entry.action in engine.HOOK_READY_ACTIONS

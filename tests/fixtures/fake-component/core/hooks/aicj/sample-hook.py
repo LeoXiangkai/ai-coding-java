@@ -9,7 +9,7 @@ from pathlib import Path
 def main() -> int:
     mode = os.environ.get("AICJ_HOOK_MODE", "").strip().lower()
     if not mode:
-        config = Path(__file__).resolve().parents[2] / "aicj" / "config.json"
+        config = Path(os.path.abspath(__file__)).parents[2] / "aicj" / "config.json"
         try:
             mode = str(json.loads(config.read_text(encoding="utf-8")).get("hook_mode", "warn")).strip().lower()
         except (OSError, ValueError, AttributeError):

@@ -125,3 +125,13 @@ def test_runs_targeted_for_conflict_or_unknown_source(
 
     assert output[0] == "RUN_TARGETED"
     assert expected in output
+
+
+@pytest.mark.parametrize("args", [
+    ("--repo", "x", "--baseline-before", "b", "--baseline-after", "a", "--integration-mode", "managed-no-ff"),
+    ("--repo", "", "--fork", "f", "--baseline-before", "b", "--baseline-after", "a", "--integration-mode", "managed-no-ff"),
+])
+def test_missing_required_merge_metadata_runs_targeted(tmp_path: Path, args: tuple[str, str]) -> None:
+    result = subprocess.run([sys.executable, str(SCRIPT), *args], capture_output=True, text=True, encoding="utf-8")
+    assert result.returncode == 0
+    assert result.stdout == "RUN_TARGETED\nreason=required merge verification metadata is missing\n"

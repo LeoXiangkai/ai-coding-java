@@ -7,6 +7,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 from adapter_helpers import REPO, fake_command, run_script
 from conftest import files_under, run_aicj
 
@@ -110,6 +112,57 @@ def test_jev_consumer_bash3_empty_extra_array(tmp_path):
     env = {"PATH": f"{tmp_path}{os.pathsep}{os.environ['PATH']}", "AICJ_CLAUDE_DIR": str(claude)}
     result = subprocess.run([sys.executable, str(JEV / "bin/jev-consumer"), "data", "needle", str(repo)], env=env, capture_output=True, text=True, encoding="utf-8")
     assert "unbound variable" not in result.stderr
+
+
+def _large_jev_repo(tmp_path: Path) -> Path:
+    repo = tmp_path / "large-repo"
+    repo.mkdir()
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    for number in range(16):
+        path = repo / f"candidate-{number}.txt"
+        path.write_text("needle\n", encoding="utf-8")
+        subprocess.run(["git", "-C", str(repo), "add", path.name], check=True)
+    return repo
+
+
+def test_jev_consumer_default_layout_and_env_file(tmp_path):
+    repo = _large_jev_repo(tmp_path)
+    claude = tmp_path / "claude"
+    script = claude / "bin/jev-consumer"
+    script.parent.mkdir(parents=True)
+    script.write_bytes((JEV / "bin/jev-consumer").read_bytes())
+    script.chmod(0o755)
+    (claude / "aicj/jev").mkdir(parents=True)
+    (claude / "aicj/jev/consumer-template.json").write_text("{}\n", encoding="utf-8")
+    scan = claude / "skills/jev-assist/scripts/consumer_scan.mjs"
+    scan.parent.mkdir(parents=True)
+    scan.write_text("process.stdout.write(process.env.JEV_TEST_VALUE || '')\n", encoding="utf-8")
+    scan.chmod(0o755)
+    node_dir = tmp_path / "node-bin"
+    node = fake_command(node_dir, "node", "import os; print(os.environ.get('JEV_TEST_VALUE', ''))\n")
+    env = {k: v for k, v in os.environ.items() if not k.startswith("AICJ_")}
+    env["PATH"] = str(node_dir) + os.pathsep + os.environ["PATH"]
+    env["JEV_ENV_FILE"] = str(tmp_path / "jev.env")
+    (tmp_path / "jev.env").write_text("# comment\nexport JEV_TEST_VALUE='from-file'\n", encoding="utf-8")
+    result = subprocess.run([sys.executable, str(script), "data", "needle", str(repo)], env=env, capture_output=True, text=True, encoding="utf-8")
+    assert result.returncode == 0
+    assert "from-file" in result.stdout
+
+
+@pytest.mark.parametrize("content, expected", [(None, "JEV_ENV_FILE not found"), ("BAD LINE\n", "failed to load JEV_ENV_FILE")])
+def test_jev_consumer_rejects_missing_or_invalid_env_file(tmp_path, content, expected):
+    repo = _large_jev_repo(tmp_path)
+    claude = tmp_path / ".claude"
+    (claude / "aicj/jev").mkdir(parents=True)
+    (claude / "aicj/jev/consumer-template.json").write_text("{}\n", encoding="utf-8")
+    scan = claude / "skills/jev-assist/scripts/consumer_scan.mjs"
+    scan.parent.mkdir(parents=True)
+    scan.write_text("", encoding="utf-8")
+    env_file = tmp_path / "jev.env"
+    if content is not None:
+        env_file.write_text(content, encoding="utf-8")
+    result = run_jev("data", "needle", str(repo), claude=claude, env_extra={"JEV_ENV_FILE": str(env_file)})
+    assert result.returncode == 2 and expected in result.stderr
 
 
 def test_verify_probe_requires_profile_and_ignores_sample(tmp_path):

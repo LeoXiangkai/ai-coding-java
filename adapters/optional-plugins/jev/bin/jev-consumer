@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import re
 from pathlib import Path
 
 for _stream in (sys.stdout, sys.stderr):
@@ -20,6 +21,26 @@ for _stream in (sys.stdout, sys.stderr):
 def fail(message: str, code: int = 2) -> int:
     print(f"jev-consumer: {message}", file=sys.stderr)
     return code
+
+
+def load_env_file(path: Path) -> dict[str, str]:
+    values: dict[str, str] = {}
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("export "):
+            line = line[7:].lstrip()
+        match = re.fullmatch(r"([A-Za-z_][A-Za-z0-9_]*)=(.*)", line)
+        if not match:
+            raise ValueError
+        key, value = match.groups()
+        if len(value) >= 2 and value[0] in "'\"" and value[-1] == value[0]:
+            value = value[1:-1]
+        elif value.startswith(("'", '"')) or value.endswith(("'", '"')):
+            raise ValueError
+        values[key] = value
+    return values
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -39,8 +60,9 @@ def main(argv: list[str] | None = None) -> int:
         else: return fail(f"unknown option: {option}")
     if subprocess.run(["git", "-C", repo, "rev-parse", "--show-toplevel"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode != 0:
         return fail(f"not a git repository: {repo}")
-    script_dir = Path(__file__).resolve().parent
-    claude_dir = Path(os.environ.get("AICJ_CLAUDE_DIR", script_dir.parent.parent)).expanduser()
+    script_path = Path(os.path.abspath(__file__))
+    override = os.environ.get("AICJ_CLAUDE_DIR", "")
+    claude_dir = Path(override).expanduser() if override.strip() else script_path.parent.parent
     with tempfile.TemporaryDirectory(prefix="jev-consumer-") as temp:
         root = Path(temp)
         listing = root / "list.txt"
@@ -61,9 +83,16 @@ def main(argv: list[str] | None = None) -> int:
         if not scan.is_file(): return fail(f"consumer_scan.mjs missing: {scan}")
         node = shutil.which("node")
         if not node: return fail("node command is missing; install node before using the semantic scan")
+        child_env = os.environ.copy()
         env_file = os.environ.get("JEV_ENV_FILE")
         if env_file:
-            return fail("JEV_ENV_FILE is unsupported for Python consumer; export its variables before running") if not Path(env_file).is_file() else None
+            env_path = Path(env_file)
+            if not env_path.is_file():
+                return fail(f"JEV_ENV_FILE not found: {env_file}")
+            try:
+                child_env.update(load_env_file(env_path))
+            except (OSError, UnicodeError, ValueError):
+                return fail(f"failed to load JEV_ENV_FILE: {env_file}")
         spec_path = root / "spec.json"
         try:
             spec = json.loads(template.read_text(encoding="utf-8"))
@@ -72,7 +101,7 @@ def main(argv: list[str] | None = None) -> int:
             spec_path.write_text(json.dumps(spec, ensure_ascii=False), encoding="utf-8")
         except (OSError, ValueError) as exc:
             return fail(f"cannot build spec: {exc}")
-        return subprocess.run([node, str(scan), str(spec_path), repo, str(listing), *extra]).returncode
+        return subprocess.run([node, str(scan), str(spec_path), repo, str(listing), *extra], env=child_env).returncode
 
 
 if __name__ == "__main__":

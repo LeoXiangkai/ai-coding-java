@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path, PureWindowsPath
+import re
 
 from .util import UserError, read_json, write_json
 
@@ -43,18 +44,22 @@ def _owned(command: object, args: tuple[str, ...] | list[str] = ()) -> bool:
     return HOOK_PATH_MARK in _norm(command) or any(HOOK_PATH_MARK in _norm(arg) for arg in args)
 
 
-def _script_suffix(command: object, args: tuple[str, ...] | list[str] = ()) -> str:
-    """Return the installed hook path suffix, including compatibility shell forms."""
-    values = [_norm(command), *(_norm(arg) for arg in args)]
+def _script_path(command: object, args: tuple[str, ...] | list[str] = ()) -> str:
+    """Extract and normalize the complete hook script path from exec or shell forms."""
+    if args:
+        values = [_norm(arg) for arg in args]
+    else:
+        values = [match.group(0).strip('"\'') for match in re.finditer(r'"[^"]*"|\'[^\']*\'|\S+', _norm(command))]
     for value in values:
-        marker = value.find(HOOK_PATH_MARK)
-        if marker >= 0:
-            return value[marker + len(HOOK_PATH_MARK):].strip('"\' ')
+        if HOOK_PATH_MARK in value:
+            return value
     return ""
 
 
 def _same_script(left: object, left_args: tuple[str, ...] | list[str], right: HookKey) -> bool:
-    return bool(_script_suffix(left, left_args)) and _script_suffix(left, left_args) == _script_suffix(right.command, right.args)
+    left_path = _script_path(left, left_args)
+    right_path = _script_path(right.command, right.args)
+    return bool(left_path and right_path) and left_path == right_path
 
 
 def _hook_args(hook: object) -> tuple[str, ...]:

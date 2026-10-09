@@ -120,9 +120,20 @@ def test_tier_model_passed_only_for_its_tier(repo, tmp_path):
     env = {"AICJ_EXECUTOR_MODEL_HIGH": "model-h", "AICJ_EXECUTOR_MODEL_LOW": "model-l"}
     high = dry(repo, tmp_path, "--tier", "high", env_extra=env)
     assert high[high.index("--model") + 1] == "model-h"
+    assert high.index("--model") < high.index("--")
     assert "--model" not in dry(repo, tmp_path, "--tier", "mid", env_extra=env)
     codex = dry(repo, tmp_path, "--tier", "low", "--engine", "codex", env_extra=env)
     assert codex[codex.index("-m") + 1] == "model-l"
+
+
+def test_prompt_reaches_engine_as_one_complete_value(repo, tmp_path):
+    fake = tmp_path / "fake-bin"
+    fake_command(fake, "claude", "import sys; print(repr(sys.argv[1:])); print(repr(sys.stdin.read()))\n")
+    path = os.pathsep.join([str(fake), str(git_only_path(tmp_path))])
+    prompt = "line one\nline two & %VALUE%"
+    result = worker("--cd", str(repo[1]), "--tier", "high", prompt, claude=tmp_path, path=path)
+    assert result.returncode == 0
+    assert repr(prompt) in result.stdout or prompt in result.stdout
 
 
 def test_blank_model_variable_is_ignored(repo, tmp_path):
