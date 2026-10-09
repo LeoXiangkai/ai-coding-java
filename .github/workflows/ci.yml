@@ -52,6 +52,30 @@ jobs:
           Write-Host "session-alive"
           if ($LASTEXITCODE -ne 0) { throw "PowerShell session did not remain usable" }
           pwsh -File "$env:GITHUB_WORKSPACE/scripts/windows/install-cpa.ps1" -InstallDir $cpaDir -Uninstall -Purge
+      - name: Windows cc launcher smoke
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $fakeClaudeDir = Join-Path $env:RUNNER_TEMP "fake-claude"
+          New-Item -ItemType Directory -Path $fakeClaudeDir -Force | Out-Null
+          Set-Content -LiteralPath (Join-Path $fakeClaudeDir "claude.cmd") -Value "@echo fake-claude %*" -Encoding ASCII
+          $env:Path = "$fakeClaudeDir$([IO.Path]::PathSeparator)$env:Path"
+          $repoDir = Join-Path $env:RUNNER_TEMP "aicj-repo-cc-launcher"
+          $installArgs = @("-Mode", "cc", "-NoPrereqs", "-NoClaude", "-RepoUrl", $env:GITHUB_WORKSPACE, "-RepoDir", $repoDir)
+          & pwsh -File "$env:GITHUB_WORKSPACE/scripts/windows/install.ps1" @installArgs
+          if ($LASTEXITCODE -ne 0) { throw "cc launcher install failed: $LASTEXITCODE" }
+          $ccPath = Join-Path $fakeClaudeDir "cc.cmd"
+          if (-not (Test-Path -LiteralPath $ccPath)) { throw "cc.cmd was not created" }
+          $out = & cc --version
+          if (($out -join "`n") -notlike "*fake-claude --dangerously-skip-permissions --version*") { throw "unexpected cc output: $out" }
+          $firstContent = [Convert]::ToBase64String([IO.File]::ReadAllBytes($ccPath))
+          & pwsh -File "$env:GITHUB_WORKSPACE/scripts/windows/install.ps1" @installArgs
+          if ($LASTEXITCODE -ne 0) { throw "idempotent cc launcher install failed: $LASTEXITCODE" }
+          if ($firstContent -ne [Convert]::ToBase64String([IO.File]::ReadAllBytes($ccPath))) { throw "cc.cmd changed on idempotent install" }
+          Set-Content -LiteralPath $ccPath -Value "@echo different" -Encoding ASCII
+          & pwsh -File "$env:GITHUB_WORKSPACE/scripts/windows/install.ps1" @installArgs
+          if ($LASTEXITCODE -ne 0) { throw "conflicting cc launcher install failed: $LASTEXITCODE" }
+          if ([IO.File]::ReadAllText($ccPath).Trim() -ne "@echo different") { throw "conflicting cc.cmd was overwritten" }
 
   wsl:
     runs-on: windows-latest
