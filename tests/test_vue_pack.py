@@ -19,7 +19,7 @@ def run_detect(name: str) -> dict:
     result = subprocess.run(
         [sys.executable, str(DETECT), str(FIXTURES / name)],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     )
     assert result.returncode == 0, result.stdout + result.stderr
     return json.loads(result.stdout)
@@ -115,7 +115,7 @@ def test_install_doctor_uninstall_vue_pack(tmp_path: Path):
     install = subprocess.run(
         [sys.executable, str(AICJ), "install", "--home", str(home), "--source", str(REPO), "--packs", "vue"],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     )
     assert install.returncode == 0, install.stdout + install.stderr
     for name in ("vue3-typescript.md", "vue2-legacy.md"):
@@ -126,14 +126,14 @@ def test_install_doctor_uninstall_vue_pack(tmp_path: Path):
     doctor = subprocess.run(
         [sys.executable, str(AICJ), "doctor", "--home", str(home)],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     )
     assert doctor.returncode == 0, doctor.stdout + doctor.stderr
     assert "MISSING" not in doctor.stdout
     uninstall = subprocess.run(
         [sys.executable, str(AICJ), "uninstall", "--home", str(home)],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     )
     assert uninstall.returncode == 0, uninstall.stdout + uninstall.stderr
     assert list(home.rglob("*")) == []
@@ -155,7 +155,7 @@ def test_vue_static_review_good_fixture_has_no_findings():
     result = subprocess.run(
         [sys.executable, str(STATIC), str(FIXTURES / "static/good")],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     )
     assert result.returncode == 0, result.stdout + result.stderr
     assert "Scanned files: 1" in result.stdout
@@ -166,7 +166,7 @@ def test_vue_static_review_bad_fixture_hits_every_rule():
     result = subprocess.run(
         [sys.executable, str(STATIC), str(FIXTURES / "static/bad/x.vue")],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     )
     assert result.returncode == 2, result.stdout + result.stderr
     for message in (
@@ -185,7 +185,7 @@ def test_vue_static_review_skips_marked_fixture_directory_but_scans_explicit_fil
     directory = subprocess.run(
         [sys.executable, str(STATIC), str(FIXTURES / "static/bad")],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     )
     assert directory.returncode == 0
     assert directory.stdout.splitlines()[0] == "Scanned files: 0"
@@ -194,7 +194,7 @@ def test_vue_static_review_skips_marked_fixture_directory_but_scans_explicit_fil
 def test_detect_vue_includes_static_command_path():
     result = run_detect("vue3-vite-ts-pnpm")
     command = result["static"]
-    assert command.startswith("python3 ")
-    script_path = Path(command.removeprefix("python3 ").split(" <paths>", 1)[0])
-    assert script_path == STATIC.resolve()
-    assert script_path.is_file()
+    expected = (f'"{Path(sys.executable).resolve()}" "{STATIC.resolve()}" <paths>'
+                if sys.platform == "win32" else f"python3 {STATIC} <paths>")
+    assert command == expected
+    assert STATIC.resolve().is_file()

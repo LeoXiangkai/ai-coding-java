@@ -17,13 +17,13 @@ AICJ = REPO / "installer/aicj.py"
 
 
 def run_detect(name: str) -> dict:
-    result = subprocess.run([sys.executable, str(DETECT), str(FIXTURES / name)], capture_output=True, text=True)
+    result = subprocess.run([sys.executable, str(DETECT), str(FIXTURES / name)], capture_output=True, text=True, encoding="utf-8")
     assert result.returncode == 0, result.stdout + result.stderr
     return json.loads(result.stdout)
 
 
 def run_static(name: str) -> subprocess.CompletedProcess:
-    return subprocess.run([sys.executable, str(STATIC), str(FIXTURES / "static" / name)], capture_output=True, text=True)
+    return subprocess.run([sys.executable, str(STATIC), str(FIXTURES / "static" / name)], capture_output=True, text=True, encoding="utf-8")
 
 
 def test_pack_manifest_shape_and_rule_frontmatter():
@@ -117,7 +117,7 @@ def test_static_review_bad_hits_each_rule_and_p0_exit():
 
 
 def test_static_review_syntax_error_is_reported_without_crash():
-    result = subprocess.run([sys.executable, str(STATIC), str(FIXTURES / "static/bad/syntax_error.py")], capture_output=True, text=True)
+    result = subprocess.run([sys.executable, str(STATIC), str(FIXTURES / "static/bad/syntax_error.py")], capture_output=True, text=True, encoding="utf-8")
     assert result.returncode == 0
     assert "parse failed" in result.stdout
 
@@ -133,15 +133,15 @@ def test_resolve_packs_auto_detects_python_files(tmp_path: Path):
 def test_install_doctor_uninstall_python_pack(tmp_path: Path):
     home = tmp_path / "home"
     home.mkdir()
-    install = subprocess.run([sys.executable, str(AICJ), "install", "--home", str(home), "--source", str(REPO), "--packs", "python"], capture_output=True, text=True)
+    install = subprocess.run([sys.executable, str(AICJ), "install", "--home", str(home), "--source", str(REPO), "--packs", "python"], capture_output=True, text=True, encoding="utf-8")
     assert install.returncode == 0, install.stdout + install.stderr
     for name in ("python-core.md", "python-web.md"):
         assert (home / ".claude/rules" / name).is_file()
     assert (home / ".claude/skills/python-verify/SKILL.md").is_file()
-    doctor = subprocess.run([sys.executable, str(AICJ), "doctor", "--home", str(home)], capture_output=True, text=True)
+    doctor = subprocess.run([sys.executable, str(AICJ), "doctor", "--home", str(home)], capture_output=True, text=True, encoding="utf-8")
     assert doctor.returncode == 0, doctor.stdout + doctor.stderr
     assert "MISSING" not in doctor.stdout
-    uninstall = subprocess.run([sys.executable, str(AICJ), "uninstall", "--home", str(home)], capture_output=True, text=True)
+    uninstall = subprocess.run([sys.executable, str(AICJ), "uninstall", "--home", str(home)], capture_output=True, text=True, encoding="utf-8")
     assert uninstall.returncode == 0, uninstall.stdout + uninstall.stderr
     assert list(home.rglob("*")) == []
 

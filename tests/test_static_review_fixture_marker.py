@@ -7,7 +7,7 @@ BAD_SQL = "update t_user set name = 'x';\n"
 
 
 def run(*paths: Path) -> subprocess.CompletedProcess[str]:
-    return subprocess.run([sys.executable, str(SCRIPT), *map(str, paths)], text=True, capture_output=True)
+    return subprocess.run([sys.executable, str(SCRIPT), *map(str, paths)], text=True, encoding="utf-8", capture_output=True)
 
 
 def test_unmarked_bad_sample_is_blocked(tmp_path):

@@ -16,13 +16,13 @@ AICJ = REPO / "installer/aicj.py"
 
 
 def run_detect(name: str) -> dict:
-    result = subprocess.run([sys.executable, str(DETECT), str(FIXTURES / name)], capture_output=True, text=True)
+    result = subprocess.run([sys.executable, str(DETECT), str(FIXTURES / name)], capture_output=True, text=True, encoding="utf-8")
     assert result.returncode == 0, result.stdout + result.stderr
     return json.loads(result.stdout)
 
 
 def run_static(name: str) -> subprocess.CompletedProcess:
-    return subprocess.run([sys.executable, str(STATIC), str(FIXTURES / "static" / name)], capture_output=True, text=True)
+    return subprocess.run([sys.executable, str(STATIC), str(FIXTURES / "static" / name)], capture_output=True, text=True, encoding="utf-8")
 
 
 def test_pack_manifest_shape_and_rule_frontmatter():
@@ -70,7 +70,7 @@ def test_detect_no_build_is_unknown_and_exits_zero():
         "build_tool": "unknown", "wrapper": False, "modules": [], "java_version": None,
         "spring_boot_version": None, "namespace": "unknown", "persistence": [],
         "commands": {"compile": None, "test": None, "start": None,
-                      "static": f"python3 {STATIC} <paths>"},
+                      "static": (f'"{Path(sys.executable).resolve()}" "{STATIC.resolve()}" <paths>' if sys.platform == "win32" else f"python3 {STATIC} <paths>")},
     }
 
 
@@ -99,7 +99,7 @@ def test_static_review_bad_hits_each_rule_and_p0_exit():
 
 
 def test_static_review_jakarta_namespace_flag_is_explicit():
-    result = subprocess.run([sys.executable, str(STATIC), "--namespace", "jakarta", str(FIXTURES / "static/bad/src/main/java/example/BadService.java")], capture_output=True, text=True)
+    result = subprocess.run([sys.executable, str(STATIC), "--namespace", "jakarta", str(FIXTURES / "static/bad/src/main/java/example/BadService.java")], capture_output=True, text=True, encoding="utf-8")
     assert "legacy javax import" in result.stdout
 
 
@@ -114,14 +114,14 @@ def test_resolve_packs_auto_detects_java_files(tmp_path: Path):
 def test_install_doctor_uninstall_java_pack(tmp_path: Path):
     home = tmp_path / "home"
     home.mkdir()
-    install = subprocess.run([sys.executable, str(AICJ), "install", "--home", str(home), "--source", str(REPO), "--packs", "java"], capture_output=True, text=True)
+    install = subprocess.run([sys.executable, str(AICJ), "install", "--home", str(home), "--source", str(REPO), "--packs", "java"], capture_output=True, text=True, encoding="utf-8")
     assert install.returncode == 0, install.stdout + install.stderr
     for name in ("java-spring-boot.md", "java-sql-mybatis.md", "java-modern.md"):
         assert (home / ".claude/rules" / name).is_file()
     assert (home / ".claude/skills/java-verify/SKILL.md").is_file()
-    doctor = subprocess.run([sys.executable, str(AICJ), "doctor", "--home", str(home)], capture_output=True, text=True)
+    doctor = subprocess.run([sys.executable, str(AICJ), "doctor", "--home", str(home)], capture_output=True, text=True, encoding="utf-8")
     assert doctor.returncode == 0, doctor.stdout + doctor.stderr
     assert "MISSING" not in doctor.stdout
-    uninstall = subprocess.run([sys.executable, str(AICJ), "uninstall", "--home", str(home)], capture_output=True, text=True)
+    uninstall = subprocess.run([sys.executable, str(AICJ), "uninstall", "--home", str(home)], capture_output=True, text=True, encoding="utf-8")
     assert uninstall.returncode == 0, uninstall.stdout + uninstall.stderr
     assert list(home.rglob("*")) == []

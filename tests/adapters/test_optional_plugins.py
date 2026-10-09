@@ -108,7 +108,7 @@ def test_jev_consumer_bash3_empty_extra_array(tmp_path):
     scan.write_text("process.exit(0)\n", encoding="utf-8")
     scan.chmod(0o755)
     env = {"PATH": f"{tmp_path}{os.pathsep}{os.environ['PATH']}", "AICJ_CLAUDE_DIR": str(claude)}
-    result = subprocess.run([sys.executable, str(JEV / "bin/jev-consumer"), "data", "needle", str(repo)], env=env, capture_output=True, text=True)
+    result = subprocess.run([sys.executable, str(JEV / "bin/jev-consumer"), "data", "needle", str(repo)], env=env, capture_output=True, text=True, encoding="utf-8")
     assert "unbound variable" not in result.stderr
 
 

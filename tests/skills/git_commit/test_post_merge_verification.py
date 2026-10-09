@@ -15,7 +15,7 @@ def git(repo: Path, *args: str) -> str:
         ["git", "-C", str(repo), *args],
         check=True,
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     )
     return result.stdout.strip()
 
@@ -52,7 +52,7 @@ def decision(repo: Path, fork: str, before: str, after: str, *extra: str) -> lis
         ],
         check=True,
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     )
     return result.stdout.splitlines()
 
@@ -118,8 +118,7 @@ def test_runs_targeted_for_conflict_or_unknown_source(
                 sys.executable, str(SCRIPT), "--repo", str(repo), "--fork", fork,
                 "--baseline-before", before, "--baseline-after", after,
                 "--fork-source", "fallback", "--integration-mode", "managed-no-ff",
-            ], check=True, capture_output=True, text=True,
-        )
+            ], check=True, capture_output=True, text=True, encoding="utf-8")
         output = result.stdout.splitlines()
     else:
         output = decision(repo, fork, before, after, *extra)

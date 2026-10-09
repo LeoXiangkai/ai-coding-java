@@ -34,7 +34,7 @@ def run_hook(stdin: dict, env: dict | None = None) -> subprocess.CompletedProces
     return subprocess.run(
         [sys.executable, str(HOOK_SCRIPT)],
         input=json.dumps(stdin),
-        text=True,
+        text=True, encoding="utf-8",
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         env=env,
@@ -69,7 +69,7 @@ def commit(repo: Path, rel_path: str, content: str, message: str) -> str:
         ["git", "-C", str(repo), "rev-parse", "HEAD"],
         check=True,
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     ).stdout.strip()
 
 
@@ -79,7 +79,7 @@ def record_outcome(repo: Path, log_dir: Path, reviewers: int = 1, gate: str = "s
         [sys.executable, str(SCOPE_SCRIPT), "--target", str(repo), "--outcome",
          "--reviewers", str(reviewers), "--findings", "0", "--confirmed", "0"],
         env=env,
-        text=True,
+        text=True, encoding="utf-8",
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=False,
@@ -208,7 +208,7 @@ class TestPushGate:
             ["git", "-C", str(clone), "rev-parse", "main"],
             check=True,
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8",
         ).stdout.strip()
         subprocess.run(
             ["git", "-C", str(clone), "config", "branch.feature/w.fork-oid", base],
@@ -235,7 +235,7 @@ class TestPushGate:
             ["git", "-C", str(clone), "rev-parse", "main"],
             check=True,
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8",
         ).stdout.strip()
         subprocess.run(
             ["git", "-C", str(clone), "config", "branch.feature/w.fork-oid", base],
@@ -273,7 +273,7 @@ class TestPushGate:
             ["git", "-C", str(clone), "rev-parse", "main"],
             check=True,
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8",
         ).stdout.strip()
         subprocess.run(
             ["git", "-C", str(clone), "config", "branch.feature/w.fork-oid", base],
@@ -289,14 +289,14 @@ class TestPushGate:
             ["git", "-C", str(clone), "hash-object", "auth/Z.java"],
             check=True,
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8",
         ).stdout.strip()
         # forge a record that matches the head blob but uses a different common_dir
         common_dir = subprocess.run(
             ["git", "-C", str(clone), "rev-parse", "--git-common-dir"],
             check=True,
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8",
         ).stdout.strip()
         record = {
             "ts": "2026-01-01T00:00:00+00:00",
@@ -369,8 +369,7 @@ class TestPushGate:
         subprocess.run(["git", "-C", str(clone), "switch", "-c", "feature/w"], check=True, capture_output=True)
         base = subprocess.run(
             ["git", "-C", str(clone), "rev-parse", "main"],
-            check=True, capture_output=True, text=True,
-        ).stdout.strip()
+            check=True, capture_output=True, text=True, encoding="utf-8").stdout.strip()
         subprocess.run(
             ["git", "-C", str(clone), "config", "branch.feature/w.fork-oid", base],
             check=True, capture_output=True,
@@ -395,8 +394,7 @@ class TestPushGate:
         subprocess.run(["git", "-C", str(clone), "switch", "-c", "feature/w"], check=True, capture_output=True)
         base = subprocess.run(
             ["git", "-C", str(clone), "rev-parse", "main"],
-            check=True, capture_output=True, text=True,
-        ).stdout.strip()
+            check=True, capture_output=True, text=True, encoding="utf-8").stdout.strip()
         subprocess.run(
             ["git", "-C", str(clone), "config", "branch.feature/w.fork-oid", base],
             check=True, capture_output=True,

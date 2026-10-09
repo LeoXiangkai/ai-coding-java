@@ -28,7 +28,7 @@ ADAPTER_FILES = [
 def seeded_home(home):
     settings = home / ".claude" / "settings.json"
     settings.parent.mkdir(parents=True)
-    settings.write_text(json.dumps(ORIGINAL_SETTINGS, indent=2) + "\n", encoding="utf-8")
+    settings.write_text(json.dumps(ORIGINAL_SETTINGS, indent=2) + "\n", encoding="utf-8", newline="\n")
     return home
 
 

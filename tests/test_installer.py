@@ -280,8 +280,15 @@ def test_codex_links_skills_and_strict_configures_hook(home: Path) -> None:
     assert "/hooks/aicj/" in command["args"][0].replace("\\", "/")
     assert json.loads((home / ".claude/aicj/config.json").read_text(encoding="utf-8")) == {"hook_mode": "block"}
 
-    codex = json.loads((home / ".codex/hooks.json").read_text(encoding="utf-8"))
-    assert "/hooks/aicj/" in codex["hooks"]["PreToolUse"][0]["hooks"][0]["args"][0].replace("\\", "/")
+    codex_hooks = home / ".codex/hooks.json"
+    if os.name == "nt":
+        assert not codex_hooks.exists()
+        assert "Windows 上 Codex hooks 暂不合并：Codex hooks 行为未确认" in result.stdout
+        doctor = run_aicj("doctor", home=home)
+        assert "SKIPPED  codex hooks  Windows behavior not confirmed; hooks were not merged" in doctor.stdout
+    else:
+        codex = json.loads(codex_hooks.read_text(encoding="utf-8"))
+        assert "/hooks/aicj/" in codex["hooks"]["PreToolUse"][0]["hooks"][0]["args"][0].replace("\\", "/")
 
     assert run_aicj("uninstall", home=home).returncode == 0
     assert not (home / ".agents/skills/sample-skill").is_symlink()

@@ -30,8 +30,7 @@ def run_sanitize(root: Path, extra: Path | None = None) -> subprocess.CompletedP
     return subprocess.run(
         [sys.executable, str(SANITIZE), "--root", str(root)],
         capture_output=True,
-        text=True,
-        encoding="utf-8",
+        text=True, encoding="utf-8",
         cwd=str(REPO),
         env=env,
     )

@@ -15,6 +15,12 @@ import os
 import sys
 from pathlib import Path
 
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8")
+    except AttributeError:
+        pass
+
 LOG_DIR_ENV = "AICJ_REVIEW_LOG_DIR"
 CLAUDE_DIR_ENV = "AICJ_CLAUDE_DIR"
 LOG_FILE = "gate-events.jsonl"

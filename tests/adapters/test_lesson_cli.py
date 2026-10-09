@@ -129,6 +129,6 @@ def test_installed_layout_derives_claude_dir_from_script_location(tmp_path):
     result = subprocess.run(
         [sys.executable, str(claude / "bin" / "aicj-lesson"), "add", "--id", "loc", "--lesson", "x",
          "--tools", "Bash", "--cmd-regex", "a"],
-        capture_output=True, text=True, env=env)
+        capture_output=True, text=True, encoding="utf-8", env=env)
     assert result.returncode == 0, result.stderr
     assert (claude / "aicj" / "lessons" / "cards.jsonl").is_file()

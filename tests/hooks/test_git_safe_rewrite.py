@@ -25,7 +25,7 @@ def run(command, tool_name="Bash", extra=None, raw_stdin=None, env=None):
     full_env = dict(os.environ)
     full_env.setdefault("AICJ_CLAUDE_DIR", str(REPO_CORE))
     full_env.update(env or {})
-    p = subprocess.run([sys.executable, HOOK], input=payload, capture_output=True, text=True, env=full_env)
+    p = subprocess.run([sys.executable, HOOK], input=payload, capture_output=True, text=True, encoding="utf-8", env=full_env)
     return p.returncode, p.stdout, p.stderr
 
 
@@ -198,7 +198,7 @@ class GitSafeSelfSkip(unittest.TestCase):
                     os.symlink(src, fake_bin / tool)
             real_git = shutil.which("git")
             env = {"PATH": os.pathsep.join([str(fake_bin), os.path.dirname(real_git), os.environ.get("PATH", "")])}
-            proc = subprocess.run([sys.executable, str(core_bin / "git-safe"), "--version"], capture_output=True, text=True, env=env)
+            proc = subprocess.run([sys.executable, str(core_bin / "git-safe"), "--version"], capture_output=True, text=True, encoding="utf-8", env=env)
             self.assertEqual(proc.returncode, 0, proc.stderr)
             self.assertIn("git version", proc.stdout)
 
@@ -216,6 +216,6 @@ class GitSafeSelfSkip(unittest.TestCase):
                     os.symlink(src, fake_bin / tool)
             # real git deliberately NOT on PATH: the only 'git' resolves to git-safe itself
             env = {"PATH": str(fake_bin)}
-            proc = subprocess.run([sys.executable, str(core_bin / "git-safe"), "--version"], capture_output=True, text=True, env=env)
+            proc = subprocess.run([sys.executable, str(core_bin / "git-safe"), "--version"], capture_output=True, text=True, encoding="utf-8", env=env)
             self.assertEqual(proc.returncode, 127, (proc.stdout, proc.stderr))
             self.assertIn("no real git", proc.stderr)
