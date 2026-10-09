@@ -10,6 +10,18 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+try:
+    from hook_mode import hook_mode
+except ImportError:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "core" / "hooks"))
+    from hook_mode import hook_mode
+
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8")
+    except AttributeError:
+        pass
+
 
 def claude_dir() -> Path:
     value = os.environ.get("AICJ_CLAUDE_DIR")
@@ -20,7 +32,7 @@ def claude_dir() -> Path:
 
 def event() -> dict:
     try:
-        data = json.load(sys.stdin)
+        data = json.loads(sys.stdin.buffer.read().decode("utf-8"))
     except Exception:
         return {}
     return data if isinstance(data, dict) else {}
@@ -44,7 +56,7 @@ def main() -> int:
     matches: list[dict] = []
     if cards_path.is_file():
         try:
-            lines = cards_path.read_text(encoding="utf-8", errors="ignore").splitlines()
+            lines = cards_path.read_bytes().decode("utf-8", errors="ignore").splitlines()
         except OSError:
             lines = []
         for line in lines:
@@ -101,7 +113,7 @@ def main() -> int:
             blocks.append(line)
         else:
             injections.append(line)
-    if blocks and os.environ.get("AICJ_HOOK_MODE", "warn").strip().lower() == "block":
+    if blocks and hook_mode() == "block":
         sys.stderr.write("\n".join(blocks) + "\n")
         return 2
     lines = blocks + injections

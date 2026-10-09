@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 from .util import UserError, read_json, write_json
 
@@ -17,14 +17,51 @@ class HookKey:
     event: str
     matcher: str
     command: str
+    args: tuple[str, ...] = ()
 
     def to_dict(self, target: str) -> dict:
         return {
             "event": self.event,
             "matcher": self.matcher,
             "command": self.command,
+            "args": list(self.args),
             "target": target,
         }
+
+
+def _norm(value: object) -> str:
+    text = str(value).replace("\\", "/")
+    return text.casefold() if PureWindowsPath(text).drive else text
+
+
+def _matches(hook: dict, key: HookKey) -> bool:
+    return (hook.get("type") == "command" and _norm(hook.get("command", "")) == _norm(key.command)
+            and tuple(_norm(arg) for arg in _hook_args(hook)) == tuple(_norm(arg) for arg in key.args))
+
+
+def _owned(command: object, args: tuple[str, ...] | list[str] = ()) -> bool:
+    return HOOK_PATH_MARK in _norm(command) or any(HOOK_PATH_MARK in _norm(arg) for arg in args)
+
+
+def _script_suffix(command: object, args: tuple[str, ...] | list[str] = ()) -> str:
+    """Return the installed hook path suffix, including compatibility shell forms."""
+    values = [_norm(command), *(_norm(arg) for arg in args)]
+    for value in values:
+        marker = value.find(HOOK_PATH_MARK)
+        if marker >= 0:
+            return value[marker + len(HOOK_PATH_MARK):].strip('"\' ')
+    return ""
+
+
+def _same_script(left: object, left_args: tuple[str, ...] | list[str], right: HookKey) -> bool:
+    return bool(_script_suffix(left, left_args)) and _script_suffix(left, left_args) == _script_suffix(right.command, right.args)
+
+
+def _hook_args(hook: object) -> tuple[str, ...]:
+    raw = hook.get("args", ()) if isinstance(hook, dict) else getattr(hook, "args", ())
+    if isinstance(raw, (list, tuple)):
+        return tuple(str(item) for item in raw)
+    return ()
 
 
 def load(path: Path) -> dict:
@@ -55,15 +92,21 @@ def has_hook(payload: dict, key: HookKey) -> bool:
         if not isinstance(group, dict) or group.get("matcher", "") != key.matcher:
             continue
         for hook in group.get("hooks") or []:
-            if isinstance(hook, dict) and hook.get("command") == key.command:
+            if (
+                isinstance(hook, dict)
+                and _matches(hook, key)
+            ):
                 return True
+            if isinstance(hook, dict) and not _hook_args(hook) and len(key.args) == 1:
+                if _same_script(hook.get("command", ""), (), key):
+                    return True
     return False
 
 
 def merge_hooks(payload: dict, keys: list[HookKey]) -> list[HookKey]:
     added: list[HookKey] = []
     for key in keys:
-        if HOOK_PATH_MARK not in key.command:
+        if not _owned(key.command, key.args):
             raise UserError(f"hook command must contain {HOOK_PATH_MARK}: {key.command}")
         if has_hook(payload, key):
             continue
@@ -73,7 +116,7 @@ def merge_hooks(payload: dict, keys: list[HookKey]) -> list[HookKey]:
         groups = container.setdefault(key.event, [])
         if not isinstance(groups, list):
             raise UserError(f"hooks.{key.event} must be a list")
-        entry = {"hooks": [{"type": "command", "command": key.command}]}
+        entry = {"hooks": [{"type": "command", "command": key.command, "args": list(key.args)}]}
         if key.event not in NO_MATCHER_EVENTS:
             entry = {"matcher": key.matcher, **entry}
         groups.append(entry)
@@ -101,8 +144,8 @@ def unmerge_hooks(payload: dict, keys: list[HookKey]) -> list[HookKey]:
                 for hook in hooks
                 if not (
                     isinstance(hook, dict)
-                    and hook.get("command") == key.command
-                    and HOOK_PATH_MARK in str(hook.get("command", ""))
+                    and (_matches(hook, key) or _same_script(hook.get("command", ""), _hook_args(hook), key))
+                    and _owned(hook.get("command", ""), _hook_args(hook))
                 )
             ]
             if len(kept) != len(hooks):

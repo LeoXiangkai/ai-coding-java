@@ -2,6 +2,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
@@ -31,9 +32,9 @@ def isolated_aicj_env(tmp_path, monkeypatch):
 def run_hook(stdin: dict, env: dict | None = None) -> subprocess.CompletedProcess[str]:
     env = {**os.environ, **(env or {})}
     return subprocess.run(
-        ["python3", str(HOOK_SCRIPT)],
+        [sys.executable, str(HOOK_SCRIPT)],
         input=json.dumps(stdin),
-        text=True,
+        text=True, encoding="utf-8",
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         env=env,
@@ -44,10 +45,11 @@ def run_hook(stdin: dict, env: dict | None = None) -> subprocess.CompletedProces
 def make_repo(tmp_path: Path):
     remote = tmp_path / "remote.git"
     remote.mkdir()
-    subprocess.run(["git", "init", "--bare", str(remote)], check=True, capture_output=True)
+    subprocess.run(["git", "init", "--bare", "--initial-branch=main", str(remote)], check=True, capture_output=True)
 
     clone = tmp_path / "clone"
     subprocess.run(["git", "clone", str(remote), str(clone)], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(clone), "symbolic-ref", "HEAD", "refs/heads/main"], check=True, capture_output=True)
     subprocess.run(["git", "-C", str(clone), "config", "user.email", "t@t.test"], check=True, capture_output=True)
     subprocess.run(["git", "-C", str(clone), "config", "user.name", "T"], check=True, capture_output=True)
     (clone / "README.md").write_text("base\n", encoding="utf-8")
@@ -67,17 +69,17 @@ def commit(repo: Path, rel_path: str, content: str, message: str) -> str:
         ["git", "-C", str(repo), "rev-parse", "HEAD"],
         check=True,
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     ).stdout.strip()
 
 
 def record_outcome(repo: Path, log_dir: Path, reviewers: int = 1, gate: str = "single") -> None:
     env = {**os.environ, "AICJ_REVIEW_LOG_DIR": str(log_dir)}
     result = subprocess.run(
-        ["python3", str(SCOPE_SCRIPT), "--target", str(repo), "--outcome",
+        [sys.executable, str(SCOPE_SCRIPT), "--target", str(repo), "--outcome",
          "--reviewers", str(reviewers), "--findings", "0", "--confirmed", "0"],
         env=env,
-        text=True,
+        text=True, encoding="utf-8",
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=False,
@@ -206,7 +208,7 @@ class TestPushGate:
             ["git", "-C", str(clone), "rev-parse", "main"],
             check=True,
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8",
         ).stdout.strip()
         subprocess.run(
             ["git", "-C", str(clone), "config", "branch.feature/w.fork-oid", base],
@@ -233,7 +235,7 @@ class TestPushGate:
             ["git", "-C", str(clone), "rev-parse", "main"],
             check=True,
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8",
         ).stdout.strip()
         subprocess.run(
             ["git", "-C", str(clone), "config", "branch.feature/w.fork-oid", base],
@@ -252,7 +254,7 @@ class TestPushGate:
     def test_git_safe_with_global_c_flag_recognized(self, tmp_path, isolated_aicj_env):
         _, clone = make_repo(tmp_path)
         commit(clone, "auth/X.java", "class X {}\n", "x")
-        result = run_hook(std_input(f"cd {clone} && git-safe -C {clone} push origin main", clone))
+        result = run_hook(std_input(f"cd {clone.as_posix()} && git-safe -C {clone.as_posix()} push origin main", clone))
         assert result.returncode == 2
         assert "auth/X.java" in result.stderr
 
@@ -271,7 +273,7 @@ class TestPushGate:
             ["git", "-C", str(clone), "rev-parse", "main"],
             check=True,
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8",
         ).stdout.strip()
         subprocess.run(
             ["git", "-C", str(clone), "config", "branch.feature/w.fork-oid", base],
@@ -287,14 +289,14 @@ class TestPushGate:
             ["git", "-C", str(clone), "hash-object", "auth/Z.java"],
             check=True,
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8",
         ).stdout.strip()
         # forge a record that matches the head blob but uses a different common_dir
         common_dir = subprocess.run(
             ["git", "-C", str(clone), "rev-parse", "--git-common-dir"],
             check=True,
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8",
         ).stdout.strip()
         record = {
             "ts": "2026-01-01T00:00:00+00:00",
@@ -367,8 +369,7 @@ class TestPushGate:
         subprocess.run(["git", "-C", str(clone), "switch", "-c", "feature/w"], check=True, capture_output=True)
         base = subprocess.run(
             ["git", "-C", str(clone), "rev-parse", "main"],
-            check=True, capture_output=True, text=True,
-        ).stdout.strip()
+            check=True, capture_output=True, text=True, encoding="utf-8").stdout.strip()
         subprocess.run(
             ["git", "-C", str(clone), "config", "branch.feature/w.fork-oid", base],
             check=True, capture_output=True,
@@ -393,8 +394,7 @@ class TestPushGate:
         subprocess.run(["git", "-C", str(clone), "switch", "-c", "feature/w"], check=True, capture_output=True)
         base = subprocess.run(
             ["git", "-C", str(clone), "rev-parse", "main"],
-            check=True, capture_output=True, text=True,
-        ).stdout.strip()
+            check=True, capture_output=True, text=True, encoding="utf-8").stdout.strip()
         subprocess.run(
             ["git", "-C", str(clone), "config", "branch.feature/w.fork-oid", base],
             check=True, capture_output=True,
@@ -498,7 +498,7 @@ class TestPushGate:
         commit(repo_b, "auth/RepoB.java", "class RepoB {}\n", "repo b risky")
         result = run_hook({
             "tool_name": "Bash",
-            "tool_input": {"command": f"cd {repo_a} && git push && cd {repo_b}", "cwd": str(tmp_path)},
+            "tool_input": {"command": f"cd {repo_a.as_posix()} && git push && cd {repo_b.as_posix()}", "cwd": str(tmp_path)},
         })
         assert result.returncode == 2
         assert "auth/RepoA.java" in result.stderr

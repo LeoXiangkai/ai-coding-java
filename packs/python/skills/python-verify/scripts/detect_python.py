@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 import json
 import re
+import shlex
 import sys
 from pathlib import Path
 from typing import Any
@@ -18,6 +19,13 @@ except ModuleNotFoundError:  # pragma: no cover - supported runtimes have tomlli
 TOOLS = ("ruff", "mypy", "pyright", "pytest")
 FRAMEWORKS = ("fastapi", "flask", "django")
 ORM_ORDER = ("sqlalchemy", "django-orm", "tortoise", "peewee")
+STATIC_REVIEW = Path(__file__).resolve().with_name("static_review.py")
+
+
+def static_command() -> str:
+    if sys.platform == "win32":
+        return f'"{Path(sys.executable).resolve()}" "{STATIC_REVIEW}" <paths>'
+    return f"python3 {shlex.quote(str(STATIC_REVIEW))} <paths>"
 
 
 def empty_result() -> dict[str, Any]:
@@ -30,7 +38,7 @@ def empty_result() -> dict[str, Any]:
         "pydantic_major": None,
         "tools": {name: False for name in TOOLS},
         "entry": None,
-        "commands": {"lint": "MISSING", "format_check": "MISSING", "type_check": "MISSING", "test": "MISSING", "start": "MISSING"},
+        "commands": {"lint": "MISSING", "format_check": "MISSING", "type_check": "MISSING", "test": "MISSING", "start": "MISSING", "static": "MISSING"},
     }
 
 
@@ -218,6 +226,8 @@ def main(argv: list[str] | None = None) -> int:
     result["pydantic_major"] = version_major(versions.get("pydantic"))
     result["tools"] = {name: has_tool(name, root, project, dependencies) for name in TOOLS}
     result["entry"] = guess_entry(root, result["frameworks"])
+    if has_manifest:
+        result["commands"]["static"] = static_command()
 
     manager = result["package_manager"]
     prefix = {"uv": "uv run", "poetry": "poetry run", "pip": "python -m"}.get(manager)

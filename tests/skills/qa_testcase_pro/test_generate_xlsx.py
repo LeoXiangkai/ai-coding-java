@@ -39,7 +39,7 @@ def test_missing_openpyxl_returns_exit_two_with_actionable_message(tmp_path: Pat
     result = subprocess.run(
         [sys.executable, "-I", str(script), "--input", str(source), "--output", str(isolated / "out.xlsx")],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     )
 
     assert result.returncode == 2
@@ -56,7 +56,7 @@ def test_with_openpyxl_generates_file_when_dependency_is_available(tmp_path: Pat
     result = subprocess.run(
         [sys.executable, str(SCRIPT), "--input", str(source), "--output", str(output)],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     )
 
     assert result.returncode == 0, result.stdout + result.stderr

@@ -39,13 +39,15 @@ class Entry:
 
 def safe_rel(raw: str, what: str, allow_root: bool = False) -> str:
     """Manifest paths are relative to home and must stay under ~/.claude, ~/.codex or ~/.agents."""
-    text = str(raw)
-    if not text.strip() or PurePosixPath(text).is_absolute() or PureWindowsPath(text).anchor:
+    text = str(raw).strip()
+    windows = PureWindowsPath(text)
+    posix = PurePosixPath(text)
+    if not text.strip() or posix.is_absolute() or windows.anchor:
         raise UserError(f"manifest {what} must be a relative path: {text!r}")
     parts = PurePosixPath(text.replace("\\", "/")).parts
-    if ".." in parts or "." in parts or parts[0] not in ALLOWED_ROOTS or (len(parts) < 2 and not allow_root):
+    if not parts or ".." in parts or "." in parts or parts[0].lower() not in ALLOWED_ROOTS or (len(parts) < 2 and not allow_root):
         raise UserError(f"manifest {what} is outside the managed directories: {text!r}")
-    return text
+    return "/".join((parts[0].lower(), *parts[1:]))
 
 
 def _entry(item) -> Entry:
@@ -148,6 +150,13 @@ def _hook(item: object) -> dict:
     command = item.get("command")
     if target not in (".claude/settings.json", ".codex/hooks.json"):
         raise UserError(f"manifest settings hook target is not managed: {target!r}")
-    if not isinstance(command, str) or HOOK_PATH_MARK not in command:
+    args = item.get("args", [])
+    if not isinstance(command, str) or not command.strip() or not isinstance(args, list) or any(not isinstance(value, str) or not value.strip() for value in args):
+        raise UserError(f"manifest settings hook command/args are invalid: {command!r}")
+    normalized = command.replace("\\", "/").casefold()
+    normalized_args = [value.replace("\\", "/").casefold() for value in args]
+    if HOOK_PATH_MARK not in normalized and not (PurePosixPath(normalized).is_absolute() or PureWindowsPath(normalized).is_absolute()):
+        raise UserError(f"manifest settings hook command must be an absolute executable: {command!r}")
+    if HOOK_PATH_MARK not in normalized and not any(HOOK_PATH_MARK in value for value in normalized_args):
         raise UserError(f"manifest settings hook command must contain {HOOK_PATH_MARK}: {command!r}")
     return dict(item)

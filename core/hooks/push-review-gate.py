@@ -15,6 +15,18 @@ import subprocess
 import sys
 from pathlib import Path
 
+try:
+    from hook_mode import hook_mode as get_hook_mode
+except ImportError:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from hook_mode import hook_mode as get_hook_mode
+
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8")
+    except AttributeError:
+        pass
+
 LOG_DIR_ENV = "AICJ_REVIEW_LOG_DIR"
 CLAUDE_DIR_ENV = "AICJ_CLAUDE_DIR"
 GATE_LOG_FILE = "code-review-gates.jsonl"
@@ -43,7 +55,7 @@ def review_log_dir() -> Path:
 
 
 def hook_mode() -> str:
-    return os.environ.get("AICJ_HOOK_MODE", "warn").strip().lower() or "warn"
+    return get_hook_mode()
 
 
 def deny_or_warn(message: str) -> int:
@@ -123,7 +135,7 @@ def _expand_vars(text: str, env: dict[str, str]) -> str | None:
 def log_event(event: str, rule: str, raw_input: str) -> None:
     try:
         subprocess.run(
-            ["python3", str(GATE_LOG_HELPER), "push-review-gate.py", event, rule, raw_input],
+            [sys.executable, str(GATE_LOG_HELPER), "push-review-gate.py", event, rule, raw_input],
             check=False,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
@@ -253,7 +265,12 @@ def _is_export_assignment(seg: list[str]) -> tuple[str, str] | None:
 
 def _resolve_path(text: str, base_cwd: Path | None) -> Path | None:
     """Expand user, resolve relative to base_cwd, and require the path to exist."""
-    expanded = os.path.expanduser(text)
+    # Git Bash on Windows sets HOME, but os.path.expanduser there reads USERPROFILE
+    home = os.environ.get("HOME")
+    if home and (text == "~" or text.startswith(("~/", "~\\"))):
+        expanded = home + text[1:]
+    else:
+        expanded = os.path.expanduser(text)
     path = Path(expanded)
     if not path.is_absolute():
         if base_cwd is not None:
@@ -638,7 +655,7 @@ def check_push(repo: Path, ref: str, remote_ref: str | None, raw_input: str, rem
 
 def main() -> int:
     try:
-        raw = sys.stdin.read()
+        raw = sys.stdin.buffer.read().decode("utf-8")
         try:
             event = json.loads(raw)
         except json.JSONDecodeError:

@@ -11,14 +11,26 @@ import subprocess
 import sys
 from pathlib import Path
 
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8")
+    except AttributeError:
+        pass
+
 
 def is_linked_worktree(path: Path) -> bool:
     try:
-        git_dir = subprocess.check_output(["git", "rev-parse", "--git-dir"], cwd=path, text=True, stderr=subprocess.DEVNULL).strip()
-        common = subprocess.check_output(["git", "rev-parse", "--git-common-dir"], cwd=path, text=True, stderr=subprocess.DEVNULL).strip()
+        git_dir = subprocess.check_output(["git", "rev-parse", "--git-dir"], cwd=path, text=True, encoding="utf-8", stderr=subprocess.DEVNULL).strip()
+        common = subprocess.check_output(["git", "rev-parse", "--git-common-dir"], cwd=path, text=True, encoding="utf-8", stderr=subprocess.DEVNULL).strip()
     except (OSError, subprocess.CalledProcessError):
         return False
-    return Path(os.path.realpath(str(path / git_dir))).resolve() != Path(os.path.realpath(str(path / common))).resolve()
+    def absolute(value: str) -> Path:
+        candidate = Path(value.replace("\\", os.sep))
+        if not candidate.is_absolute():
+            candidate = path / candidate
+        return Path(os.path.normcase(os.path.normpath(os.path.realpath(candidate))))
+
+    return absolute(git_dir) != absolute(common)
 
 
 def parser() -> argparse.ArgumentParser:
@@ -78,8 +90,24 @@ def main(argv: list[str] | None = None) -> int:
         print("外部执行体不可用，按降级条款改派子代理", file=sys.stderr)
         return 127
     try:
+        # Batch files are not directly executable by CreateProcess; invoke them through cmd.exe.
+        invocation = argv_out
+        if os.name == "nt":
+            resolved = shutil.which(argv_out[0])
+            if resolved and Path(resolved).suffix.casefold() in {".cmd", ".bat"}:
+                invocation = [os.environ.get("ComSpec", "cmd.exe"), "/d", "/c", resolved, *argv_out[1:]]
         # a background caller's stdin is a pipe that never closes; engines would wait on it forever
-        return subprocess.run(argv_out, cwd=worktree, env=os.environ.copy(), stdin=subprocess.DEVNULL, check=False, timeout=timeout).returncode
+        proc = subprocess.Popen(invocation, cwd=worktree, env=os.environ.copy(), stdin=subprocess.DEVNULL)
+        try:
+            return proc.wait(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            # killing cmd.exe alone leaves the engine running; terminate the whole tree on Windows
+            if os.name == "nt":
+                subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc.pid)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+            else:
+                proc.kill()
+            proc.wait()
+            raise
     except subprocess.TimeoutExpired:
         print(f"外部执行体超时（AICJ_EXECUTOR_TIMEOUT={raw_timeout}s）", file=sys.stderr)
         return 124

@@ -5,12 +5,17 @@ import json
 import os
 import stat
 import tempfile
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
 
 class UserError(Exception):
     """Raised for bad arguments or unreadable/invalid input files (exit 2)."""
+
+
+def is_windows() -> bool:
+    return os.name == "nt"
 
 
 def abspath(path: str | Path) -> Path:
@@ -41,8 +46,16 @@ def atomic_write(path: Path, data: bytes) -> None:
     try:
         with os.fdopen(fd, "wb") as handle:
             handle.write(data)
-        os.chmod(tmp, mode)
-        os.replace(tmp, real)
+        if not is_windows():
+            os.chmod(tmp, mode)
+        for attempt in range(5):
+            try:
+                os.replace(tmp, real)
+                break
+            except PermissionError:
+                if not is_windows() or attempt == 4:
+                    raise
+                time.sleep(0.05 * (attempt + 1))
     except BaseException:
         Path(tmp).unlink(missing_ok=True)
         raise
@@ -82,6 +95,7 @@ def git_commit(repo: Path) -> str:
         result = subprocess.run(
             ["git", "-C", str(repo), "rev-parse", "HEAD"],
             text=True,
+            encoding="utf-8",
             capture_output=True,
             timeout=10,
         )

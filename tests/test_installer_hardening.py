@@ -68,10 +68,11 @@ def test_symlinked_settings_and_claude_md_stay_links_with_mode(home: Path, tmp_p
     ok(run_aicj("install", home=home))
     assert (home / ".claude/settings.json").is_symlink()
     assert (home / ".claude/CLAUDE.md").is_symlink()
-    assert "/hooks/aicj/" in (dotfiles / "settings.json").read_text(encoding="utf-8")
+    assert "/hooks/aicj/" in (dotfiles / "settings.json").read_text(encoding="utf-8").replace("\\\\", "/").replace("\\", "/")
     assert BEGIN in (dotfiles / "CLAUDE.md").read_text(encoding="utf-8")
-    assert stat.S_IMODE((dotfiles / "settings.json").stat().st_mode) == 0o600
-    assert stat.S_IMODE((dotfiles / "CLAUDE.md").stat().st_mode) == 0o640
+    if os.name != "nt":  # Windows has no POSIX permission bits
+        assert stat.S_IMODE((dotfiles / "settings.json").stat().st_mode) == 0o600
+        assert stat.S_IMODE((dotfiles / "CLAUDE.md").stat().st_mode) == 0o640
 
     ok(run_aicj("uninstall", home=home))
     assert (home / ".claude/settings.json").is_symlink()
@@ -80,6 +81,7 @@ def test_symlinked_settings_and_claude_md_stay_links_with_mode(home: Path, tmp_p
     assert (dotfiles / "CLAUDE.md").read_text(encoding="utf-8") == "# mine\n"
 
 
+@pytest.mark.skipif(os.name == "nt", reason="POSIX permission bits are not portable on Windows")
 def test_atomic_write_new_file_is_0644_and_keeps_existing_mode(tmp_path: Path) -> None:
     fresh = tmp_path / "new.txt"
     util.atomic_write(fresh, b"x")
@@ -123,7 +125,7 @@ def test_non_utf8_claude_md_aborts_without_writing(home: Path) -> None:
     assert files_under(home) == [".claude/CLAUDE.md"]
 
 
-@pytest.mark.skipif(os.geteuid() == 0, reason="permission failure cannot be simulated as root")
+@pytest.mark.skipif(os.name == "nt" or os.geteuid() == 0, reason="POSIX directory permissions are required to simulate the failure")
 def test_midway_failure_leaves_log_and_rerun_then_uninstall_is_clean(home: Path) -> None:
     skills = home / ".claude/skills"
     skills.mkdir(parents=True)
@@ -145,7 +147,7 @@ def test_midway_failure_leaves_log_and_rerun_then_uninstall_is_clean(home: Path)
     assert files_under(home) == []
 
 
-@pytest.mark.skipif(os.geteuid() == 0, reason="permission failure cannot be simulated as root")
+@pytest.mark.skipif(os.name == "nt" or os.geteuid() == 0, reason="POSIX directory permissions are required to simulate the failure")
 def test_uninstall_after_interrupted_install_leaves_nothing(home: Path) -> None:
     skills = home / ".claude/skills"
     skills.mkdir(parents=True)
@@ -339,15 +341,18 @@ def test_hook_command_works_when_home_contains_spaces(tmp_path: Path) -> None:
     spaced.mkdir()
     ok(run_aicj("install", home=spaced))
     settings = json.loads((spaced / ".claude/settings.json").read_text(encoding="utf-8"))
-    command = settings["hooks"]["PreToolUse"][0]["hooks"][0]["command"]
-    assert "'" in command
-    run = subprocess.run(command, shell=True, capture_output=True, text=True)
+    hook = settings["hooks"]["PreToolUse"][0]["hooks"][0]
+    assert hook["command"] == os.path.abspath(sys.executable)
+    run = subprocess.run([hook["command"], *hook["args"]], input="{}", capture_output=True, text=True, encoding="utf-8")
     assert run.returncode == 0, run.stderr
     strict = run_aicj("install", "--strict", home=spaced)
     ok(strict)
     settings = json.loads((spaced / ".claude/settings.json").read_text(encoding="utf-8"))
-    command = settings["hooks"]["PreToolUse"][0]["hooks"][0]["command"]
-    assert subprocess.run(command, shell=True, capture_output=True, text=True).returncode == 2
+    hook = settings["hooks"]["PreToolUse"][0]["hooks"][0]
+    assert json.loads((spaced / ".claude/aicj/config.json").read_text(encoding="utf-8")) == {"hook_mode": "block"}
+    env = {k: v for k, v in os.environ.items() if k != "AICJ_HOOK_MODE"}
+    blocked = subprocess.run([hook["command"], *hook["args"]], input="{}", capture_output=True, text=True, encoding="utf-8", env=env)
+    assert blocked.returncode == 2, blocked.stderr
 
 
 def test_hook_with_skipped_script_is_not_registered(home: Path) -> None:
@@ -374,7 +379,7 @@ def test_malformed_manifest_hook_is_rejected_by_install_and_uninstall(
     user_payload = {"hooks": {"PreToolUse": [{"matcher": "Bash", "hooks": [{"type": "command", "command": "echo user"}]}]}}
     settings_path.write_text(json.dumps(user_payload), encoding="utf-8")
     ok(run_aicj("install", home=home))
-    assert any("/hooks/aicj/" in row["command"] for row in manifest_of(home)["settings_hooks"])
+    assert any("/hooks/aicj/" in row["args"][0].replace("\\", "/") for row in manifest_of(home)["settings_hooks"])
     victim.write_text(settings_path.read_text(encoding="utf-8"), encoding="utf-8")
     manifest_path = home / ".claude/aicj/manifest.json"
     data = manifest_of(home)
@@ -409,7 +414,7 @@ def test_hook_requires_existing_user_skill_is_not_registered(home: Path) -> None
     clean.mkdir()
     ok(run_aicj("install", home=clean, source=None))
     clean_payload = json.loads((clean / ".claude/settings.json").read_text(encoding="utf-8"))
-    assert any("push-review-gate.py" in hook["command"] for group in clean_payload["hooks"]["PreToolUse"] for hook in group["hooks"])
+    assert any("push-review-gate.py" in " ".join([hook["command"], *(hook.get("args") or [])]) for group in clean_payload["hooks"]["PreToolUse"] for hook in group["hooks"])
     clean_doctor = run_aicj("doctor", home=clean, source=None)
     assert clean_doctor.returncode == 0, clean_doctor.stdout + clean_doctor.stderr
     assert "hook push-review-gate requirements" not in clean_doctor.stdout
@@ -711,7 +716,7 @@ def test_kept_manifest_keeps_created_dirs_so_a_later_uninstall_can_prune(home: P
 
 
 def test_cli_entry_point_is_runnable() -> None:
-    result = subprocess.run([sys.executable, str(AICJ), "--help"], capture_output=True, text=True)
+    result = subprocess.run([sys.executable, str(AICJ), "--help"], capture_output=True, text=True, encoding="utf-8")
     assert result.returncode == 0
 
 

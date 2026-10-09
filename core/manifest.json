@@ -19,7 +19,7 @@
       "event": "Claude Code hook event, e.g. PreToolUse",
       "matcher": "hook matcher expression; empty string matches everything",
       "script": "installed script path relative to ~/.claude, must live under hooks/aicj/",
-      "blocking": "true when the script consults AICJ_HOOK_MODE (warn by default, block under install --strict)",
+      "blocking": "true when the script consults AICJ_HOOK_MODE or .claude/aicj/config.json (warn by default, block under install --strict)",
       "optional": "true when the hook only registers when named by install --enable-hook <name>; the script file itself still installs"
     },
     "detect": {
@@ -152,6 +152,10 @@
       {
         "source": "hooks/git-safe-rewrite.py",
         "target": "hooks/aicj/git-safe-rewrite.py"
+      },
+      {
+        "source": "hooks/hook_mode.py",
+        "target": "hooks/aicj/hook_mode.py"
       }
     ],
     "bin": [
@@ -173,7 +177,9 @@
       "matcher": "Bash",
       "script": "hooks/aicj/push-review-gate.py",
       "blocking": true,
-      "requires": ["skills/code-review/scripts/scope.py"]
+      "requires": [
+        "skills/code-review/scripts/scope.py"
+      ]
     },
     {
       "event": "PreToolUse",
