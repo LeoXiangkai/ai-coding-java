@@ -2,12 +2,18 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from pathlib import Path
 
 
 def claude_dir() -> Path:
     value = os.environ.get("AICJ_CLAUDE_DIR")
-    return Path(value).expanduser().resolve() if value else Path(__file__).resolve().parents[2]
+    if value:
+        return Path(value).expanduser().resolve()
+    script = Path(os.path.abspath(sys.argv[0]))
+    if script.parent.name == "aicj" and script.parent.parent.name == "hooks":
+        return script.parents[2]
+    return Path(__file__).resolve().parents[2]
 
 
 def hook_mode() -> str:

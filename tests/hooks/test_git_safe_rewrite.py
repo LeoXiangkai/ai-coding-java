@@ -181,6 +181,19 @@ class MissingGitSafe(unittest.TestCase):
 
 
 class GitSafeSelfSkip(unittest.TestCase):
+    @unittest.skipIf(os.name == "nt", "POSIX signal semantics; the fake git is a /bin/sh script")
+    def test_git_safe_maps_signal_exit_to_shell_status(self):
+        import tempfile
+        core_bin = REPO_CORE / "bin"
+        with tempfile.TemporaryDirectory() as tmp:
+            fake_bin = _P(tmp) / "bin"
+            fake_bin.mkdir()
+            target = fake_bin / "git"
+            target.write_text("#!/bin/sh\nkill -TERM $$\n", encoding="utf-8")
+            target.chmod(0o755)
+            proc = subprocess.run([sys.executable, str(core_bin / "git-safe"), "--version"], capture_output=True, text=True, encoding="utf-8", env={"PATH": str(fake_bin)})
+            self.assertEqual(proc.returncode, 143)
+
     def test_git_safe_skips_itself_and_finds_real_git(self):
         """PATH contains git-safe (as git) first and the real git second; git-safe must
         invoke the second, proving it skips entries resolving to itself."""

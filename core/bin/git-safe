@@ -22,14 +22,18 @@ for _stream in (sys.stdout, sys.stderr):
 def real_git() -> str | None:
     self_path = Path(__file__).resolve()
     for entry in os.environ.get("PATH", "").split(os.pathsep):
-        candidate = Path(entry or ".") / ("git.exe" if os.name == "nt" else "git")
+        if not entry:
+            continue
+        candidate = Path(entry) / ("git.exe" if os.name == "nt" else "git")
         try:
             resolved = candidate.resolve()
         except OSError:
             continue
         if candidate.is_file() and os.access(candidate, os.X_OK) and resolved != self_path:
             return str(candidate)
-    found = shutil.which("git")
+    raw_path = os.environ.get("PATH")
+    search_path = os.pathsep.join(entry for entry in raw_path.split(os.pathsep) if entry) if raw_path is not None else None
+    found = shutil.which("git", path=search_path)
     return found if found and Path(found).resolve() != self_path else None
 
 
@@ -49,6 +53,9 @@ def main(argv: list[str] | None = None) -> int:
                 if result.returncode == 0:
                     sys.stderr.buffer.write(error)
                     return 0
+                if result.returncode < 0:
+                    sys.stderr.buffer.write(error)
+                    return 128 + (-result.returncode)
                 text = error.decode("utf-8", errors="replace")
                 if "Unable to create" not in text or "index.lock" not in text or "File exists" not in text:
                     sys.stderr.buffer.write(error)

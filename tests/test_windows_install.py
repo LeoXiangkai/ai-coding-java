@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -40,6 +41,14 @@ def test_symlink_failure_copies_tracks_and_cleans(home, monkeypatch):
     engine.run_uninstall(home, False)
     assert (skill / 'SKILL.md').read_text(encoding='utf-8') == 'user edit'
     assert not rule.exists()
+
+
+def test_symlink_file_exists_error_is_not_copied(home, monkeypatch):
+    def already_exists(*args, **kwargs):
+        raise FileExistsError('target exists')
+    monkeypatch.setattr(Path, 'symlink_to', already_exists)
+    with pytest.raises(util.UserError, match='target exists'):
+        engine.run_install(home, FIXTURE, options(link=True), False)
 
 
 def test_windows_launchers_strict_and_codex_skip(home, monkeypatch):
@@ -109,6 +118,61 @@ def test_exec_hook_identity_includes_args_and_preserves_user_hooks():
     manifest.Manifest.from_dict({**manifest.Manifest().to_dict(), 'settings_hooks': [key.to_dict('.claude/settings.json')]})
     with pytest.raises(util.UserError):
         manifest.Manifest.from_dict({**manifest.Manifest().to_dict(), 'settings_hooks': [other.to_dict('.claude/settings.json')]})
+
+
+def test_foreign_hook_script_path_is_not_owned():
+    key = settings.HookKey('PreToolUse', 'Bash', '/usr/bin/python3', ('/home/me/.claude/hooks/aicj/push-review-gate.py',))
+    foreign_shell = {'hooks': {'PreToolUse': [{'matcher': 'Bash', 'hooks': [
+        {'type': 'command', 'command': 'python3 /srv/other/.claude/hooks/aicj/push-review-gate.py'}
+    ]}]}}
+    assert not settings.has_hook(foreign_shell, key)
+    assert settings.merge_hooks(foreign_shell, [key]) == [key]
+    assert sum(len(group['hooks']) for group in foreign_shell['hooks']['PreToolUse']) == 2
+
+
+def test_legacy_shell_hook_with_drive_path_matches_case_insensitively():
+    key = settings.HookKey('PreToolUse', 'Bash', 'C:/Python/python.exe', ('C:\\Users\\Me\\.claude\\hooks\\aicj\\sample-hook.py',))
+    payload = {'hooks': {'PreToolUse': [{'matcher': 'Bash', 'hooks': [
+        {'type': 'command', 'command': "python3 'c:/users/me/.claude/hooks/aicj/sample-hook.py'"}
+    ]}]}}
+    assert settings.has_hook(payload, key)
+
+
+def test_doctor_matches_hook_by_script_path_when_interpreter_differs(home, tmp_path):
+    source = tmp_path / 'component'
+    import shutil
+    shutil.copytree(FIXTURE, source)
+    component = json.loads((source / 'core/manifest.json').read_text(encoding='utf-8'))
+    engine.run_install(home, source, options(), False)
+    component['hooks'][0]['requires'] = ['missing-required-file']
+    (source / 'core/manifest.json').write_text(json.dumps(component), encoding='utf-8')
+    manifest_path = home / '.claude/aicj/manifest.json'
+    data = json.loads(manifest_path.read_text(encoding='utf-8'))
+    for row in data['settings_hooks']:
+        row['command'] = '/opt/another/python'
+    manifest_path.write_text(json.dumps(data), encoding='utf-8')
+    settings_path = home / '.claude/settings.json'
+    payload = json.loads(settings_path.read_text(encoding='utf-8'))
+    for groups in payload['hooks'].values():
+        for group in groups:
+            for hook in group['hooks']:
+                hook['command'] = '/opt/another/python'
+    settings_path.write_text(json.dumps(payload), encoding='utf-8')
+    checks, status = doctor.run_doctor(home, source)
+    assert status == 0
+    assert not any(name == '.claude/settings.json' and state == 'MISSING' for state, name, _detail in checks)
+    assert not any(name == 'hook sample-hook requirements' for _state, name, _detail in checks)
+
+
+def test_linked_strict_hook_reads_installed_config(home):
+    if os.name == 'nt':
+        pytest.skip('Windows platform does not provide POSIX symlink execution semantics for this fixture')
+    result = subprocess.run([sys.executable, str(REPO / 'installer/aicj.py'), 'install', '--link', '--strict', '--home', str(home), '--source', str(FIXTURE)], capture_output=True, text=True, encoding='utf-8')
+    assert result.returncode == 0, result.stdout + result.stderr
+    hook = json.loads((home / '.claude/settings.json').read_text(encoding='utf-8'))['hooks']['PreToolUse'][0]['hooks'][0]
+    env = {k: v for k, v in os.environ.items() if k not in {'AICJ_HOOK_MODE', 'AICJ_CLAUDE_DIR'}}
+    run = subprocess.run([hook['command'], *hook['args']], input='{}', capture_output=True, text=True, encoding='utf-8', env=env)
+    assert run.returncode == 2
 
 
 def test_reinstall_replaces_recorded_legacy_shell_hook_but_keeps_user_hook(home):

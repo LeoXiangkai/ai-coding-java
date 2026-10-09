@@ -475,6 +475,8 @@ def _write_item(item: index.FileItem, target: Path, link: bool, journal: Journal
             target.symlink_to(item.source)
             return
         except OSError as exc:
+            if isinstance(exc, FileExistsError):
+                raise
             report.warn(f"{item.target}: 软链失败，已改为复制；改仓库即生效失效 ({exc})")
     atomic_write(target, item.source.read_bytes())
     if not is_windows():

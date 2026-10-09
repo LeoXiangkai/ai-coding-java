@@ -23,14 +23,18 @@ def is_commit(repo: Path, value: str) -> bool:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--repo", required=True)
-    parser.add_argument("--fork", required=True)
-    parser.add_argument("--baseline-before", required=True)
-    parser.add_argument("--baseline-after", required=True)
+    parser.add_argument("--repo")
+    parser.add_argument("--fork")
+    parser.add_argument("--baseline-before")
+    parser.add_argument("--baseline-after")
     parser.add_argument("--fork-source", default="missing")
-    parser.add_argument("--integration-mode", required=True)
+    parser.add_argument("--integration-mode")
     parser.add_argument("--manual-resolution", action="store_true")
     args = parser.parse_args(argv)
+    required = (args.repo, args.fork, args.baseline_before, args.baseline_after, args.integration_mode)
+    if any(value is None or not value.strip() for value in required):
+        print("RUN_TARGETED\nreason=required merge verification metadata is missing")
+        return 0
     repo = Path(args.repo)
     reason = ""
     if not ((repo / ".git").is_dir() or (repo / ".git").is_file()):
