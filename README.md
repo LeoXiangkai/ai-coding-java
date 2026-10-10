@@ -5,6 +5,7 @@
 ## 两层职责
 
 - **全局层**：`installer/aicj.py` 将语言无关的 `core/`、语言包 `packs/` 和按需选择的 `adapters/` 安装到 `~/.claude`。默认复制，`--link` 使用软链接。`--codex` 额外把 skills 链接到 `~/.agents/skills`。
+- `aicj install` 默认安装 `claude-hud` 状态栏（目录、git 分支、上下文、模型），需要 Node.js；已有其它状态栏时不会替换。可用 `--no-hud`（Windows 脚本为 `-NoHud`）关闭，安装后可用 `/claude-hud:configure` 调整显示项。
 - **项目档案层**：`skills/setup-ai-coding/SKILL.md` 初始化目标项目工作区，用 `scripts/init_target_project.py` 写入 `.ai-coding-java/` 和入口 marker。素材来自根 `rules/`、`workflow/`、`templates/`、`docs/`；根 `rules/` 是 Java 8 / Spring Boot 2 项目档案规则，保留供既有项目使用。
 
 > **平台支持：macOS / Linux / Windows / WSL。** Windows 建议安装 Git for Windows；使用 `py -3 installer/aicj.py ...`。`--link` 与 `--codex` 没有软链权限时自动改为复制，改仓库不会即时生效。Windows 暂不合并 Codex hooks（行为尚未确认）。
@@ -126,6 +127,7 @@ py -3 installer/aicj.py selftest
 | `--enable-hook <name>` | 点名注册可选 hook，可重复；未点名脚本仍安装但不注册 |
 | `--codex` | 额外安装 Codex skill 链接 |
 | `--codex-hooks` | 显式合并 Codex hooks.json |
+| `--no-hud` | 不安装 claude-hud 状态栏 |
 | `selftest` | 在临时仓库执行安装行为自检 |
 
 参数适用命令以对应 `--help` 为准。

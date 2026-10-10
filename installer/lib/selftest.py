@@ -12,7 +12,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-from . import doctor, manifest, settings
+from . import doctor, hud, manifest, settings
 
 
 def _git(repo: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess:
@@ -124,6 +124,64 @@ def _executor_mode(home: Path) -> str:
     except (OSError, ValueError, TypeError):
         return "cc"
     return "worker" if isinstance(data, dict) and str(data.get("executor_mode", "")).strip().casefold() == "worker" else "cc"
+
+
+def _hud_check(home: Path, loaded: manifest.Manifest | None, root: Path, env_base: Dict[str, str], checks: List[Tuple[str, str, str]]) -> None:
+    if loaded is None or not loaded.hud or loaded.options.no_hud:
+        checks.append(_line("N/A", "claude-hud", "未安装或由 --no-hud 关闭"))
+        return
+    state, reason = hud.status(home, loaded.hud)
+    if state in ("skipped", "kept-other"):
+        checks.append(_line("SKIP", "claude-hud", reason or state))
+        return
+    if state != "installed":
+        checks.append(_line("FAIL", "claude-hud", reason or state))
+        return
+    try:
+        payload = settings.load(home / ".claude/settings.json")
+        command = hud._statusline_command(payload)
+        if "claude-hud" not in command.strip().casefold():
+            checks.append(_line("FAIL", "claude-hud", "settings.json 的 statusLine.command 不含 claude-hud"))
+            return
+        launcher = home / ".claude/plugins/claude-hud/statusline.mjs"
+        if not launcher.is_file():
+            checks.append(_line("FAIL", "claude-hud", f"启动器不存在：{launcher}"))
+            return
+        runtime = hud._runtime()
+        if not runtime:
+            checks.append(_line("FAIL", "claude-hud", "未找到 bun 或 node 运行时"))
+            return
+        env = dict(env_base)
+        if home.resolve() != Path.home().resolve():
+            env["CLAUDE_CONFIG_DIR"] = str(home / ".claude")
+        input_data = json.dumps(
+            {
+                "model": {"display_name": "Opus"},
+                "context_window": {"used_percentage": 12, "context_window_size": 200000},
+                "cwd": str(root),
+            },
+            ensure_ascii=False,
+        )
+        result = subprocess.run(
+            [runtime, str(launcher)],
+            cwd=root,
+            env=env,
+            input=input_data,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=60,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            checks.append(_line("PASS", "claude-hud", "statusline.mjs 执行成功并输出模型状态"))
+        else:
+            output = (result.stdout + " " + result.stderr).strip()[:300]
+            checks.append(_line("FAIL", "claude-hud", f"exit={result.returncode}，输出={output}"))
+    except subprocess.TimeoutExpired:
+        checks.append(_line("FAIL", "claude-hud", "statusline.mjs 执行超时"))
+    except Exception as exc:
+        checks.append(_line("FAIL", "claude-hud", str(exc)))
 
 
 def _worker_invocation(home: Path, *args: str) -> List[str]:
@@ -265,6 +323,7 @@ def _worker_claude_check(home: Path, root: Path, env: Dict[str, str], checks: Li
 
 def _run(home: Path, source: Optional[Path], with_claude: bool) -> List[Tuple[str, str, str]]:
     checks = []
+    loaded_for_hud: manifest.Manifest | None = None
     mode = _executor_mode(home)
     checks.append(_line("PASS", "模式", mode))
     try:
@@ -276,6 +335,7 @@ def _run(home: Path, source: Optional[Path], with_claude: bool) -> List[Tuple[st
 
     try:
         loaded = manifest.load(home)
+        loaded_for_hud = loaded
         if loaded is None:
             raise RuntimeError("manifest 不存在")
         skills = [entry.path for entry in loaded.entries if entry.kind in ("skill-dir", "skill-copy")]
@@ -316,6 +376,7 @@ def _run(home: Path, source: Optional[Path], with_claude: bool) -> List[Tuple[st
                 "PYTHONDONTWRITEBYTECODE": "1",
             }
         )
+        _hud_check(home, loaded_for_hud, root, env_base, checks)
 
         if mode == "worker":
             _worker_checks(home, root, env_base, checks)

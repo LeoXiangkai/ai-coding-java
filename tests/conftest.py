@@ -53,6 +53,12 @@ def files_under(root: Path) -> list[str]:
     return sorted(snapshot(root))
 
 
+@pytest.fixture(autouse=True)
+def _skip_hud(monkeypatch: pytest.MonkeyPatch) -> None:
+    # 本机 PATH 上的真实 claude 会让安装测试联网装插件；hud 行为由 test_hud.py 单独覆盖
+    monkeypatch.setenv("AICJ_SKIP_HUD", "1")
+
+
 @pytest.fixture()
 def home(tmp_path: Path) -> Path:
     target = tmp_path / "home"

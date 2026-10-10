@@ -47,13 +47,15 @@ tests/         安装器与钩子测试，全部使用临时 HOME
 
 安装器支持 macOS、Linux、Windows 和 WSL。Windows 使用 `py -3 installer/aicj.py ...`，建议安装 Git for Windows。钩子统一写为带 `args` 的 exec 形式，解释器使用安装时的绝对 `sys.executable`；`--link` 与 `--codex` 遇到软链权限错误会回退为复制并记录 checksum。Windows 额外生成 `.cmd` bin 启动器；`--codex-hooks` 在 Windows 暂不合并，doctor 标记为 SKIPPED。
 
+安装步骤还会默认探测并安装 `claude-hud` 状态栏（目录、git 分支、上下文、模型）；缺少 Claude Code 或 Node.js 时只跳过并告警，已有其它状态栏时不替换，可用 `--no-hud` 关闭。
+
 WSL 内运行的安装器按 Linux 工作，并使用 WSL 的用户目录。若在 WSL 中将有效 `--home` 指向 `/mnt/<盘符>/...`（或 `AICJ_WSL_MOUNT_ROOT` 下的单字母盘符目录），安装器会把脚本、目标路径及显式的 `--source` / `--project` 转换为 Windows 路径，交给 Windows Python 执行；需先安装 Python 3.9+。WSL 中的仓库源位于 Windows 盘时只给出性能、换行符和权限位警告，建议迁移到 WSL 文件系统。
 
 ### 3.1 命令
 
 ```
 aicj install   [--global | --project <dir>] [--packs auto|java,python,vue] [--adapters executor,lesson,jev,verify-probe]
-               [--codex] [--codex-hooks] [--strict] [--enable-hook <name>]... [--link] [--on-conflict skip|backup] [--dry-run] [--home <dir>]
+               [--codex] [--codex-hooks] [--strict] [--enable-hook <name>]... [--link] [--on-conflict skip|backup] [--no-hud] [--dry-run] [--home <dir>]
 aicj uninstall [--global | --project <dir>] [--dry-run] [--home <dir>]
 aicj status    [--home <dir>]      只读：逐项列出 已装/未装/与仓库不同，并给出 diff 命令
 aicj doctor    [--home <dir>]      只读：PASS / WARN / MISSING / SKIPPED
@@ -97,7 +99,7 @@ aicj selftest  [--home <dir>] [--source <dir>] [--with-claude]  在临时仓库�
 1. 写前备份为 `settings.json.aicj-bak-<ts>`（每次安装最多保留最近 1 份，旧的我方备份随之删除）；文件不存在则从 `{}` 开始。目标是软链时写到软链指向的真实文件并保持其 mode，软链本身保留。
 2. 以 `(事件, matcher, command, args)` 为唯一键：已存在跳过，不存在则追加到对应事件列表末尾；不改已有条目顺序与内容。
 3. 我方钩子使用 `{"type":"command","command":"<绝对解释器>","args":["<绝对脚本>"]}` exec 形式，脚本路径经规范化后必须位于 `hooks/aicj/` 下；旧 shell 形式在升级时替换，用户钩子不动。仅当脚本条目为 created/replaced/adopted 时才注册。`SessionStart` / `Stop` / `UserPromptSubmit` / `SessionEnd` / `PreCompact` / `Notification` 不写 `matcher` 键。
-4. 只触碰 `hooks` 键；`env`、`permissions`、`statusLine`、`enabledPlugins` 等一律不读不写（`permissions` 不随安装带出）。
+4. 常规合并只触碰 `hooks` 键；`env`、`permissions`、`enabledPlugins` 等一律不读不写（`permissions` 不随安装带出）。`statusLine` 仅由 claude-hud 步骤按独立归属规则管理。
 5. 写回用临时文件 + 原子 rename，写后重新解析校验。
 6. 卸载按 manifest 中记录的键精确删除；删除后为空的 matcher 组与事件键一并清除。用户预先已有的同 command 条目记为 adopted，不进 manifest、卸载不删。
 7. 卸载后 settings 与用户原件一致时，清理我方创建的备份。

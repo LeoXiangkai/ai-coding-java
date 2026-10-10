@@ -24,6 +24,7 @@ class Options:
     on_conflict: str = "skip"
     project: str = ""
     enable_hooks: list[str] = field(default_factory=list)
+    no_hud: bool = False
 
 
 @dataclass
@@ -78,6 +79,7 @@ class Manifest:
     settings_hooks: list[dict] = field(default_factory=list)
     created_dirs: list[str] = field(default_factory=list)
     state: str = COMPLETE
+    hud: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return {
@@ -89,6 +91,7 @@ class Manifest:
             "entries": [asdict(entry) for entry in self.entries],
             "settings_hooks": list(self.settings_hooks),
             "created_dirs": list(self.created_dirs),
+            "hud": dict(self.hud),
         }
 
     @classmethod
@@ -120,11 +123,13 @@ class Manifest:
                 on_conflict=str(options.get("on_conflict", "skip")),
                 project=str(options.get("project", "")),
                 enable_hooks=[str(x) for x in options.get("enable_hooks", [])],
+                no_hud=bool(options.get("no_hud", False)),
             ),
             entries=[_entry(item) for item in entries],
             settings_hooks=[_hook(item) for item in hooks],
             created_dirs=[safe_rel(str(x), "created dir", allow_root=True) for x in data.get("created_dirs") or []],
             state=state,
+            hud=dict(data.get("hud") or {}) if isinstance(data.get("hud") or {}, dict) else {},
         )
 
     def save(self, home: Path) -> None:
