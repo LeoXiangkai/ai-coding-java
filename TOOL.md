@@ -28,6 +28,8 @@
 
 ## Recommended Runtime Use
 
+Scenario-to-skill combinations are in [USAGE.md Quick Start](USAGE.md#quick-start).
+
 For this component project:
 
 ```bash
