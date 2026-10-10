@@ -152,6 +152,13 @@ def cmd_status(args: argparse.Namespace) -> int:
     return 0
 
 
+NEXT_STEPS = (
+    "初始化目标项目：/setup-ai-coding",
+    "不知道下一步做什么：/flow",
+    "只有粗糙想法：/req-intake",
+)
+
+
 def cmd_doctor(args: argparse.Namespace) -> int:
     home = _home(args)
     checks, code = doctor_mod.run_doctor(home, _source(args, None))
@@ -160,6 +167,12 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         print(f"{status:<8} {name}  {detail}")
     counts = Counter(status for status, _name, _detail in checks)
     print("summary          " + " ".join(f"{name}={counts[name]}" for name in sorted(counts)))
+    if code == 0:
+        for text in NEXT_STEPS:
+            print(f"下一步  {text}")
+    gap = doctor_mod.optional_skill_gap(home)
+    if gap:
+        print(f"hint    {gap}")
     return code
 
 

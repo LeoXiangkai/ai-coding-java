@@ -2,6 +2,26 @@
 
 全局安装入口见 [README](README.md)，安装结构与行为以 [global-install-design](docs/global-install-design.md) 为准。本文保留项目档案层用法；全局 `core/`、`packs/`、`adapters/` 由 `installer/aicj.py` 安装。
 
+## Quick Start
+
+安装后先跑 `python3 installer/aicj.py doctor`；健康安装会在 `summary` 行之后打印「下一步」三行，照做即可。
+
+| 场景 | 组合拳 |
+|---|---|
+| 只有粗糙想法 | `flow` → `req-intake` → `add-module` → `local-verify` → `code-review` → `git-commit` |
+| 需求文档完整 | `prd` 或现有文档 → `auto-sdd` → `code-review` → `git-commit` |
+| 小改 | `flow` → 在 worktree 里直接改 → `local-verify` → `git-commit` |
+| 大需求 / 会议纪要 | `prd` → `req-analysis` → 逐 Story 走前两种 |
+| 补测试 | `qa-testcase-pro` → `qa-baseline` |
+
+三条口诀：
+
+- 不知道下一步就 `flow`。
+- 需求不成熟别硬写 PRD，先 `req-intake`；说不清就让 `grilling` 追问。
+- 改文件前先建 worktree，收口走 `git-commit`。
+
+`grilling` 为可选增强：未安装时 `req-intake` / `flow` 降级为直接问答。
+
 ## Initialize A Target Java Project
 
 1. Run or follow `$setup-ai-coding` in the target repository; Java/Python/Vue targets get `.ai-coding-java/` through this flow and write the Claude marker to `CLAUDE.local.md`.

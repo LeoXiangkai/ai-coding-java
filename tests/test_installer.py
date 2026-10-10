@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -249,6 +250,62 @@ def test_doctor_reports_missing_install(home: Path) -> None:
     doctor = run_aicj("doctor", home=home)
     assert doctor.returncode == 1
     assert "MISSING" in doctor.stdout
+
+
+def test_doctor_prints_next_steps_only_when_healthy(home: Path) -> None:
+    assert run_aicj("install", home=home).returncode == 0
+    doctor = run_aicj("doctor", home=home)
+    assert doctor.returncode == 0, doctor.stdout + doctor.stderr
+    lines = doctor.stdout.splitlines()
+    assert "下一步  初始化目标项目：/setup-ai-coding" in lines
+    assert "下一步  不知道下一步做什么：/flow" in lines
+    assert "下一步  只有粗糙想法：/req-intake" in lines
+    summary = [ln for ln in lines if ln.startswith("summary")]
+    assert len(summary) == 1
+    assert lines.index(summary[0]) < lines.index("下一步  初始化目标项目：/setup-ai-coding")
+    assert sum(1 for ln in lines if ln.startswith("下一步")) == 3
+
+
+def test_doctor_omits_next_steps_when_not_installed(home: Path) -> None:
+    doctor = run_aicj("doctor", home=home)
+    assert doctor.returncode == 1
+    assert "下一步" not in doctor.stdout
+
+
+def test_doctor_summary_line_format_is_unchanged(home: Path) -> None:
+    assert run_aicj("install", home=home).returncode == 0
+    before = run_aicj("doctor", home=home)
+    assert before.returncode == 0, before.stdout + before.stderr
+    summary = [ln for ln in before.stdout.splitlines() if ln.startswith("summary")]
+    assert len(summary) == 1
+    assert re.fullmatch(
+        r"summary          (MISSING|PASS|SKIPPED|WARN)=\d+( (MISSING|PASS|SKIPPED|WARN)=\d+)*",
+        summary[0],
+    ), summary[0]
+    assert summary[0] == "summary          PASS=10 SKIPPED=3 WARN=6"
+
+    (home / ".claude/skills/grilling").mkdir(parents=True)
+    after = run_aicj("doctor", home=home)
+    assert after.returncode == 0, after.stdout + after.stderr
+    assert [ln for ln in after.stdout.splitlines() if ln.startswith("summary")] == summary
+
+
+def test_doctor_hints_when_optional_grilling_skill_is_absent(home: Path) -> None:
+    assert run_aicj("install", home=home).returncode == 0
+    missing = run_aicj("doctor", home=home)
+    assert missing.returncode == 0, missing.stdout + missing.stderr
+    hints = [ln for ln in missing.stdout.splitlines() if ln.startswith("hint")]
+    assert len(hints) == 1
+    assert "grilling" in hints[0]
+    assert "直接问答" in hints[0]
+    rows_before = [ln for ln in missing.stdout.splitlines() if ln.split(" ", 1)[0] in {"PASS", "WARN", "MISSING", "SKIPPED"}]
+
+    (home / ".claude/skills/grilling").mkdir(parents=True)
+    present = run_aicj("doctor", home=home)
+    assert present.returncode == 0, present.stdout + present.stderr
+    assert [ln for ln in present.stdout.splitlines() if ln.startswith("hint")] == []
+    rows_after = [ln for ln in present.stdout.splitlines() if ln.split(" ", 1)[0] in {"PASS", "WARN", "MISSING", "SKIPPED"}]
+    assert rows_after == rows_before
 
 
 def test_install_option_flags_all_parse(home: Path) -> None:

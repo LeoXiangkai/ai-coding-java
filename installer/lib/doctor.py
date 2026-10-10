@@ -19,6 +19,8 @@ THIRD_PARTY_SKILLS = (
     "writing-for-agents",
 )
 
+OPTIONAL_SKILL = "grilling"
+
 
 def _same_hook_script(left: dict, command: str, args: tuple[str, ...]) -> bool:
     expected = settings._script_path(command, args)
@@ -52,6 +54,14 @@ def run_doctor(home: Path, source: Path | None = None) -> tuple[list[tuple[str, 
 
     missing = sum(1 for status, _name, _detail in checks if status == MISSING)
     return checks, 1 if missing else 0
+
+
+def optional_skill_gap(home: Path) -> str | None:
+    """Hint text when an optional skill is absent; never a check row, never changes the return code."""
+    skill = home / ".claude" / "skills" / OPTIONAL_SKILL
+    if skill.is_dir():
+        return None
+    return f"可选 skill 缺失：{skill} 未安装，需求澄清降级为直接问答"
 
 
 def _hud(home: Path, loaded: manifest.Manifest) -> list[tuple[str, str, str]]:
