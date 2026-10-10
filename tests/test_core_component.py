@@ -88,6 +88,8 @@ def test_real_core_install_doctor_uninstall_leaves_no_residue(home: Path) -> Non
         ".claude/refs/git-policy.md",
         ".claude/agents/scanner.md",
         ".claude/aicj/CLAUDE.global.md",
+        ".claude/skills/req-intake/SKILL.md",
+        ".claude/skills/flow/SKILL.md",
     ):
         assert (home / rel).is_file(), rel
     assert "@aicj/CLAUDE.global.md" in (home / ".claude/CLAUDE.md").read_text(encoding="utf-8")

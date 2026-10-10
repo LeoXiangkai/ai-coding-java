@@ -124,6 +124,14 @@
         "target": "skills/req-analysis"
       },
       {
+        "source": "skills/req-intake",
+        "target": "skills/req-intake"
+      },
+      {
+        "source": "skills/flow",
+        "target": "skills/flow"
+      },
+      {
         "source": "skills/qa-baseline",
         "target": "skills/qa-baseline"
       },

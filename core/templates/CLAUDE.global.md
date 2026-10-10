@@ -102,6 +102,8 @@ PM / SA / Dev / QA / Scanner 职责见 `agents/*.md`。核心约束：
 
 | 意图 | skill |
 |---|---|
+| 需求粗糙/只有想法、一句话需求 | `req-intake` |
 | PRD、需求澄清、测试基线、测试用例 | `prd` / `req-analysis` / `qa-baseline` / `qa-testcase-pro` |
+| 新任务不知从哪起步、下一步做什么 | `flow` |
 | 提交收口、合并后验证 | `git-commit` |
 | 本地编译、启动、接口自测、日志诊断 | `local-verify` |
