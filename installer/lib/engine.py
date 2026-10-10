@@ -10,7 +10,7 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import conflict, index, manifest, mdblock, settings
+from . import conflict, hud, index, manifest, mdblock, settings
 from .util import (
     UserError,
     atomic_write,
@@ -697,7 +697,7 @@ def _run_install(
     journal = Journal(home, old, enabled=not dry_run)
     journal.meta = manifest.Manifest(
         source_repo=str(source),
-        source_commit=git_commit(source),
+        source_commit=git_commit(source) if not dry_run else "",
         installed_at=iso_now(),
         options=options,
     )
@@ -723,13 +723,22 @@ def _run_install(
 
     md_entry = _apply_md_block(home, claude_text, block_span, dry_run, report, previous.get(CLAUDE_MD), journal)
 
+    hud_before = hud.runtime_artifacts(home) if not dry_run else {}
+    hud_record = hud.install(home, report, dry_run=dry_run, disabled=options.no_hud, previous=old.hud if old else None)
+    hud_entries: list[manifest.Entry] = []
+    if not dry_run:
+        for path, digest in hud.runtime_artifacts(home).items():
+            if path not in hud_before:
+                hud_entries.append(manifest.Entry(path, "hud-file", conflict.CREATED, digest))
+
     ordered = [op.entry for op in file_ops + codex_ops]
     ordered.extend(op.entry for op in generated_ops)
+    ordered.extend(hud_entries)
     names = {entry.path for entry in ordered} | {entry.path for entry in hook_entries} | {CLAUDE_MD}
     for path, entry in previous.items():
         if path in names:
             continue
-        keep_kind = entry.kind in ("file", "symlink", "skill-copy", SKILL_DIR)
+        keep_kind = entry.kind in ("file", "symlink", "skill-copy", SKILL_DIR, "hud-file")
         if keep_kind and entry.action in OWNED_ACTIONS:
             report.note(f"{path}: no longer shipped, kept and still tracked for uninstall")
             ordered.append(entry)
@@ -741,6 +750,7 @@ def _run_install(
     result.entries = ordered
     result.settings_hooks = hooks_rows
     result.created_dirs = list(journal.created_dirs)
+    result.hud = hud_record
     if not dry_run:
         # hook files dropped from this run (nothing wanted, nothing stale) must not leave rows behind
         for rel in list(journal.hooks):
@@ -934,6 +944,8 @@ def _run_uninstall(home: Path, dry_run: bool) -> Report:
         report.note("no manifest; nothing installed")
         return report
 
+    hud.uninstall(home, loaded.hud, report, dry_run=dry_run)
+
     hook_keys: dict[str, list[settings.HookKey]] = {}
     for row in loaded.settings_hooks:
         target = str(row.get("target", SETTINGS))
@@ -1038,6 +1050,8 @@ def run_status(home: Path, source: Path | None) -> Report:
         report.note("install was interrupted; rerun install to finish")
 
     root = source or (Path(loaded.source_repo) if loaded.source_repo else None)
+    hud_status, hud_reason = hud.status(home, loaded.hud)
+    report.add(hud_status, "claude-hud", hud_reason)
     if root is None or not root.is_dir():
         report.note(f"source root unavailable: {root}")
         return report

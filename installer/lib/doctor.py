@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from . import engine, index, manifest, mdblock, settings
+from . import engine, hud, index, manifest, mdblock, settings
 from .util import UserError, is_windows
 
 PASS = "PASS"
@@ -48,9 +48,32 @@ def run_doctor(home: Path, source: Path | None = None) -> tuple[list[tuple[str, 
     checks.extend(_bin_path(home, loaded))
     checks.extend(_codex(home, loaded))
     checks.extend(_third_party(home))
+    checks.extend(_hud(home, loaded))
 
     missing = sum(1 for status, _name, _detail in checks if status == MISSING)
     return checks, 1 if missing else 0
+
+
+def _hud(home: Path, loaded: manifest.Manifest) -> list[tuple[str, str, str]]:
+    record = loaded.hud
+    if not record or loaded.options.no_hud:
+        return [(SKIPPED, "claude-hud", "未安装或由 --no-hud 关闭")]
+    state, reason = hud.status(home, record)
+    if state in ("skipped", "kept-other"):
+        return [(SKIPPED, "claude-hud", reason or state)]
+    if state != "installed":
+        return [(WARN, "claude-hud", reason or state)]
+    try:
+        payload = settings.load(home / ".claude/settings.json")
+        command = hud._statusline_command(payload)
+    except Exception as exc:
+        return [(WARN, "claude-hud", f"无法读取状态栏：{exc}")]
+    if "claude-hud" not in command.strip().casefold():
+        return [(WARN, "claude-hud", "settings.json 的 statusLine.command 不含 claude-hud")]
+    launcher = home / ".claude/plugins/claude-hud/statusline.mjs"
+    if not launcher.is_file():
+        return [(WARN, "claude-hud", f"启动器不存在：{launcher}")]
+    return [(PASS, "claude-hud", "状态栏已安装")]
 
 
 def _load_manifest(home: Path, checks: list) -> manifest.Manifest | None:

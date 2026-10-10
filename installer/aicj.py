@@ -45,6 +45,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     install.add_argument("--link", action="store_true", help="symlink instead of copy")
     install.add_argument("--on-conflict", choices=("skip", "backup"), default="skip")
+    install.add_argument("--no-hud", action="store_true", help="do not install the claude-hud status line")
     install.add_argument("--dry-run", action="store_true")
 
     uninstall = sub.add_parser("uninstall", help="remove what the manifest records as ours", allow_abbrev=False)
@@ -129,6 +130,7 @@ def cmd_install(args: argparse.Namespace) -> int:
         link=args.link,
         on_conflict=args.on_conflict,
         enable_hooks=list(args.enable_hook),
+        no_hud=args.no_hud,
     )
     report, _result = engine.run_install(home, source, options, args.dry_run)
     _print_report("install", report, args.dry_run)

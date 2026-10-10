@@ -129,7 +129,8 @@ def test_cc_mode_marks_worker_checks_na_and_writes_config(tmp_path: Path) -> Non
     assert result.returncode == 0, result.stdout + result.stderr
     assert "PASS  模式  cc" in result.stdout
     assert "N/A   worker dry-run  cc 模式，未安装 executor 适配" in result.stdout
-    assert "N/A=5" in result.stdout
+    assert "N/A   claude-hud" in result.stdout
+    assert "N/A=6" in result.stdout
     assert json.loads((home / ".claude/aicj/config.json").read_text(encoding="utf-8"))["executor_mode"] == "cc"
 
 

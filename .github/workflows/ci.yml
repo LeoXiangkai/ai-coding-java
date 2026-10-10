@@ -27,6 +27,23 @@ jobs:
       - run: python scripts/sanitize_check.py
       - run: python scripts/template_integrity_check.py
       - run: python scripts/install_roundtrip_check.py
+      - name: Ubuntu Claude HUD end-to-end
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install -g @anthropic-ai/claude-code
+          hud_home="$(mktemp -d)"
+          trap 'rm -rf "$hud_home"' EXIT
+          python3 installer/aicj.py install --home "$hud_home"
+          python3 - "$hud_home" <<'PY'
+          import json, pathlib, sys
+          settings = json.loads((pathlib.Path(sys.argv[1]) / '.claude/settings.json').read_text(encoding='utf-8'))
+          assert 'claude-hud' in str(settings.get('statusLine', {}).get('command', ''))
+          PY
+          selftest_output="$(python3 installer/aicj.py selftest --home "$hud_home")"
+          printf '%s\n' "$selftest_output"
+          grep -F 'PASS  claude-hud' <<<"$selftest_output"
       - name: Windows PowerShell 5.1 one-click install smoke
         if: runner.os == 'Windows'
         shell: powershell

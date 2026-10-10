@@ -1,10 +1,11 @@
-﻿# Parameters: -RepoDir -HomeDir -NoPrereqs -NoClaude -NoCcLauncher -RepoUrl -Mode -CpaUrl -CpaToken -CpaDir -InstallCpa -Adapters
+﻿# Parameters: -RepoDir -HomeDir -NoPrereqs -NoClaude -NoHud -NoCcLauncher -RepoUrl -Mode -CpaUrl -CpaToken -CpaDir -InstallCpa -Adapters
 [CmdletBinding()]
 param(
     [string]$RepoDir,
     [string]$HomeDir,
     [switch]$NoPrereqs,
     [switch]$NoClaude,
+    [switch]$NoHud,
     [switch]$NoCcLauncher,
     [string]$RepoUrl = "https://github.com/LeoXiangkai/ai-coding-java.git",
     [ValidateSet("cc", "worker")]
@@ -162,6 +163,7 @@ try {
         if ($LASTEXITCODE -ne 0) { Install-WingetPackage "Python.Python.3.12" }
         & py -3 -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 9) else 1)"
         Assert-ExitCode "Python 3.9+ 版本检查"
+        if (-not $NoHud -and -not (Get-Command node -ErrorAction SilentlyContinue)) { Install-WingetPackage "OpenJS.NodeJS.LTS" }
         if (-not (Get-Command claude -ErrorAction SilentlyContinue) -and -not $NoClaude) {
             Write-Host "未找到 Claude Code，正在运行官方安装器..."
             Invoke-Expression (Invoke-RestMethod https://claude.ai/install.ps1)
@@ -224,6 +226,7 @@ try {
         if ($Mode -eq "worker" -and $adapterNames -notcontains "executor") { $adapterNames += "executor" }
         $installArgs = @("install") + $homeArgs
         if ($adapterNames.Count -gt 0) { $installArgs += "--adapters"; $installArgs += (($adapterNames | Select-Object -Unique) -join ",") }
+        if ($NoHud) { $installArgs += "--no-hud" }
         & py -3 installer/aicj.py @installArgs
         Assert-ExitCode "aicj 安装"
         Install-CcLauncher
